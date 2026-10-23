@@ -47,6 +47,24 @@ public class KittyFeedingStationBlockEntity extends BlockEntity {
         return inventory;
     }
 
+    public static void tick(Level level, BlockPos pos, BlockState state, KittyFeedingStationBlockEntity station) {
+        if (level.isClientSide || level.getGameTime() % 40 != 0) return;
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(pos).inflate(10.0D);
+        java.util.List<com.kittytalents.entity.TalentedCat> cats = level.getEntitiesOfClass(
+                com.kittytalents.entity.TalentedCat.class, box, c -> c.isAlive() && c.getHunger() < 80);
+        for (com.kittytalents.entity.TalentedCat cat : cats) {
+            for (int i = 0; i < station.inventory.getSlots(); i++) {
+                ItemStack s = station.inventory.getStackInSlot(i);
+                if (!s.isEmpty() && CatFoodHelper.isEdibleByCat(s, cat)) {
+                    station.inventory.extractItem(i, 1, false);
+                    cat.increaseHunger(25);
+                    cat.heal(4.0F);
+                    break;
+                }
+            }
+        }
+    }
+
     public void dropContents() {
         if (level != null) {
             for (int i = 0; i < inventory.getSlots(); i++) {

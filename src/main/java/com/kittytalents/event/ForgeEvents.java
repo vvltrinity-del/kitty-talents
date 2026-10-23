@@ -327,4 +327,31 @@ public class ForgeEvents {
             );
         }
     }
+
+    @SubscribeEvent
+    public static void onPlayerChangedDimension(net.minecraftforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)) return;
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server == null) return;
+        ServerLevel fromLevel = server.getLevel(event.getFrom());
+        ServerLevel toLevel = server.getLevel(event.getTo());
+        if (fromLevel == null || toLevel == null) return;
+
+        for (net.minecraft.world.entity.Entity entity : fromLevel.getAllEntities()) {
+            if (entity instanceof TalentedCat cat && cat.isAlive() && !cat.isIncapacitated() && !cat.isOrderedToSit()) {
+                if (cat.isPrimaryOwner(player)) {
+                    com.kittytalents.entity.CatMode mode = cat.getCatMode();
+                    if (mode == com.kittytalents.entity.CatMode.FOLLOW ||
+                        mode == com.kittytalents.entity.CatMode.GUARD ||
+                        mode == com.kittytalents.entity.CatMode.TACTICAL ||
+                        mode == com.kittytalents.entity.CatMode.AGGRESSIVE) {
+                        net.minecraft.world.entity.Entity moved = cat.changeDimension(toLevel);
+                        if (moved instanceof TalentedCat movedCat) {
+                            movedCat.teleportTo(player.getX(), player.getY(), player.getZ());
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

@@ -24,7 +24,9 @@ public class PacketTwineAction {
         DODGE(2),
         TEAM_SYNERGY(3),
         TRAVERSAL_ACTION(4),
-        INTERACT(5);
+        INTERACT(5),
+        RELOAD_GUN(6),
+        AIM_GUN(7);
 
         private final int id;
 
@@ -159,6 +161,16 @@ public class PacketTwineAction {
                 case INTERACT -> {
                     if (cat.isTwinedWith(sender)) {
                         cat.tryUseEquippedTool();
+                    }
+                }
+                case RELOAD_GUN -> {
+                    if (cat.isTwinedWith(sender) && cat.hasEquippedGun()) {
+                        com.kittytalents.compat.tacz.TacZCompat.triggerReload(cat, cat.getEquippedWeapon());
+                    }
+                }
+                case AIM_GUN -> {
+                    if (cat.isTwinedWith(sender) && cat.hasEquippedGun()) {
+                        com.kittytalents.compat.tacz.TacZCompat.setAiming(cat, actionData > 0.5F);
                     }
                 }
             }

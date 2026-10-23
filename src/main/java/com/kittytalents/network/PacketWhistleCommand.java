@@ -148,9 +148,23 @@ public class PacketWhistleCommand {
                     }
                     case FISH -> {
                         cat.setOrderedToSit(false);
+                        cat.setCatMode(CatMode.WORK);
+                        cat.setCatJob(com.kittytalents.work.CatJob.FISHER);
+                        cat.setClockedIn(true);
                     }
                     case MINE -> {
                         cat.setOrderedToSit(false);
+                        cat.setCatMode(CatMode.WORK);
+                        cat.setCatJob(com.kittytalents.work.CatJob.MINER);
+                        cat.setClockedIn(true);
+                    }
+                    case CLOCK_IN -> {
+                        cat.setOrderedToSit(false);
+                        cat.setCatMode(CatMode.WORK);
+                        cat.setClockedIn(true);
+                    }
+                    case CLOCK_OUT -> {
+                        cat.setClockedIn(false);
                     }
                     case FLY -> {
                         if (cat.getTalentLevel(Talents.SKY_FELINE) > 0) {

@@ -67,7 +67,7 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         super(menu, playerInventory, title);
         this.cat = menu.getCat();
         for (Talent t : Talents.getAll()) {
-            if (!t.isStandard()) {
+            if (!t.isStandard() && t.isAvailable()) {
                 this.allTalents.add(t);
             }
         }
@@ -103,7 +103,8 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         return t == Talents.POUNCE_STRIKE || t == Talents.FELINE_REFLEXES || t == Talents.CRITICAL_CLAWS ||
                t == Talents.FELINE_BERSERKER || t == Talents.FELINE_HISS || t == Talents.VENOM_CLAWS ||
                t == Talents.INFERNO_CAT || t == Talents.GUARDIAN_CAT || t == Talents.CATNIP_CATASTROPHE ||
-               t == Talents.HUNTER_CAT || t == Talents.CAT_ARMORY || t == Talents.CAT_ARMOR;
+               t == Talents.HUNTER_CAT || t == Talents.CAT_ARMORY || t == Talents.CAT_ARMOR ||
+               t == Talents.MARKSMAN || t == Talents.QUICK_RELOAD || t == Talents.AMMO_SCAVENGER;
     }
 
     private boolean isMobilityTalent(Talent t) {
@@ -115,7 +116,8 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         return t == Talents.KITTY_PACK || t == Talents.TORCH_KITTY || t == Talents.HOME_WHISKERS ||
                t == Talents.WHISKER_RADAR || t == Talents.SNIFFER_WHISKERS || t == Talents.KITTY_TOOLS ||
                t == Talents.MOLE_CAT || t == Talents.PAW_RETRIEVER || t == Talents.HERDING_KITTY ||
-               t == Talents.GATE_PURR || t == Talents.HAPPY_EATER;
+               t == Talents.GATE_PURR || t == Talents.HAPPY_EATER ||
+               t == Talents.GREEN_PAW || t == Talents.TIMBER_CLAWS || t == Talents.LOGISTICS_WHISKERS || t == Talents.WORK_ETHIC;
     }
 
     private boolean isSupportTalent(Talent t) {
@@ -289,6 +291,35 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
                 Component.literal("Whistle"),
                 button -> ClientModEvents.openWhistleScreen()
         ).bounds(actionX + 82, actionY + 22, 78, 18).build());
+
+        // Job Assignment & Clock In/Out row
+        com.kittytalents.work.CatJob curJob = cat.getCatJob();
+        this.addRenderableWidget(Button.builder(
+                Component.literal("Job: " + curJob.getDisplayName()).withStyle(ChatFormatting.GOLD),
+                button -> {
+                    com.kittytalents.work.CatJob[] jobs = com.kittytalents.work.CatJob.values();
+                    com.kittytalents.work.CatJob next = jobs[(cat.getCatJob().ordinal() + 1) % jobs.length];
+                    cat.setCatJob(next);
+                    if (next != com.kittytalents.work.CatJob.NONE) {
+                        cat.setCatMode(CatMode.WORK);
+                        cat.setClockedIn(true);
+                    }
+                    PacketHandler.sendToServer(new PacketSetCatJob(cat.getId(), next, cat.isClockedIn()));
+                    rebuildInterface();
+                }
+        ).bounds(actionX, actionY + 44, 102, 18).build());
+
+        boolean clockedIn = cat.isClockedIn();
+        this.addRenderableWidget(Button.builder(
+                Component.literal(clockedIn ? "Clocked In" : "Clocked Out")
+                        .withStyle(clockedIn ? ChatFormatting.GREEN : ChatFormatting.RED),
+                button -> {
+                    boolean nextClock = !cat.isClockedIn();
+                    cat.setClockedIn(nextClock);
+                    PacketHandler.sendToServer(new PacketSetCatJob(cat.getId(), cat.getCatJob(), nextClock));
+                    rebuildInterface();
+                }
+        ).bounds(actionX + 106, actionY + 44, 54, 18).build());
     }
 
     // ==========================================

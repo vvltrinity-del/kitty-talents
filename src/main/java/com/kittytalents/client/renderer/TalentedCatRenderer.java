@@ -16,6 +16,7 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, TalentedCatMod
         this.addLayer(new TalentedCatArmorLayer(this));
         this.addLayer(new TalentedCatCollarLayer(this, context.getModelSet()));
         this.addLayer(new TalentedCatWeaponLayer(this));
+        this.addLayer(new TalentedCatGunHarnessLayer(this));
         this.addLayer(new TalentedCatPackLayer(this));
         this.addLayer(new TalentedCatWingLayer(this, context.getModelSet()));
         this.addLayer(new TalentedCatAccessoryLayer(this));

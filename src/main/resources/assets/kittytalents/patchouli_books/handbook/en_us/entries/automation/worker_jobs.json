@@ -1,0 +1,16 @@
+{
+  "name": "Worker Jobs & Clipboard",
+  "category": "kittytalents:automation",
+  "icon": "kittytalents:kitty_work_clipboard",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Use the $(l)Kitty Work Clipboard$() to configure your worker cats:$(br2)1. $(l)Right-Click Cat$(): Select cat.$(br)2. $(l)Sneak + Right-Click Cat$(): Cycle job (Farmer, Lumberjack, Miner, Rancher, Courier, Sorter, Fisher, Collector, Gunsmith).$(br)3. $(l)Right-Click Work Station$(): Bind cat to station.$(br)4. $(l)Sneak + Right-Click Block$(): Set Work Area Corners A & B."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Kitty Habitat 2.0",
+      "text": "Right-Click a $(l)Kitty Habitat$() with a selected cat on your Clipboard to house the cat inside the habitat safely.$(br2)Sneak + Right-Click the Habitat with the Clipboard (or break the block) to release your cat back into the world. Optional Forge Energy (FE) doubles production speed!"
+    }
+  ]
+}

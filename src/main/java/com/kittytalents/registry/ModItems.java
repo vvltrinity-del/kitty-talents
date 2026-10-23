@@ -248,6 +248,12 @@ public class ModItems {
     public static final RegistryObject<Item> FEEDING_STATION = ITEMS.register("feeding_station",
             () -> new BlockItem(ModBlocks.FEEDING_STATION.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> KITTY_WORK_STATION = ITEMS.register("kitty_work_station",
+            () -> new BlockItem(ModBlocks.KITTY_WORK_STATION.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> TREAT_OVEN = ITEMS.register("treat_oven",
+            () -> new BlockItem(ModBlocks.TREAT_OVEN.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> KITTEN_INCUBATOR = ITEMS.register("kitten_incubator",
             () -> new BlockItem(ModBlocks.KITTEN_INCUBATOR.get(), new Item.Properties()));
 

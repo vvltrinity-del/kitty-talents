@@ -61,4 +61,16 @@ public class ModBlocks {
                     .strength(1.5F)
                     .sound(SoundType.GLASS)
                     .noOcclusion()));
+
+    public static final RegistryObject<Block> KITTY_WORK_STATION = BLOCKS.register("kitty_work_station",
+            () -> new com.kittytalents.block.KittyWorkStationBlock(BlockBehaviour.Properties.of()
+                    .strength(2.0F)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> TREAT_OVEN = BLOCKS.register("treat_oven",
+            () -> new com.kittytalents.block.TreatOvenBlock(BlockBehaviour.Properties.of()
+                    .strength(2.0F)
+                    .sound(SoundType.STONE)
+                    .noOcclusion()));
 }

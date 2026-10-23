@@ -57,38 +57,9 @@ public class KittyHabitatBlock extends BaseEntityBlock {
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         ItemStack held = player.getItemInHand(hand);
         if (level.getBlockEntity(pos) instanceof KittyHabitatBlockEntity habitat) {
-            // Check if holding KittyWorkClipboardItem with stored cat
-            if (held.getItem() instanceof com.kittytalents.item.KittyWorkClipboardItem && held.hasTag() &&
-                (held.getTag().hasUUID("CatUUID") || held.getTag().contains("CatUUID"))) {
-                if (!level.isClientSide) {
-                    net.minecraft.nbt.CompoundTag tag = held.getTag();
-                    java.util.UUID catUUID = tag.hasUUID("CatUUID") ? tag.getUUID("CatUUID") : java.util.UUID.fromString(tag.getString("CatUUID"));
-                    String catName = tag.getString("CatName");
-                    com.kittytalents.entity.CatVariant variant = com.kittytalents.entity.CatVariant.fromId(tag.getString("CatVariant"));
-                    com.kittytalents.entity.ProductionTier tier = tag.contains("CatTier") ?
-                            com.kittytalents.entity.ProductionTier.fromId(tag.getString("CatTier")) : com.kittytalents.entity.ProductionTier.STANDARD;
-                    int catLvl = tag.getInt("CatLevel");
-                    boolean female = tag.getBoolean("CatFemale");
-                    String role = tag.getString("CatRole");
-                    String mutation = tag.contains("CatMutation") ? tag.getString("CatMutation") : "NONE";
-
-                    if (level instanceof net.minecraft.server.level.ServerLevel sl) {
-                        net.minecraft.world.entity.Entity e = sl.getEntity(catUUID);
-                        if (e instanceof com.kittytalents.entity.TalentedCat activeCat) {
-                            catName = activeCat.getName().getString();
-                            variant = activeCat.getCatVariant();
-                            tier = activeCat.getProductionTier();
-                            catLvl = activeCat.getCatLevel();
-                            female = activeCat.isFemale();
-                            mutation = activeCat.getMutation().name();
-                        }
-                    }
-
-                    habitat.assignWorker(catUUID, catName, variant, tier, catLvl, female, role, mutation);
-                    level.playSound(null, pos, SoundEvents.NOTE_BLOCK_CHIME.get(), SoundSource.BLOCKS, 1.0F, 1.5F);
-                    player.displayClientMessage(Component.literal("Worker " + catName + " assigned to Production Habitat").withStyle(ChatFormatting.GREEN), true);
-                }
-                return InteractionResult.sidedSuccess(level.isClientSide);
+            // Check if holding KittyWorkClipboardItem
+            if (held.getItem() instanceof com.kittytalents.item.KittyWorkClipboardItem) {
+                return InteractionResult.PASS; // Handled by KittyWorkClipboardItem#useOn
             }
 
             // Sneak right click extracts outputs
@@ -120,6 +91,19 @@ public class KittyHabitatBlock extends BaseEntityBlock {
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
         return InteractionResult.PASS;
+    }
+
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof KittyHabitatBlockEntity habitat) {
+            return habitat.getComparatorOutput();
+        }
+        return 0;
     }
 
     @Override

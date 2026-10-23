@@ -234,7 +234,11 @@ public class ClientTwineHandler {
                 PacketHandler.sendToServer(new com.kittytalents.network.PacketTeamCommand(com.kittytalents.network.PacketTeamCommand.CommandType.CAST_ABILITY_3));
             }
             if (ultimate) {
-                PacketHandler.sendToServer(new com.kittytalents.network.PacketTeamCommand(com.kittytalents.network.PacketTeamCommand.CommandType.CAST_ULTIMATE));
+                if (cat.hasEquippedGun() && !mc.options.keyShift.isDown()) {
+                    PacketHandler.sendToServer(new PacketTwineAction(activeTwinedCatId, PacketTwineAction.ActionType.RELOAD_GUN, 0.0F));
+                } else {
+                    PacketHandler.sendToServer(new com.kittytalents.network.PacketTeamCommand(com.kittytalents.network.PacketTeamCommand.CommandType.CAST_ULTIMATE));
+                }
             }
 
             // These local values only provide normal local entity prediction. The
@@ -408,9 +412,20 @@ public class ClientTwineHandler {
 
         drawAbilityCard(graphics, font, hudX + 5 + 258, cardY, cardW, cardH, "R", ultName, cat, gameTime);
 
-        // 4. Compact Controls Footer
-        String footer = "[L-Click] Attack/Combo  •  [R-Click] Pounce  •  [Alt] Dodge  •  [X] Synergy  •  [U] Untwine";
-        graphics.drawCenteredString(font, footer, screenWidth / 2, hudY + hudH + 3, 0xCC94A3B8);
+        // 4. Compact Controls Footer & Gun Ammo HUD Pill
+        if (cat.hasEquippedGun()) {
+            net.minecraft.world.item.ItemStack gun = cat.getEquippedWeapon();
+            int curAmmo = com.kittytalents.compat.tacz.TacZCompat.getAmmoCount(gun);
+            int maxAmmo = com.kittytalents.compat.tacz.TacZCompat.getMaxAmmoCount(gun);
+            boolean reloading = com.kittytalents.compat.tacz.TacZCompat.isReloading(cat);
+            String gunStatus = reloading
+                    ? "🔫 " + gun.getHoverName().getString() + " [RELOADING...]"
+                    : "🔫 " + gun.getHoverName().getString() + " [" + curAmmo + "/" + maxAmmo + "]  •  [L-Click] Shoot  •  [R-Click] Aim  •  [R] Reload";
+            graphics.drawCenteredString(font, gunStatus, screenWidth / 2, hudY + hudH + 3, reloading ? 0xFFF59E0B : 0xFF38BDF8);
+        } else {
+            String footer = "[L-Click] Attack/Combo  •  [R-Click] Pounce  •  [Alt] Dodge  •  [X] Synergy  •  [U] Untwine";
+            graphics.drawCenteredString(font, footer, screenWidth / 2, hudY + hudH + 3, 0xCC94A3B8);
+        }
     }
 
     private static void drawAbilityCard(GuiGraphics graphics, Font font, int x, int y, int w, int h, String keyHint, String abilityId, TalentedCat cat, long gameTime) {

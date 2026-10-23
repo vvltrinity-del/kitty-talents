@@ -1,0 +1,16 @@
+{
+  "name": "Tactical Gunplay & Gunsmith",
+  "category": "kittytalents:tacz",
+  "icon": "kittytalents:feline_goggles",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "With $(l)Timeless and Classics Zero (TacZ)$() installed, cats with $(l)Cat Armory$() can equip firearms on a back-mounted turret harness!$(br2)Switch to $(l)Tactical Mode$() so your cat engages enemies from range using real TacZ ballistics, magazine reloads, and ammo from its Ammo Pouch or Kitty Pack."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Gunsmith Job",
+      "text": "Assign a cat with the $(l)Gunsmith Paw$() talent to the $(l)Gunsmith$() job near a TacZ Gun Smith Table.$(br2)- $(l)Level 10+$(): Crafts TacZ ammunition.$(br)- $(l)Level 25+$(): Crafts TacZ attachments.$(br)- Place a template item in the cat's offhand to specify which ammo or attachment to craft!"
+    }
+  ]
+}

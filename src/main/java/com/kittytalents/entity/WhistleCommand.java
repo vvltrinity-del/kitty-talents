@@ -29,7 +29,9 @@ public enum WhistleCommand {
     FISH("Fish in Water", "Commands cats with Fisherman talent to catch fish."),
     MINE("Mole Cat Dig", "Commands cats with Mole talent to dig underground."),
     FLY("Mount Takeoff", "Mount or takeoff if equipped with flight gear."),
-    INVENTORY("Open Cat Pack", "Opens the nearest cat's pack inventory.");
+    INVENTORY("Open Cat Pack", "Opens the nearest cat's pack inventory."),
+    CLOCK_IN("Clock In (Work)", "Commands bound worker cats to clock in and resume their jobs."),
+    CLOCK_OUT("Clock Out (Rest)", "Commands worker cats to clock out, return to station, and sit.");
 
     private final String displayName;
     private final String description;

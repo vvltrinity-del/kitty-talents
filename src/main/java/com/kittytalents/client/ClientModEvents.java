@@ -23,6 +23,8 @@ public class ClientModEvents {
             MenuScreens.register(ModMenus.CAT_PACK_MENU.get(), CatPackScreen::new);
             MenuScreens.register(ModMenus.CAT_FOOD_BOWL_MENU.get(), com.kittytalents.client.gui.CatFoodBowlScreen::new);
             MenuScreens.register(ModMenus.KITTY_HABITAT_MENU.get(), com.kittytalents.client.gui.KittyHabitatScreen::new);
+            MenuScreens.register(ModMenus.KITTY_WORK_STATION_MENU.get(), com.kittytalents.client.gui.KittyWorkStationScreen::new);
+            MenuScreens.register(ModMenus.TREAT_OVEN_MENU.get(), com.kittytalents.client.gui.TreatOvenScreen::new);
         });
     }
 

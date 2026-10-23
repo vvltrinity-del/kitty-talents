@@ -105,6 +105,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.CAT_BATH.get());
                         output.accept(ModItems.CAT_RICE_MILL.get());
                         output.accept(ModItems.KITTY_HABITAT.get());
+                        output.accept(ModItems.KITTY_WORK_STATION.get());
+                        output.accept(ModItems.TREAT_OVEN.get());
                         output.accept(ModItems.FEEDING_STATION.get());
                         output.accept(ModItems.KITTEN_INCUBATOR.get());
 

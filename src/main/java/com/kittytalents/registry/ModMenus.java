@@ -24,4 +24,10 @@ public class ModMenus {
 
     public static final RegistryObject<MenuType<com.kittytalents.inventory.KittyHabitatMenu>> KITTY_HABITAT_MENU =
             MENUS.register("kitty_habitat_menu", () -> IForgeMenuType.create(com.kittytalents.inventory.KittyHabitatMenu::new));
+
+    public static final RegistryObject<MenuType<com.kittytalents.inventory.KittyWorkStationMenu>> KITTY_WORK_STATION_MENU =
+            MENUS.register("kitty_work_station_menu", () -> IForgeMenuType.create(com.kittytalents.inventory.KittyWorkStationMenu::new));
+
+    public static final RegistryObject<MenuType<com.kittytalents.inventory.TreatOvenMenu>> TREAT_OVEN_MENU =
+            MENUS.register("treat_oven_menu", () -> IForgeMenuType.create(com.kittytalents.inventory.TreatOvenMenu::new));
 }

@@ -91,6 +91,10 @@ public class KittyHabitatScreen extends AbstractContainerScreen<KittyHabitatMenu
             int slotY = y + 93;
             graphics.fill(slotX, slotY, slotX + 18, slotY + 18, 0xFF2D3748);
         }
+
+        // Draw slot outlines for Food (8) & Catalyst (9)
+        graphics.fill(x + 55, y + 65, x + 73, y + 83, 0xFF1E3A5F);
+        graphics.fill(x + 75, y + 65, x + 93, y + 83, 0xFF3B2854);
     }
 
     @Override

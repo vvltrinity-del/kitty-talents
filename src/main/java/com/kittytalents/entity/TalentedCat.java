@@ -107,6 +107,14 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> DATA_TWINED =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Byte> DATA_JOB =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Boolean> DATA_CLOCKED_IN =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<String> DATA_WORK_STATUS =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Integer> DATA_LAST_SHOT_TICK =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
 
     private boolean isDualStriking = false;
 
@@ -117,6 +125,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     private final Map<String, Integer> talentLevels = new HashMap<>();
     private final SimpleContainer catPack = new SimpleContainer(27);
+    private final SimpleContainer ammoPouch = new SimpleContainer(9);
+    private final com.kittytalents.work.JobData jobData = new com.kittytalents.work.JobData();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> catItemCapability =
+            net.minecraftforge.common.util.LazyOptional.of(() -> new com.kittytalents.work.CatAmmoAndPackItemHandler(this));
 
     private ItemStack equippedWeapon = ItemStack.EMPTY;
     private ItemStack equippedTool = ItemStack.EMPTY;
@@ -258,6 +270,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.define(DATA_RESOURCE_TIER, ProductionTier.STANDARD.getId());
         this.entityData.define(DATA_MUTATION, CatBreedingManager.MutationType.NONE.name());
         this.entityData.define(DATA_TWINED, false);
+        this.entityData.define(DATA_JOB, (byte) com.kittytalents.work.CatJob.NONE.ordinal());
+        this.entityData.define(DATA_CLOCKED_IN, true);
+        this.entityData.define(DATA_WORK_STATUS, "Idle");
+        this.entityData.define(DATA_LAST_SHOT_TICK, -100);
     }
 
     @Override
@@ -312,9 +328,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.goalSelector.addGoal(7, new CatUseScratcherGoal(this));
         this.goalSelector.addGoal(8, new CatEatFromBowlGoal(this));
         this.goalSelector.addGoal(9, new CatFetchToyGoal(this));
-        this.goalSelector.addGoal(10, new CatFisherGoal(this));
         this.goalSelector.addGoal(11, new CatComfortGoal(this));
-        this.goalSelector.addGoal(12, new CatMoleMiningGoal(this));
         this.goalSelector.addGoal(13, new com.kittytalents.entity.ai.CatPlaceTorchGoal(this));
         this.goalSelector.addGoal(11, new WaterAvoidingRandomStrollGoal(this, 1.0D) {
             @Override
@@ -850,7 +864,14 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     // Equipment, Tools & Accessories
     public ItemStack getEquippedWeapon() { return equippedWeapon; }
-    public void setEquippedWeapon(ItemStack stack) { this.equippedWeapon = stack.copy(); updateAttributes(); syncEquipment(); }
+    public void setEquippedWeapon(ItemStack stack) {
+        this.equippedWeapon = stack.copy();
+        updateAttributes();
+        syncEquipment();
+        if (!this.level().isClientSide && com.kittytalents.compat.tacz.TacZCompat.isGun(this.equippedWeapon)) {
+            com.kittytalents.compat.tacz.TacZCompat.onGunEquipped(this, this.equippedWeapon);
+        }
+    }
     public void setEquippedWeaponClient(ItemStack stack) { this.equippedWeapon = stack.copy(); updateAttributes(); }
 
     public ItemStack getEquippedTool() { return equippedTool; }
@@ -1145,6 +1166,66 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     public SimpleContainer getCatPack() { return catPack; }
+    public SimpleContainer getAmmoPouch() { return ammoPouch; }
+    public com.kittytalents.work.JobData getJobData() { return jobData; }
+
+    public com.kittytalents.work.CatJob getCatJob() {
+        if (!this.level().isClientSide) {
+            return jobData.getJob();
+        }
+        return com.kittytalents.work.CatJob.byOrdinal(this.entityData.get(DATA_JOB));
+    }
+
+    public void setCatJob(com.kittytalents.work.CatJob job) {
+        com.kittytalents.work.CatJob safe = job != null ? job : com.kittytalents.work.CatJob.NONE;
+        this.jobData.setJob(safe);
+        this.entityData.set(DATA_JOB, (byte) safe.ordinal());
+    }
+
+    public boolean isClockedIn() {
+        if (!this.level().isClientSide) {
+            return jobData.isClockedIn();
+        }
+        return this.entityData.get(DATA_CLOCKED_IN);
+    }
+
+    public void setClockedIn(boolean clockedIn) {
+        this.jobData.setClockedIn(clockedIn);
+        this.entityData.set(DATA_CLOCKED_IN, clockedIn);
+    }
+
+    public String getWorkStatus() {
+        return this.entityData.get(DATA_WORK_STATUS);
+    }
+
+    public void setWorkStatus(String status) {
+        String safe = status != null ? status : "Idle";
+        this.jobData.setStatusMessage(safe);
+        this.entityData.set(DATA_WORK_STATUS, safe);
+    }
+
+    public int getLastShotTick() {
+        return this.entityData.get(DATA_LAST_SHOT_TICK);
+    }
+
+    public void setLastShotTick(int tick) {
+        this.entityData.set(DATA_LAST_SHOT_TICK, tick);
+    }
+
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(net.minecraftforge.common.capabilities.Capability<T> capability, @Nullable net.minecraft.core.Direction facing) {
+        if (this.isAlive() && capability == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER) {
+            return catItemCapability.cast();
+        }
+        return super.getCapability(capability, facing);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        catItemCapability.invalidate();
+    }
+
     public int getPackSlotCount() {
         int packLevel = getTalentLevel(Talents.KITTY_PACK);
         return Math.min(27, packLevel * 6);
@@ -1923,21 +2004,22 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             }
         }
 
-        // Storing Gun Ammo into backpack by right-clicking with ammo
+        // Storing Gun Ammo into ammo pouch / backpack by right-clicking with ammo
         if (com.kittytalents.compat.tacz.TacZCompat.isAmmo(held) && (isOwnedBy(player) || isTrusted(player.getUUID()))) {
-            if (getPackSlotCount() > 0) {
-                ItemStack leftover = this.catPack.addItem(held.copy());
-                int added = held.getCount() - leftover.getCount();
-                if (added > 0) {
-                    if (!player.getAbilities().instabuild) {
-                        held.setCount(leftover.getCount());
-                    }
-                    this.playSound(SoundEvents.BUNDLE_INSERT, 0.8F, 1.2F);
-                    if (!this.level().isClientSide) {
-                        player.sendSystemMessage(Component.literal("Stored " + added + " ammo in " + this.getName().getString() + "'s pack!").withStyle(ChatFormatting.AQUA));
-                    }
-                    return InteractionResult.sidedSuccess(this.level().isClientSide);
+            ItemStack remaining = this.ammoPouch.addItem(held.copy());
+            if (!remaining.isEmpty() && getPackSlotCount() > 0) {
+                remaining = this.catPack.addItem(remaining);
+            }
+            int added = held.getCount() - remaining.getCount();
+            if (added > 0) {
+                if (!player.getAbilities().instabuild) {
+                    held.setCount(remaining.getCount());
                 }
+                this.playSound(SoundEvents.BUNDLE_INSERT, 0.8F, 1.2F);
+                if (!this.level().isClientSide) {
+                    player.sendSystemMessage(Component.literal("Stored " + added + " ammo in " + this.getName().getString() + "'s ammo pouch!").withStyle(ChatFormatting.AQUA));
+                }
+                return InteractionResult.sidedSuccess(this.level().isClientSide);
             }
         }
 
@@ -2237,6 +2319,19 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             }
         }
         tag.put("CatPack", invTag);
+
+        ListTag ammoTag = new ListTag();
+        for (int i = 0; i < ammoPouch.getContainerSize(); i++) {
+            ItemStack stack = ammoPouch.getItem(i);
+            if (!stack.isEmpty()) {
+                CompoundTag itemTag = new CompoundTag();
+                itemTag.putByte("Slot", (byte) i);
+                stack.save(itemTag);
+                ammoTag.add(itemTag);
+            }
+        }
+        tag.put("AmmoPouch", ammoTag);
+        tag.put("JobData", jobData.save());
     }
 
     @Override
@@ -2356,6 +2451,36 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 }
             }
         }
+        if (tag.contains("AmmoPouch", Tag.TAG_LIST)) {
+            ListTag ammoTag = tag.getList("AmmoPouch", Tag.TAG_COMPOUND);
+            ammoPouch.clearContent();
+            for (int i = 0; i < ammoTag.size(); i++) {
+                CompoundTag itemTag = ammoTag.getCompound(i);
+                int slot = itemTag.getByte("Slot") & 255;
+                if (slot < ammoPouch.getContainerSize()) {
+                    ammoPouch.setItem(slot, ItemStack.of(itemTag));
+                }
+            }
+        }
+        if (tag.contains("JobData", Tag.TAG_COMPOUND)) {
+            jobData.load(tag.getCompound("JobData"));
+        }
+        // Migrate legacy FARM / MINE / FISH modes to WORK + corresponding CatJob
+        CatMode currentMode = getCatMode();
+        if (currentMode == CatMode.FARM) {
+            setCatMode(CatMode.WORK);
+            setCatJob(com.kittytalents.work.CatJob.FARMER);
+        } else if (currentMode == CatMode.MINE) {
+            setCatMode(CatMode.WORK);
+            setCatJob(com.kittytalents.work.CatJob.MINER);
+        } else if (currentMode == CatMode.FISH) {
+            setCatMode(CatMode.WORK);
+            setCatJob(com.kittytalents.work.CatJob.FISHER);
+        } else {
+            this.entityData.set(DATA_JOB, (byte) jobData.getJob().ordinal());
+            this.entityData.set(DATA_CLOCKED_IN, jobData.isClockedIn());
+            this.entityData.set(DATA_WORK_STATUS, jobData.getStatusMessage());
+        }
         updateAttributes();
         this.refreshDimensions();
     }
@@ -2364,6 +2489,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void die(DamageSource cause) {
         if (!this.level().isClientSide) {
             Containers.dropContents(this.level(), this, this.catPack);
+            Containers.dropContents(this.level(), this, this.ammoPouch);
             if (!equippedWeapon.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedWeapon);
             if (!equippedTool.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedTool);
             if (!equippedHelmet.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedHelmet);

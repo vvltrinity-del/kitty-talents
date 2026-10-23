@@ -22,7 +22,8 @@ public enum CatMode {
     SUPPORT("mode.kittytalents.support"),
     PROTECT("mode.kittytalents.protect"),
     RETURN_HOME("mode.kittytalents.return_home"),
-    RETREAT("mode.kittytalents.retreat");
+    RETREAT("mode.kittytalents.retreat"),
+    WORK("mode.kittytalents.work");
 
     private final String key;
 
@@ -53,11 +54,11 @@ public enum CatMode {
     }
 
     public boolean isWorkMode() {
-        return this == FETCH || this == MINE || this == FARM || this == FISH;
+        return this == WORK || this == FETCH || this == MINE || this == FARM || this == FISH;
     }
 
     public boolean canAttack() {
-        return this != DOCILE && this != RETREAT && this != STAY;
+        return this != DOCILE && this != RETREAT && this != STAY && this != WORK;
     }
 
     public boolean shouldRetreat() {

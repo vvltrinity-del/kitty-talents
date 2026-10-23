@@ -3,9 +3,13 @@ package com.kittytalents.block;
 import com.kittytalents.entity.CatVariant;
 import com.kittytalents.entity.ProductionTier;
 import com.kittytalents.entity.TalentedCat;
+import com.kittytalents.recipe.HabitatProductionRecipe;
 import com.kittytalents.registry.ModBlockEntities;
+import com.kittytalents.registry.ModEntities;
 import com.kittytalents.registry.ModItems;
+import com.kittytalents.registry.ModRecipes;
 import com.kittytalents.talent.Talents;
+import com.kittytalents.util.CatFoodHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -13,6 +17,8 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
@@ -23,16 +29,32 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.EnergyStorage;
+import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
+import net.minecraftforge.items.wrapper.RangedWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.UUID;
 
+/**
+ * Habitat 2.0: Houses a worker cat inside as NBT (or links by UUID), supports optional FE boost,
+ * food & catalyst inputs, data-driven HabitatProductionRecipe lookup, redstone pause, and comparator output.
+ * Slots:
+ * 0..3 = Upgrades
+ * 4..7 = Outputs
+ * 8 = Food Input
+ * 9 = Catalyst Input
+ */
 public class KittyHabitatBlockEntity extends BlockEntity {
-    // 0..3 = Upgrades (Speed, Productivity, Efficiency, Storage), 4..7 = Output Slots
-    private final ItemStackHandler inventory = new ItemStackHandler(8) {
+    public static final int SLOT_FOOD_IN = 8;
+    public static final int SLOT_CATALYST_IN = 9;
+    public static final int TOTAL_SLOTS = 10;
+
+    private final ItemStackHandler inventory = new ItemStackHandler(TOTAL_SLOTS) {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
@@ -40,24 +62,66 @@ public class KittyHabitatBlockEntity extends BlockEntity {
                 level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
             }
         }
+
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            if (slot >= 0 && slot <= 3) return isUpgradeItem(stack);
+            if (slot >= 4 && slot <= 7) return false;
+            if (slot == SLOT_FOOD_IN) return CatFoodHelper.isEdibleByCat(stack, null);
+            return true;
+        }
     };
 
+    private final EnergyStorage energyStorage = new EnergyStorage(20000, 400, 400);
+    private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> energyStorage);
     private final LazyOptional<IItemHandler> itemHandler = LazyOptional.of(() -> inventory);
-    private final LazyOptional<IItemHandler> bottomHandler = LazyOptional.of(() -> new net.minecraftforge.items.wrapper.RangedWrapper(inventory, 4, 8) {
+    private final LazyOptional<IItemHandler> bottomHandler = LazyOptional.of(() -> new RangedWrapper(inventory, 4, 8) {
         @Override
         public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-            return stack; // Deny insertion into output slots from bottom
+            return stack;
         }
     });
-    private final LazyOptional<IItemHandler> topSideHandler = LazyOptional.of(() -> new net.minecraftforge.items.wrapper.RangedWrapper(inventory, 0, 4) {
+    private final LazyOptional<IItemHandler> topSideHandler = LazyOptional.of(() -> new IItemHandler() {
         @Override
-        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
-            return ItemStack.EMPTY; // Deny extracting upgrades from top/sides
+        public int getSlots() {
+            return TOTAL_SLOTS;
         }
+
+        @Override
+        public @NotNull ItemStack getStackInSlot(int slot) {
+            return inventory.getStackInSlot(slot);
+        }
+
         @Override
         public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-            if (!isUpgradeItem(stack)) return stack;
-            return super.insertItem(slot, stack, simulate);
+            if (slot >= 0 && slot <= 3 && isUpgradeItem(stack)) {
+                return inventory.insertItem(slot, stack, simulate);
+            }
+            if (slot == SLOT_FOOD_IN && CatFoodHelper.isEdibleByCat(stack, null)) {
+                return inventory.insertItem(slot, stack, simulate);
+            }
+            if (slot == SLOT_CATALYST_IN) {
+                return inventory.insertItem(slot, stack, simulate);
+            }
+            return stack;
+        }
+
+        @Override
+        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot >= 4 && slot <= 7) {
+                return inventory.extractItem(slot, amount, simulate);
+            }
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return inventory.getSlotLimit(slot);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return inventory.isItemValid(slot, stack);
         }
     });
 
@@ -79,6 +143,8 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     private boolean assignedCatFemale = false;
     private String assignedCatRole = "";
     private boolean isPaused = false;
+    private CompoundTag storedCat = new CompoundTag();
+    private int housedHunger = 100;
 
     private int progress = 0;
     private int maxProgress = 160;
@@ -86,7 +152,6 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     private int totalResources = 0;
     private String statusMessage = "Idle - No Worker Assigned";
 
-    // Performance-optimized simulation caching (R29, R30)
     private int simulationCooldown = 0;
     private TalentedCat cachedWorkerCat = null;
     private int cachedYieldMultiplier = 1;
@@ -99,6 +164,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     }
 
     public ItemStackHandler getInventory() { return inventory; }
+    public EnergyStorage getEnergyStorage() { return energyStorage; }
     public int getProgress() { return progress; }
     public int getMaxProgress() { return maxProgress; }
     public int getTotalCycles() { return totalCycles; }
@@ -115,6 +181,66 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     public boolean isAssignedCatFemale() { return assignedCatFemale; }
     public String getAssignedCatRole() { return assignedCatRole; }
     public String getStatusMessage() { return statusMessage; }
+    public boolean hasStoredCat() { return storedCat != null && !storedCat.isEmpty(); }
+    public CompoundTag getStoredCatTag() { return storedCat; }
+
+    /**
+     * Houses a physical TalentedCat inside the Habitat as NBT (like Productive Bees),
+     * releasing any previously housed cat first.
+     */
+    public boolean houseWorker(TalentedCat cat) {
+        if (cat == null || level == null || level.isClientSide) return false;
+        if (hasStoredCat()) {
+            releaseHousedCat(worldPosition.above());
+        }
+        if (cat.isTwined()) {
+            com.kittytalents.entity.TwineManager.endForCat(cat, "Cat entered Production Habitat.");
+        }
+        cat.stopRiding();
+        cat.ejectPassengers();
+
+        CompoundTag catNbt = new CompoundTag();
+        cat.saveWithoutId(catNbt);
+        this.storedCat = catNbt;
+        this.housedHunger = cat.getHunger();
+
+        assignWorker(
+                cat.getUUID(),
+                cat.getName().getString(),
+                cat.getCatVariant(),
+                cat.getProductionTier(),
+                cat.getCatLevel(),
+                cat.isFemale(),
+                cat.getCatVariant().getTraitDescription(),
+                cat.getMutation().name()
+        );
+        cat.discard();
+        return true;
+    }
+
+    /**
+     * Releases the housed cat back into the world as a live TalentedCat entity.
+     */
+    @Nullable
+    public TalentedCat releaseHousedCat(@Nullable BlockPos spawnPos) {
+        if (!hasStoredCat() || !(level instanceof ServerLevel sl)) {
+            removeWorker();
+            return null;
+        }
+        TalentedCat cat = ModEntities.TALENTED_CAT.get().create(sl);
+        if (cat != null) {
+            cat.load(storedCat);
+            cat.setHunger(Math.max(20, housedHunger));
+            BlockPos target = spawnPos != null ? spawnPos : worldPosition.above();
+            cat.moveTo(target.getX() + 0.5D, target.getY() + 0.1D, target.getZ() + 0.5D, 0.0F, 0.0F);
+            cat.setOrderedToSit(false);
+            sl.addFreshEntity(cat);
+            sl.playSound(null, target, SoundEvents.CAT_PURREOW, SoundSource.NEUTRAL, 1.0F, 1.1F);
+        }
+        this.storedCat = new CompoundTag();
+        removeWorker();
+        return cat;
+    }
 
     public void assignWorker(UUID uuid, String name, CatVariant variant, ProductionTier tier, int level, boolean female, String role, String mutation) {
         this.assignedCatUUID = uuid;
@@ -139,7 +265,11 @@ public class KittyHabitatBlockEntity extends BlockEntity {
 
     public void setWorker(TalentedCat cat) {
         if (cat != null) {
-            assignWorker(cat.getUUID(), cat.getName().getString(), cat.getCatVariant(), cat.getProductionTier(), cat.getCatLevel(), cat.isFemale(), cat.getCatVariant().getTraitDescription(), cat.getMutation().name());
+            if (level != null && !level.isClientSide) {
+                houseWorker(cat);
+            } else {
+                assignWorker(cat.getUUID(), cat.getName().getString(), cat.getCatVariant(), cat.getProductionTier(), cat.getCatLevel(), cat.isFemale(), cat.getCatVariant().getTraitDescription(), cat.getMutation().name());
+            }
         }
     }
 
@@ -166,7 +296,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     public static void tick(Level level, BlockPos pos, BlockState state, KittyHabitatBlockEntity habitat) {
         if (level.isClientSide) return;
 
-        if (habitat.assignedCatUUID == null) {
+        if (habitat.assignedCatUUID == null && !habitat.hasStoredCat()) {
             habitat.statusMessage = "Idle - No Worker Assigned";
             habitat.workerValid = false;
             habitat.cachedWorkerCat = null;
@@ -177,17 +307,25 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             return;
         }
 
-        if (habitat.isPaused) {
-            habitat.statusMessage = "Paused";
+        if (habitat.isPaused || level.hasNeighborSignal(pos)) {
+            habitat.statusMessage = level.hasNeighborSignal(pos) ? "Paused (Redstone)" : "Paused";
             return;
         }
 
-        // Periodically refresh cached worker cat and simulation metrics every 20 ticks (1s)
+        // Auto-feed housed cat from slot 8 if hungry
+        if (habitat.housedHunger < 50) {
+            ItemStack foodIn = habitat.inventory.getStackInSlot(SLOT_FOOD_IN);
+            if (!foodIn.isEmpty() && CatFoodHelper.isEdibleByCat(foodIn, null)) {
+                habitat.inventory.extractItem(SLOT_FOOD_IN, 1, false);
+                habitat.housedHunger = Math.min(120, habitat.housedHunger + 30);
+            }
+        }
+
         if (--habitat.simulationCooldown <= 0 || !habitat.workerValid) {
             habitat.simulationCooldown = 20;
 
             TalentedCat activeCat = null;
-            if (level instanceof ServerLevel serverLevel) {
+            if (!habitat.hasStoredCat() && level instanceof ServerLevel serverLevel && habitat.assignedCatUUID != null) {
                 Entity e = serverLevel.getEntity(habitat.assignedCatUUID);
                 if (e instanceof TalentedCat cat) {
                     activeCat = cat;
@@ -214,7 +352,8 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             }
 
             habitat.statusMessage = "Working (" + habitat.assignedCatResourceTier.getDisplayName() + ")";
-            habitat.cachedCycleMultiplier = ("NEKOMATA".equalsIgnoreCase(habitat.assignedCatMutation) || (activeCat != null && activeCat.getMutation() == com.kittytalents.entity.CatBreedingManager.MutationType.NEKOMATA)) ? 2 : 1;
+            habitat.cachedCycleMultiplier = ("NEKOMATA".equalsIgnoreCase(habitat.assignedCatMutation) ||
+                    (activeCat != null && activeCat.getMutation() == com.kittytalents.entity.CatBreedingManager.MutationType.NEKOMATA)) ? 2 : 1;
 
             int speedBoost = 0;
             int yieldMultiplier = 1;
@@ -228,6 +367,12 @@ public class KittyHabitatBlockEntity extends BlockEntity {
                     else if (up.is(ModItems.UPGRADE_PRODUCTIVITY_5.get())) { speedBoost += 80 * up.getCount(); yieldMultiplier += 4 * up.getCount(); }
                     else if (up.is(ModItems.UPGRADE_PRODUCTIVITY_6.get())) { speedBoost += 100 * up.getCount(); yieldMultiplier += 5 * up.getCount(); }
                 }
+            }
+
+            // Catalyst slot 9 bonus
+            ItemStack catalyst = habitat.inventory.getStackInSlot(SLOT_CATALYST_IN);
+            if (!catalyst.isEmpty() && (catalyst.is(ModItems.RESOURCE_CATALYST.get()) || catalyst.is(ModItems.CATNIP_CATALYST.get()))) {
+                yieldMultiplier += 1;
             }
 
             if (activeCat != null) {
@@ -245,20 +390,35 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             }
 
             habitat.cachedYieldMultiplier = yieldMultiplier;
-            habitat.maxProgress = Math.max(20, habitat.assignedCatResourceTier.getBaseIntervalTicks() - speedBoost);
 
+            // Check data-driven HabitatProductionRecipe first, then fallback to ProductionTier
             ItemStack baseResource = ItemStack.EMPTY;
-            if (habitat.assignedCatResourceTier != null && habitat.assignedCatResourceTier != ProductionTier.STANDARD) {
-                baseResource = habitat.assignedCatResourceTier.getProductionResult();
-            } else if (habitat.assignedCatVariant != null && habitat.assignedCatVariant.isProductive()) {
-                baseResource = habitat.assignedCatVariant.getProductionResult();
-            } else if (habitat.assignedCatResourceTier != null) {
-                baseResource = habitat.assignedCatResourceTier.getProductionResult();
-            }
-            if (baseResource.isEmpty()) {
-                baseResource = new ItemStack(Items.STRING);
+            int baseDuration = habitat.assignedCatResourceTier.getBaseIntervalTicks();
+            List<HabitatProductionRecipe> recipes = level.getRecipeManager().getAllRecipesFor(ModRecipes.HABITAT_PRODUCTION_TYPE.get());
+            for (HabitatProductionRecipe recipe : recipes) {
+                if (recipe.matchesWorker(habitat.assignedCatResourceTier, habitat.assignedCatVariant, catalyst)) {
+                    if (!recipe.getOutputs().isEmpty()) {
+                        baseResource = recipe.getOutputs().get(0).stack().copy();
+                        baseDuration = recipe.getDuration();
+                        break;
+                    }
+                }
             }
 
+            if (baseResource.isEmpty()) {
+                if (habitat.assignedCatResourceTier != null && habitat.assignedCatResourceTier != ProductionTier.STANDARD) {
+                    baseResource = habitat.assignedCatResourceTier.getProductionResult();
+                } else if (habitat.assignedCatVariant != null && habitat.assignedCatVariant.isProductive()) {
+                    baseResource = habitat.assignedCatVariant.getProductionResult();
+                } else if (habitat.assignedCatResourceTier != null) {
+                    baseResource = habitat.assignedCatResourceTier.getProductionResult();
+                }
+                if (baseResource.isEmpty()) {
+                    baseResource = new ItemStack(Items.STRING);
+                }
+            }
+
+            habitat.maxProgress = Math.max(20, baseDuration - speedBoost);
             ItemStack produced = baseResource.copy();
             produced.setCount(Math.min(produced.getMaxStackSize(), baseResource.getCount() * habitat.cachedYieldMultiplier * habitat.cachedCycleMultiplier));
             habitat.cachedProducedItem = produced;
@@ -267,22 +427,32 @@ public class KittyHabitatBlockEntity extends BlockEntity {
 
         if (!habitat.workerValid) return;
 
-        // Check output slot space
         if (habitat.cachedProducedItem.isEmpty() || !habitat.canInsertOutput(habitat.cachedProducedItem)) {
             habitat.statusMessage = "Output Full";
             return;
         }
 
-        habitat.progress++;
+        // Optional FE speed boost: +100% speed when 40 FE/tick is available
+        int step = 1;
+        if (habitat.energyStorage.getEnergyStored() >= 40) {
+            habitat.energyStorage.extractEnergy(40, false);
+            step = 2;
+        }
+
+        habitat.progress += step;
         if (habitat.progress >= habitat.maxProgress) {
             habitat.progress = 0;
             habitat.insertOutput(habitat.cachedProducedItem.copy());
             habitat.totalCycles += habitat.cachedCycleMultiplier;
             habitat.totalResources += habitat.cachedProducedItem.getCount();
 
-            if (habitat.cachedWorkerCat != null && habitat.totalCycles % 5 == 0) {
-                int hungerLoss = habitat.cachedWorkerCat.getTalentLevel(Talents.HAPPY_EATER) >= 3 ? 0 : 1;
-                if (hungerLoss > 0) habitat.cachedWorkerCat.setHunger(Math.max(0, habitat.cachedWorkerCat.getHunger() - hungerLoss));
+            if (habitat.totalCycles % 5 == 0) {
+                if (habitat.cachedWorkerCat != null) {
+                    int hungerLoss = habitat.cachedWorkerCat.getTalentLevel(Talents.HAPPY_EATER) >= 3 ? 0 : 1;
+                    if (hungerLoss > 0) habitat.cachedWorkerCat.setHunger(Math.max(0, habitat.cachedWorkerCat.getHunger() - hungerLoss));
+                } else if (habitat.hasStoredCat()) {
+                    habitat.housedHunger = Math.max(20, habitat.housedHunger - 1);
+                }
             }
 
             habitat.setChanged();
@@ -319,8 +489,25 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         }
     }
 
+    public int getComparatorOutput() {
+        int filled = 0;
+        float ratio = 0.0F;
+        for (int i = 4; i <= 7; i++) {
+            ItemStack s = inventory.getStackInSlot(i);
+            if (!s.isEmpty()) {
+                filled++;
+                ratio += (float) s.getCount() / (float) Math.max(1, s.getMaxStackSize());
+            }
+        }
+        if (filled == 0) return 0;
+        return Math.min(15, 1 + (int) Math.floor((ratio / 4.0F) * 14.0F));
+    }
+
     public void dropContents() {
         if (level != null) {
+            if (hasStoredCat()) {
+                releaseHousedCat(worldPosition);
+            }
             for (int i = 0; i < inventory.getSlots(); i++) {
                 ItemStack stack = inventory.getStackInSlot(i);
                 if (!stack.isEmpty()) {
@@ -332,6 +519,9 @@ public class KittyHabitatBlockEntity extends BlockEntity {
 
     @Override
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
+        if (cap == ForgeCapabilities.ENERGY) {
+            return energyCap.cast();
+        }
         if (cap == ForgeCapabilities.ITEM_HANDLER) {
             if (side == Direction.DOWN) {
                 return bottomHandler.cast();
@@ -346,6 +536,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     @Override
     public void invalidateCaps() {
         super.invalidateCaps();
+        energyCap.invalidate();
         itemHandler.invalidate();
         bottomHandler.invalidate();
         topSideHandler.invalidate();
@@ -359,6 +550,11 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         tag.putInt("TotalCycles", totalCycles);
         tag.putInt("TotalResources", totalResources);
         tag.putBoolean("IsPaused", isPaused);
+        tag.putInt("Energy", energyStorage.getEnergyStored());
+        tag.putInt("HousedHunger", housedHunger);
+        if (storedCat != null && !storedCat.isEmpty()) {
+            tag.put("StoredCat", storedCat);
+        }
         if (assignedCatUUID != null) {
             tag.putUUID("AssignedCatUUID", assignedCatUUID);
             tag.putString("AssignedCatName", assignedCatName);
@@ -374,11 +570,23 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
-        if (tag.contains("Inventory")) inventory.deserializeNBT(tag.getCompound("Inventory"));
+        if (tag.contains("Inventory")) {
+            CompoundTag invTag = tag.getCompound("Inventory");
+            if (invTag.getInt("Size") < TOTAL_SLOTS) {
+                invTag = invTag.copy();
+                invTag.putInt("Size", TOTAL_SLOTS);
+            }
+            inventory.deserializeNBT(invTag);
+        }
         progress = tag.getInt("Progress");
         totalCycles = tag.getInt("TotalCycles");
         totalResources = tag.getInt("TotalResources");
         isPaused = tag.getBoolean("IsPaused");
+        housedHunger = tag.contains("HousedHunger") ? tag.getInt("HousedHunger") : 100;
+        if (tag.contains("Energy")) {
+            energyStorage.receiveEnergy(tag.getInt("Energy"), false);
+        }
+        storedCat = tag.contains("StoredCat") ? tag.getCompound("StoredCat") : new CompoundTag();
         assignedCatMutation = tag.contains("AssignedCatMutation") ? tag.getString("AssignedCatMutation") : "NONE";
         if (tag.hasUUID("AssignedCatUUID")) {
             assignedCatUUID = tag.getUUID("AssignedCatUUID");

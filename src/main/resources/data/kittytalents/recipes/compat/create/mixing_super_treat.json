@@ -1,0 +1,28 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:mod_loaded",
+          "modid": "create"
+        }
+      ],
+      "recipe": {
+        "type": "create:mixing",
+        "ingredients": [
+          { "item": "kittytalents:catnip_treat" },
+          { "item": "minecraft:gold_ingot" },
+          { "item": "minecraft:honey_bottle" }
+        ],
+        "results": [
+          {
+            "item": "kittytalents:super_catnip_treat",
+            "count": 2
+          }
+        ],
+        "heatRequirement": "heated"
+      }
+    }
+  ]
+}

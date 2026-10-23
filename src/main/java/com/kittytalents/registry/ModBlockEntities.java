@@ -45,4 +45,14 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("kitten_incubator",
                     () -> BlockEntityType.Builder.of(com.kittytalents.block.KittenIncubatorBlockEntity::new, ModBlocks.KITTEN_INCUBATOR.get())
                             .build(null));
+
+    public static final RegistryObject<BlockEntityType<com.kittytalents.block.KittyWorkStationBlockEntity>> KITTY_WORK_STATION =
+            BLOCK_ENTITIES.register("kitty_work_station",
+                    () -> BlockEntityType.Builder.of(com.kittytalents.block.KittyWorkStationBlockEntity::new, ModBlocks.KITTY_WORK_STATION.get())
+                            .build(null));
+
+    public static final RegistryObject<BlockEntityType<com.kittytalents.block.TreatOvenBlockEntity>> TREAT_OVEN =
+            BLOCK_ENTITIES.register("treat_oven",
+                    () -> BlockEntityType.Builder.of(com.kittytalents.block.TreatOvenBlockEntity::new, ModBlocks.TREAT_OVEN.get())
+                            .build(null));
 }

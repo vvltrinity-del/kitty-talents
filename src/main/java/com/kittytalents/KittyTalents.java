@@ -26,6 +26,8 @@ public class KittyTalents {
         ModMenus.MENUS.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         ModSounds.SOUND_EVENTS.register(modEventBus);
+        ModRecipes.SERIALIZERS.register(modEventBus);
+        ModRecipes.TYPES.register(modEventBus);
 
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.COMMON,
@@ -41,6 +43,8 @@ public class KittyTalents {
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
             PacketHandler.register();
+            com.kittytalents.compat.tacz.TacZCompat.isLoaded();
+            com.kittytalents.compat.curios.CuriosCompat.init();
         });
         LOGGER.info("Kitty Talents initialized successfully!");
     }

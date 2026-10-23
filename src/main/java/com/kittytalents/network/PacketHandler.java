@@ -126,6 +126,12 @@ public class PacketHandler {
                 .encoder(PacketTeamCommand::toBytes)
                 .consumerMainThread(PacketTeamCommand::handle)
                 .add();
+
+        INSTANCE.messageBuilder(PacketSetCatJob.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .decoder(PacketSetCatJob::new)
+                .encoder(PacketSetCatJob::toBytes)
+                .consumerMainThread(PacketSetCatJob::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

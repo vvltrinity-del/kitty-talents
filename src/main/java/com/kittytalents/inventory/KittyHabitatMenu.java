@@ -35,6 +35,10 @@ public class KittyHabitatMenu extends AbstractContainerMenu {
             this.addSlot(new SlotItemHandler(habitat.getInventory(), 4 + i, 108 + i * 20, 94));
         }
 
+        // 2 Input Slots: 8 = Food Input, 9 = Catalyst Input
+        this.addSlot(new SlotItemHandler(habitat.getInventory(), KittyHabitatBlockEntity.SLOT_FOOD_IN, 56, 66));
+        this.addSlot(new SlotItemHandler(habitat.getInventory(), KittyHabitatBlockEntity.SLOT_CATALYST_IN, 76, 66));
+
         // Player Inventory (3 rows of 9)
         int startY = 126;
         for (int row = 0; row < 3; row++) {
@@ -61,12 +65,13 @@ public class KittyHabitatMenu extends AbstractContainerMenu {
             ItemStack stackInSlot = slot.getItem();
             itemstack = stackInSlot.copy();
 
-            if (index < 8) { // Habitat slots
-                if (!this.moveItemStackTo(stackInSlot, 8, 44, true)) {
+            if (index < 10) { // Habitat slots (0..9)
+                if (!this.moveItemStackTo(stackInSlot, 10, 46, true)) {
                     return ItemStack.EMPTY;
                 }
             } else { // Player inventory
-                if (!this.moveItemStackTo(stackInSlot, 0, 4, false)) { // Try upgrade slots
+                if (!this.moveItemStackTo(stackInSlot, 0, 4, false) &&
+                    !this.moveItemStackTo(stackInSlot, 8, 10, false)) {
                     return ItemStack.EMPTY;
                 }
             }

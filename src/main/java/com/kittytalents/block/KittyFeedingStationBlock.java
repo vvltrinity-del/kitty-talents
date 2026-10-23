@@ -44,6 +44,12 @@ public class KittyFeedingStationBlock extends BaseEntityBlock {
         return new KittyFeedingStationBlockEntity(pos, state);
     }
 
+    @Nullable
+    @Override
+    public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(Level level, BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> type) {
+        return createTickerHelper(type, ModBlockEntities.FEEDING_STATION.get(), KittyFeedingStationBlockEntity::tick);
+    }
+
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         ItemStack held = player.getItemInHand(hand);

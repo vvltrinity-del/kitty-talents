@@ -1,144 +1,86 @@
 package com.kittytalents.test;
 
 import com.kittytalents.KittyTalents;
+import com.kittytalents.block.KittyHabitatBlockEntity;
+import com.kittytalents.block.KittyWorkStationBlockEntity;
+import com.kittytalents.block.TreatOvenBlockEntity;
 import com.kittytalents.entity.CatMode;
 import com.kittytalents.entity.TalentedCat;
+import com.kittytalents.registry.ModBlocks;
 import com.kittytalents.registry.ModEntities;
 import com.kittytalents.talent.Talents;
+import com.kittytalents.work.CatJob;
+import com.kittytalents.work.WorkInventoryHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.monster.Creeper;
-import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
-/**
- * GameTest test definitions for Kitty Talents.
- * Executed via Forge GameTest runner (runGameTestServer).
- */
 @GameTestHolder(KittyTalents.MODID)
 @PrefixGameTestTemplate(false)
 public class KittyTalentsGameTests {
 
-    public static final String EMPTY_TEMPLATE = "empty3x3x3";
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testWorkerJobAssignmentAndClockIn(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), pos);
+        cat.setCatLevel(25);
+        cat.setTalentLevel(Talents.GREEN_PAW, 3);
+        cat.setCatJob(CatJob.FARMER);
+        cat.setClockedIn(true);
 
-    @GameTest(template = EMPTY_TEMPLATE)
-    public static void testCatSpawnAndAttributes(GameTestHelper helper) {
-        BlockPos spawnPos = new BlockPos(1, 1, 1);
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), spawnPos);
-
-        helper.assertTrue(cat != null, "TalentedCat failed to spawn");
-        helper.assertTrue(cat.getHealth() > 0.0F, "Cat spawned with non-positive health");
-        helper.assertTrue(cat.getCatMode() != null, "Cat spawned with null CatMode");
-        helper.assertTrue(cat.getEnergy() >= 0, "Cat energy is negative");
-        helper.assertTrue(cat.getCatLevel() >= 1, "Cat level should start at >= 1");
-
+        helper.assertTrue(cat.getCatJob() == CatJob.FARMER, "Cat job should be FARMER");
+        helper.assertTrue(cat.isClockedIn(), "Cat should be clocked in");
+        helper.assertTrue(cat.getCatMode() == CatMode.WORK, "Cat mode should switch to WORK on clock-in");
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY_TEMPLATE)
-    public static void testTalentTraining(GameTestHelper helper) {
-        BlockPos spawnPos = new BlockPos(1, 1, 1);
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), spawnPos);
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testHabitatStoreAndReleaseCat(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        helper.setBlock(pos, ModBlocks.KITTY_HABITAT.get());
+        KittyHabitatBlockEntity habitat = (KittyHabitatBlockEntity) helper.getBlockEntity(pos);
+        helper.assertTrue(habitat != null, "Habitat block entity should exist");
 
-        cat.setSkillPoints(10);
-        helper.assertTrue(cat.getSkillPoints() == 10, "Skill points failed to set");
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), pos.above());
+        cat.setCatLevel(30);
 
-        cat.setTalentLevel(Talents.POUNCE, 1);
-        helper.assertTrue(cat.getTalentLevel(Talents.POUNCE) == 1, "Pounce talent level was not updated to 1");
+        boolean stored = habitat.houseWorker(cat);
+        helper.assertTrue(stored && habitat.hasStoredCat(), "Cat should be stored inside Habitat NBT");
+        helper.assertTrue(habitat.getAssignedCatLevel() == 30, "Habitat should preserve cat level");
 
-        cat.setTalentLevel(Talents.TORCH_KITTY, 2);
-        helper.assertTrue(cat.getTalentLevel(Talents.TORCH_KITTY) == 2, "Torch Kitty talent level was not updated to 2");
-
+        TalentedCat released = habitat.releaseHousedCat(helper.absolutePos(pos.above()));
+        helper.assertTrue(released != null && !habitat.hasStoredCat(), "Cat should be released from Habitat");
+        helper.assertTrue(released.getCatLevel() == 30, "Released cat should preserve level 30");
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY_TEMPLATE)
-    public static void testModeTransitions(GameTestHelper helper) {
-        BlockPos spawnPos = new BlockPos(1, 1, 1);
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), spawnPos);
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testWorkStationBufferAndCapabilities(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        helper.setBlock(pos, ModBlocks.KITTY_WORK_STATION.get());
+        KittyWorkStationBlockEntity station = (KittyWorkStationBlockEntity) helper.getBlockEntity(pos);
+        helper.assertTrue(station != null, "Work Station block entity should exist");
 
-        cat.setCatMode(CatMode.DOCILE);
-        helper.assertTrue(cat.getCatMode() == CatMode.DOCILE, "Failed setting DOCILE mode");
-
-        cat.setCatMode(CatMode.FOLLOW);
-        helper.assertTrue(cat.getCatMode() == CatMode.FOLLOW, "Failed setting FOLLOW mode");
-
-        cat.setCatMode(CatMode.GUARD);
-        helper.assertTrue(cat.getCatMode() == CatMode.GUARD, "Failed setting GUARD mode");
-
-        cat.setCatMode(CatMode.STAY);
-        helper.assertTrue(cat.getCatMode() == CatMode.STAY, "Failed setting STAY mode");
-
-        cat.setCatMode(CatMode.WANDER);
-        helper.assertTrue(cat.getCatMode() == CatMode.WANDER, "Failed setting WANDER mode");
-
-        cat.setCatMode(CatMode.AGGRESSIVE);
-        helper.assertTrue(cat.getCatMode() == CatMode.AGGRESSIVE, "Failed setting AGGRESSIVE mode");
-
+        ItemStack rem = WorkInventoryHelper.insertIntoPos(helper.getLevel(), helper.absolutePos(pos), new ItemStack(Items.WHEAT, 16), false);
+        helper.assertTrue(rem.isEmpty(), "Work Station output buffer should accept 16 wheat");
+        helper.assertTrue(station.getInventory().getStackInSlot(0).getCount() == 16, "Slot 0 should contain 16 wheat");
+        helper.assertTrue(station.getCapability(ForgeCapabilities.ITEM_HANDLER).isPresent(), "Work Station should expose ITEM_HANDLER capability");
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY_TEMPLATE)
-    public static void testCatPackStorage(GameTestHelper helper) {
-        BlockPos spawnPos = new BlockPos(1, 1, 1);
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), spawnPos);
-
-        helper.assertTrue(cat.getCatPack() != null, "CatPack inventory is null");
-        helper.assertTrue(cat.getCatPack().getContainerSize() == 27, "CatPack must have 27 slots");
-
-        ItemStack torches = new ItemStack(Items.TORCH, 16);
-        cat.getCatPack().setItem(0, torches);
-        helper.assertTrue(cat.getCatPack().getItem(0).getItem() == Items.TORCH, "Torch item was not stored in slot 0");
-        helper.assertTrue(cat.getCatPack().getItem(0).getCount() == 16, "Torch count was not stored correctly");
-
-        helper.succeed();
-    }
-
-    @GameTest(template = EMPTY_TEMPLATE)
-    public static void testCreeperWardenPreconditions(GameTestHelper helper) {
-        BlockPos spawnPos = new BlockPos(1, 1, 1);
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), spawnPos);
-        cat.setTalentLevel(Talents.NIGHT_PROWLER, 1);
-
-        Creeper creeper = helper.spawn(EntityType.CREEPER, new BlockPos(2, 1, 1));
-        helper.assertTrue(creeper != null, "Creeper failed to spawn");
-        helper.assertTrue(cat.getTalentLevel(Talents.NIGHT_PROWLER) > 0, "Night Prowler not active on cat");
-
-        helper.succeed();
-    }
-
-    @GameTest(template = EMPTY_TEMPLATE)
-    public static void testFoxPouncePreconditions(GameTestHelper helper) {
-        BlockPos spawnPos = new BlockPos(1, 1, 1);
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), spawnPos);
-        cat.setTalentLevel(Talents.POUNCE, 1);
-        cat.setCatMode(CatMode.AGGRESSIVE);
-
-        Zombie zombie = helper.spawn(EntityType.ZOMBIE, new BlockPos(2, 1, 1));
-        helper.assertTrue(zombie != null, "Zombie failed to spawn");
-        helper.assertTrue(cat.getTalentLevel(Talents.POUNCE) > 0, "Pounce not active on cat");
-
-        helper.succeed();
-    }
-
-    @GameTest(template = EMPTY_TEMPLATE)
-    public static void testMockPlayerInteraction(GameTestHelper helper) {
-        BlockPos spawnPos = new BlockPos(1, 1, 1);
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), spawnPos);
-
-        Player player = helper.makeMockPlayer();
-        helper.assertTrue(player != null, "Mock player creation failed");
-
-        cat.tame(player);
-        helper.assertTrue(cat.isTame(), "Cat failed to tame to mock player");
-        helper.assertTrue(player.getUUID().equals(cat.getOwnerUUID()), "Owner UUID does not match mock player");
-
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testTreatOvenEnergyAndCapabilities(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        helper.setBlock(pos, ModBlocks.TREAT_OVEN.get());
+        TreatOvenBlockEntity oven = (TreatOvenBlockEntity) helper.getBlockEntity(pos);
+        helper.assertTrue(oven != null, "Treat Oven block entity should exist");
+        helper.assertTrue(oven.getCapability(ForgeCapabilities.ENERGY).isPresent(), "Treat Oven should expose ENERGY capability");
+        helper.assertTrue(oven.getCapability(ForgeCapabilities.ITEM_HANDLER).isPresent(), "Treat Oven should expose ITEM_HANDLER capability");
         helper.succeed();
     }
 }

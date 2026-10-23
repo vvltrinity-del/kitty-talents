@@ -14,121 +14,134 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import java.lang.reflect.Method;
-import java.util.function.Supplier;
+import java.util.Collections;
+import java.util.List;
 
+/**
+ * Classloading-safe facade for TacZ integration.
+ * Delegates to {@link TacZImpl}, {@link TacZGunsmith}, and {@link TacZEvents} only when "tacz" is loaded.
+ */
 public class TacZCompat {
     private static Boolean taczLoaded = null;
-    private static Method fromLivingEntityMethod = null;
-    private static Method shootMethod = null;
-    private static Method drawMethod = null;
-    private static Method getIGunOrNullMethod = null;
-    private static Method getCurrentAmmoCountMethod = null;
-    private static Method setCurrentAmmoCountMethod = null;
-    private static Method getIAmmoOrNullMethod = null;
-    private static Method isAmmoOfGunMethod = null;
 
     public static boolean isLoaded() {
         if (taczLoaded == null) {
             taczLoaded = ModList.get().isLoaded("tacz");
             if (taczLoaded) {
-                initReflection();
+                try {
+                    TacZEvents.register();
+                } catch (Throwable ignored) {}
             }
         }
         return taczLoaded;
     }
 
-    private static void initReflection() {
-        try {
-            Class<?> igunOperatorClass = Class.forName("com.tacz.guns.api.entity.IGunOperator");
-            fromLivingEntityMethod = igunOperatorClass.getMethod("fromLivingEntity", LivingEntity.class);
-            shootMethod = igunOperatorClass.getMethod("shoot", Supplier.class, Supplier.class);
-            drawMethod = igunOperatorClass.getMethod("draw", Supplier.class);
-
-            Class<?> igunClass = Class.forName("com.tacz.guns.api.item.IGun");
-            getIGunOrNullMethod = igunClass.getMethod("getIGunOrNull", ItemStack.class);
-            getCurrentAmmoCountMethod = igunClass.getMethod("getCurrentAmmoCount", ItemStack.class);
-            setCurrentAmmoCountMethod = igunClass.getMethod("setCurrentAmmoCount", ItemStack.class, int.class);
-
-            Class<?> iAmmoClass = Class.forName("com.tacz.guns.api.item.IAmmo");
-            getIAmmoOrNullMethod = iAmmoClass.getMethod("getIAmmoOrNull", ItemStack.class);
-            isAmmoOfGunMethod = iAmmoClass.getMethod("isAmmoOfGun", ItemStack.class, ItemStack.class);
-        } catch (Throwable ignored) {
-            // Reflection fallback will use direct NBT access
-        }
-    }
-
     public static boolean isGun(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        if (!isLoaded()) return false;
+        if (stack.isEmpty() || !isLoaded()) return false;
+        try {
+            if (TacZImpl.isGun(stack)) return true;
+        } catch (Throwable ignored) {}
         ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
         if (id != null && id.getNamespace().equals("tacz")) {
             if (stack.hasTag() && stack.getTag().contains("GunId")) return true;
             String path = id.getPath().toLowerCase();
-            if (path.contains("gun") || path.contains("rifle") || path.contains("pistol") ||
-                path.contains("shotgun") || path.contains("smg") || path.contains("sniper")) {
-                return true;
-            }
-        }
-        if (getIGunOrNullMethod != null) {
-            try {
-                return getIGunOrNullMethod.invoke(null, stack) != null;
-            } catch (Throwable ignored) {}
+            return path.contains("gun") || path.contains("rifle") || path.contains("pistol") ||
+                   path.contains("shotgun") || path.contains("smg") || path.contains("sniper");
         }
         return false;
     }
 
     public static boolean isAmmo(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        if (!isLoaded()) return false;
+        if (stack.isEmpty() || !isLoaded()) return false;
+        try {
+            if (TacZImpl.isAmmo(stack)) return true;
+        } catch (Throwable ignored) {}
         ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
         if (id != null && id.getNamespace().equals("tacz")) {
             String path = id.getPath().toLowerCase();
-            if (path.contains("ammo") || path.contains("bullet") || path.contains("box") || path.contains("round")) {
-                return true;
-            }
-        }
-        if (getIAmmoOrNullMethod != null) {
-            try {
-                return getIAmmoOrNullMethod.invoke(null, stack) != null;
-            } catch (Throwable ignored) {}
+            return path.contains("ammo") || path.contains("bullet") || path.contains("box") || path.contains("round");
         }
         return false;
     }
 
+    public static boolean isAttachment(ItemStack stack) {
+        if (stack.isEmpty() || !isLoaded()) return false;
+        try {
+            return TacZImpl.isAttachment(stack);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     public static boolean isMatchingAmmo(ItemStack gun, ItemStack ammo) {
         if (!isGun(gun) || ammo.isEmpty()) return false;
-        ResourceLocation ammoId = ForgeRegistries.ITEMS.getKey(ammo.getItem());
-        if (ammoId == null || !ammoId.getNamespace().equals("tacz")) return false;
-
-        if (getIAmmoOrNullMethod != null && isAmmoOfGunMethod != null) {
-            try {
-                Object ammoObj = getIAmmoOrNullMethod.invoke(null, ammo);
-                if (ammoObj != null) {
-                    Object res = isAmmoOfGunMethod.invoke(ammoObj, gun, ammo);
-                    if (res instanceof Boolean b && b) return true;
-                }
-            } catch (Throwable ignored) {}
+        try {
+            return TacZImpl.isMatchingAmmo(gun, ammo);
+        } catch (Throwable ignored) {
+            return isAmmo(ammo);
         }
+    }
 
-        return true;
+    public static void onGunEquipped(TalentedCat cat, ItemStack gun) {
+        if (!isLoaded()) return;
+        try {
+            TacZImpl.onGunEquipped(cat, gun);
+        } catch (Throwable ignored) {}
+    }
+
+    public static boolean isReloading(TalentedCat cat) {
+        if (!isLoaded()) return false;
+        try {
+            return TacZImpl.isReloading(cat);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static void setAiming(TalentedCat cat, boolean aiming) {
+        if (!isLoaded()) return;
+        try {
+            TacZImpl.setAiming(cat, aiming);
+        } catch (Throwable ignored) {}
+    }
+
+    public static boolean triggerReload(TalentedCat cat, ItemStack gun) {
+        if (!isLoaded()) return false;
+        try {
+            return TacZImpl.triggerReload(cat, gun);
+        } catch (Throwable ignored) {
+            return tryReloadFromPack(cat, gun);
+        }
     }
 
     public static boolean hasAmmoInPack(TalentedCat cat, ItemStack gun) {
-        SimpleContainer pack = cat.getCatPack();
-        for (int i = 0; i < pack.getContainerSize(); i++) {
-            ItemStack stack = pack.getItem(i);
-            if (!stack.isEmpty() && isMatchingAmmo(gun, stack)) {
-                return true;
-            }
+        if (!isLoaded()) return false;
+        try {
+            if (TacZImpl.hasAmmoInCatInventories(cat, gun)) return true;
+        } catch (Throwable ignored) {}
+        for (int i = 0; i < cat.getAmmoPouch().getContainerSize(); i++) {
+            ItemStack s = cat.getAmmoPouch().getItem(i);
+            if (!s.isEmpty() && isMatchingAmmo(gun, s)) return true;
+        }
+        for (int i = 0; i < cat.getCatPack().getContainerSize(); i++) {
+            ItemStack s = cat.getCatPack().getItem(i);
+            if (!s.isEmpty() && isMatchingAmmo(gun, s)) return true;
         }
         return false;
     }
 
     public static boolean consumeAmmoFromPack(TalentedCat cat, ItemStack gun) {
-        SimpleContainer pack = cat.getCatPack();
-        for (int i = 0; i < pack.getContainerSize(); i++) {
-            ItemStack stack = pack.getItem(i);
+        if (!isLoaded()) return false;
+        try {
+            if (TacZImpl.consumeOneAmmoFromCatInventories(cat, gun)) return true;
+        } catch (Throwable ignored) {}
+        if (consumeFallbackFromContainer(cat.getAmmoPouch(), gun)) return true;
+        return consumeFallbackFromContainer(cat.getCatPack(), gun);
+    }
+
+    private static boolean consumeFallbackFromContainer(SimpleContainer container, ItemStack gun) {
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            ItemStack stack = container.getItem(i);
             if (!stack.isEmpty() && isMatchingAmmo(gun, stack)) {
                 if (stack.hasTag() && stack.getTag().contains("AmmoCount")) {
                     int boxCount = stack.getTag().getInt("AmmoCount");
@@ -138,9 +151,7 @@ public class TacZCompat {
                     }
                 } else {
                     stack.shrink(1);
-                    if (stack.isEmpty()) {
-                        pack.setItem(i, ItemStack.EMPTY);
-                    }
+                    if (stack.isEmpty()) container.setItem(i, ItemStack.EMPTY);
                     return true;
                 }
             }
@@ -149,51 +160,48 @@ public class TacZCompat {
     }
 
     public static int getAmmoCount(ItemStack gun) {
-        if (getCurrentAmmoCountMethod != null && getIGunOrNullMethod != null) {
-            try {
-                Object iGun = getIGunOrNullMethod.invoke(null, gun);
-                if (iGun != null) {
-                    return (int) getCurrentAmmoCountMethod.invoke(iGun, gun);
-                }
-            } catch (Throwable ignored) {}
-        }
+        if (!isLoaded() || gun.isEmpty()) return 0;
+        try {
+            return TacZImpl.getAmmoCount(gun);
+        } catch (Throwable ignored) {}
         if (gun.hasTag() && gun.getTag().contains("GunCurrentAmmoCount")) {
             return gun.getTag().getInt("GunCurrentAmmoCount");
         }
         return 0;
     }
 
-    public static void setAmmoCount(ItemStack gun, int count) {
-        if (setCurrentAmmoCountMethod != null && getIGunOrNullMethod != null) {
-            try {
-                Object iGun = getIGunOrNullMethod.invoke(null, gun);
-                if (iGun != null) {
-                    setCurrentAmmoCountMethod.invoke(iGun, gun, count);
-                    return;
-                }
-            } catch (Throwable ignored) {}
+    public static int getMaxAmmoCount(ItemStack gun) {
+        if (!isLoaded() || gun.isEmpty()) return 30;
+        try {
+            return TacZImpl.getMaxAmmoCount(gun);
+        } catch (Throwable ignored) {
+            return 30;
         }
+    }
+
+    public static void setAmmoCount(ItemStack gun, int count) {
+        if (!isLoaded() || gun.isEmpty()) return;
+        try {
+            TacZImpl.setAmmoCount(gun, count);
+            return;
+        } catch (Throwable ignored) {}
         gun.getOrCreateTag().putInt("GunCurrentAmmoCount", count);
         gun.getOrCreateTag().putBoolean("HasBulletInBarrel", count > 0);
     }
 
     public static int getShootCooldownTicks(ItemStack gun) {
-        if (gun.hasTag() && gun.getTag().contains("GunId")) {
-            String gunId = gun.getTag().getString("GunId").toLowerCase();
-            if (gunId.contains("sniper") || gunId.contains("shotgun")) return 18;
-            if (gunId.contains("smg") || gunId.contains("pistol")) return 6;
-            if (gunId.contains("rifle")) return 8;
+        if (!isLoaded() || gun.isEmpty()) return 8;
+        try {
+            return TacZImpl.getShootCooldownTicks(gun);
+        } catch (Throwable ignored) {
+            return 8;
         }
-        return 8;
     }
 
     public static boolean tryReloadFromPack(TalentedCat cat, ItemStack gun) {
         if (!hasAmmoInPack(cat, gun)) return false;
         int current = getAmmoCount(gun);
-        int max = 30;
-        if (gun.hasTag() && gun.getTag().contains("MaxAmmo")) {
-            max = gun.getTag().getInt("MaxAmmo");
-        }
+        int max = getMaxAmmoCount(gun);
         int needed = max - current;
         int loaded = 0;
         while (loaded < needed && consumeAmmoFromPack(cat, gun)) {
@@ -209,98 +217,41 @@ public class TacZCompat {
 
     public static boolean shootGunAtTarget(TalentedCat cat, LivingEntity target) {
         if (!isLoaded()) return false;
-        ItemStack gun = cat.getEquippedWeapon();
-        if (!isGun(gun)) return false;
-
-        // Try reload from catPack if gun magazine is empty
-        if (getAmmoCount(gun) <= 0) {
-            if (!tryReloadFromPack(cat, gun)) {
-                if (cat.tickCount % 20 == 0) {
-                    cat.playSound(SoundEvents.DISPENSER_FAIL, 0.8F, 1.6F);
-                }
-                return false;
-            }
+        try {
+            return TacZImpl.shootGunAtTarget(cat, target);
+        } catch (Throwable ignored) {
+            return false;
         }
-
-        // Aim at target
-        Vec3 catEye = cat.getEyePosition();
-        Vec3 targetEye = target.getEyePosition();
-        Vec3 diff = targetEye.subtract(catEye);
-        if (diff.lengthSqr() < 0.001D) return false;
-
-        Vec3 dir = diff.normalize();
-        double dX = dir.x;
-        double dY = dir.y;
-        double dZ = dir.z;
-        double dXZ = Math.sqrt(dX * dX + dZ * dZ);
-        float pitch = (float) (-(Math.atan2(dY, dXZ) * (180.0D / Math.PI)));
-        float yaw = (float) (Math.atan2(dZ, dX) * (180.0D / Math.PI)) - 90.0F;
-
-        cat.setXRot(pitch);
-        cat.setYHeadRot(yaw);
-        cat.setYRot(yaw);
-
-        return executeShot(cat, gun, pitch, yaw, target, false);
     }
 
     public static boolean shootGunTwined(TalentedCat cat, Player player) {
         if (!isLoaded()) return false;
-        ItemStack gun = cat.getEquippedWeapon();
-        if (!isGun(gun)) return false;
-
-        boolean isCreative = player.getAbilities().instabuild;
-        if (!isCreative && getAmmoCount(gun) <= 0 && !hasAmmoInPack(cat, gun)) {
-            cat.playSound(SoundEvents.DISPENSER_FAIL, 0.8F, 1.6F);
+        try {
+            return TacZImpl.shootGunTwined(cat, player);
+        } catch (Throwable ignored) {
             return false;
         }
-
-        if (!isCreative && getAmmoCount(gun) <= 0) {
-            tryReloadFromPack(cat, gun);
-        }
-
-        float pitch = player.getXRot();
-        float yaw = player.getYRot();
-        cat.setXRot(pitch);
-        cat.setYHeadRot(yaw);
-        cat.setYRot(yaw);
-
-        // Raycast to find target along player look vector
-        Vec3 eye = cat.getEyePosition();
-        Vec3 look = cat.getLookAngle();
-        Vec3 end = eye.add(look.scale(64.0D));
-        LivingEntity hitTarget = null;
-        for (LivingEntity e : cat.level().getEntitiesOfClass(LivingEntity.class, cat.getBoundingBox().inflate(64.0D),
-                entity -> entity != cat && entity != player && !cat.isAlliedTo(entity))) {
-            if (e.getBoundingBox().inflate(0.6D).clip(eye, end).isPresent()) {
-                hitTarget = e;
-                break;
-            }
-        }
-
-        return executeShot(cat, gun, pitch, yaw, hitTarget, isCreative);
     }
 
     public static boolean executeShot(TalentedCat cat, ItemStack gun, float pitch, float yaw, LivingEntity target, boolean isCreative) {
+        return executeFallbackShot(cat, gun, pitch, yaw, target, isCreative);
+    }
+
+    public static boolean executeFallbackShot(TalentedCat cat, ItemStack gun, float pitch, float yaw, LivingEntity target, boolean isCreative) {
         if (!isCreative) {
             int ammo = getAmmoCount(gun);
             if (ammo > 0) {
                 setAmmoCount(gun, ammo - 1);
-            } else {
-                boolean consumed = consumeAmmoFromPack(cat, gun);
-                if (!consumed) {
-                    cat.playSound(SoundEvents.DISPENSER_FAIL, 0.8F, 1.6F);
-                    return false;
-                }
+            } else if (!consumeAmmoFromPack(cat, gun)) {
+                cat.playSound(SoundEvents.DISPENSER_FAIL, 0.8F, 1.6F);
+                return false;
             }
         }
-
-        // Recoil pushback
+        cat.setLastShotTick(cat.tickCount);
         Vec3 look = cat.getLookAngle();
         if (look.lengthSqr() > 0.001D) {
             cat.push(-look.x * 0.06D, 0.02D, -look.z * 0.06D);
         }
-
-        // Muzzle flash particle & gunshot sound
         if (cat.level() instanceof ServerLevel sl) {
             Vec3 muzzle = cat.getEyePosition().add(cat.getLookAngle().scale(0.5D));
             sl.sendParticles(ParticleTypes.FLAME, muzzle.x, muzzle.y, muzzle.z, 3, 0.05, 0.05, 0.05, 0.02);
@@ -308,27 +259,19 @@ public class TacZCompat {
         }
         cat.level().playSound(null, cat.getX(), cat.getY(), cat.getZ(),
                 SoundEvents.GENERIC_EXPLODE, SoundSource.NEUTRAL, 0.9F, 1.8F);
-
         if (target != null && target.isAlive()) {
             float baseGunDamage = 12.0F + (cat.getTalentLevel(com.kittytalents.talent.Talents.CAT_ARMORY) * 3.5F);
             target.hurt(cat.damageSources().mobAttack(cat), baseGunDamage);
             target.invulnerableTime = 0;
         }
-
         return true;
     }
 
-    /**
-     * When out of ammo for the equipped firearm:
-     * 1. Searches catPack for a melee weapon (Sword/Axe) and equips it.
-     * 2. If no melee weapon exists, unbinds/stows the empty gun so the cat fights with natural claws.
-     */
     public static boolean handleEmptyAmmoSwapOrStow(TalentedCat cat) {
         if (!isLoaded()) return false;
         ItemStack gun = cat.getEquippedWeapon();
         if (!isGun(gun)) return false;
 
-        // Check if truly empty
         if (getAmmoCount(gun) > 0 || hasAmmoInPack(cat, gun)) {
             return false;
         }
@@ -352,7 +295,6 @@ public class TacZCompat {
             cat.playSound(SoundEvents.ARMOR_EQUIP_IRON, 0.8F, 1.2F);
             return true;
         } else {
-            // Stow gun into pack if empty slot exists
             ItemStack gunCopy = gun.copy();
             cat.setEquippedWeapon(ItemStack.EMPTY);
             ItemStack remainder = pack.addItem(gunCopy);
@@ -364,9 +306,6 @@ public class TacZCompat {
         }
     }
 
-    /**
-     * If cat has stowed a firearm and later receives ammo in pack, re-equips the firearm.
-     */
     public static boolean tryReEquipFirearmIfAmmoAvailable(TalentedCat cat) {
         if (!isLoaded()) return false;
         if (isGun(cat.getEquippedWeapon())) return false;
@@ -384,5 +323,32 @@ public class TacZCompat {
             }
         }
         return false;
+    }
+
+    public static boolean canCraftSelectedGunsmithRecipe(TalentedCat cat) {
+        if (!isLoaded()) return false;
+        try {
+            return TacZGunsmith.canCraftSelectedRecipe(cat);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean craftSelectedGunsmithRecipe(TalentedCat cat) {
+        if (!isLoaded()) return false;
+        try {
+            return TacZGunsmith.craftSelectedRecipe(cat);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static List<ResourceLocation> getAvailableGunsmithRecipes(int catLevel) {
+        if (!isLoaded()) return Collections.emptyList();
+        try {
+            return TacZGunsmith.getAvailableRecipes(catLevel);
+        } catch (Throwable ignored) {
+            return Collections.emptyList();
+        }
     }
 }

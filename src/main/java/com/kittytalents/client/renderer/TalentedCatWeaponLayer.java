@@ -21,22 +21,15 @@ public class TalentedCatWeaponLayer extends RenderLayer<TalentedCat, TalentedCat
         Minecraft mc = Minecraft.getInstance();
         if (mc.getCameraEntity() == cat && mc.options.getCameraType().isFirstPerson()) return;
 
-        // Render weapon in mouth
+        // Render melee weapon in mouth (TacZ guns are rendered on the back harness by TalentedCatGunHarnessLayer)
         ItemStack weapon = cat.getEquippedWeapon();
-        if (!weapon.isEmpty()) {
+        if (!weapon.isEmpty() && !com.kittytalents.compat.tacz.TacZCompat.isGun(weapon)) {
             poseStack.pushPose();
             this.getParentModel().getHeadPart().translateAndRotate(poseStack);
-            if (com.kittytalents.compat.tacz.TacZCompat.isGun(weapon)) {
-                // Held directly in jaws, barrel pointing straight forward
-                poseStack.translate(0.0D, 0.12D, -0.38D);
-                poseStack.mulPose(Axis.XP.rotationDegrees(10.0F));
-                poseStack.scale(0.48F, 0.48F, 0.48F);
-            } else {
-                poseStack.translate(0.0D, 0.15D, -0.4D);
-                poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
-                poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F));
-                poseStack.scale(0.6F, 0.6F, 0.6F);
-            }
+            poseStack.translate(0.0D, 0.15D, -0.4D);
+            poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F));
+            poseStack.scale(0.6F, 0.6F, 0.6F);
 
             Minecraft.getInstance().getItemRenderer().renderStatic(
                     weapon,

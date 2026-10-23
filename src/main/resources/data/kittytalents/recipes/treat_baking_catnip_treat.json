@@ -1,0 +1,13 @@
+{
+  "type": "kittytalents:treat_baking",
+  "ingredients": [
+    { "item": "kittytalents:catnip" },
+    { "item": "minecraft:wheat" },
+    { "tag": "minecraft:fishes" }
+  ],
+  "result": {
+    "item": "kittytalents:catnip_treat",
+    "count": 4
+  },
+  "cook_time": 120
+}

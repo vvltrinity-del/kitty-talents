@@ -132,8 +132,10 @@ public class PacketTwineInput {
                     }
                 }
 
-                // Pounce leap (Right click)
-                if (pounce) {
+                // Pounce leap or Gun Aiming (Right click)
+                if (com.kittytalents.compat.tacz.TacZCompat.isGun(cat.getEquippedWeapon())) {
+                    com.kittytalents.compat.tacz.TacZCompat.setAiming(cat, pounce);
+                } else if (pounce) {
                     if (cat.getTalentLevel(Talents.POUNCE) > 0 && cat.onGround()) {
                         Vec3 look = cat.getLookAngle();
                         double pounceSpeed = 1.35D + cat.getTalentLevel(Talents.POUNCE) * 0.08D;

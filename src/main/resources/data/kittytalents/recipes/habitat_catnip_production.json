@@ -1,0 +1,23 @@
+{
+  "type": "kittytalents:habitat_production",
+  "min_level": 1,
+  "required_tier": "",
+  "required_talent": "",
+  "min_talent_rank": 0,
+  "catalyst": {
+    "item": "kittytalents:catnip_catalyst"
+  },
+  "ticks": 200,
+  "outputs": [
+    {
+      "item": "kittytalents:catnip",
+      "count": 4,
+      "chance": 1.0
+    },
+    {
+      "item": "kittytalents:catnip_treat",
+      "count": 1,
+      "chance": 0.5
+    }
+  ]
+}

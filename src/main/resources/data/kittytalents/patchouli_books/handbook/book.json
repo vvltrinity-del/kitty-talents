@@ -1,0 +1,8 @@
+{
+  "name": "Kitty Handbook",
+  "landing_text": "Welcome to the $(l)Kitty Talents 2.0$() Handbook! Learn how to train Feline Companions, automate your base with Worker Cats, and equip them with TacZ firearms.",
+  "version": 2,
+  "creative_tab": "kittytalents:kittytalents_tab",
+  "use_resource_pack": true,
+  "model": "patchouli:book_brown"
+}

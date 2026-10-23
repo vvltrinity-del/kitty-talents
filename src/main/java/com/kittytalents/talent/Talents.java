@@ -6,7 +6,7 @@ import net.minecraft.world.item.Items;
 import java.util.*;
 
 /**
- * Registry and catalog of all feline talents for Kitty Talents 3.0 (R8).
+ * Registry and catalog of all feline talents for Kitty Talents (R8 & 2.0 Automation/TacZ).
  */
 public class Talents {
     private static final Map<String, Talent> TALENTS = new LinkedHashMap<>();
@@ -58,6 +58,17 @@ public class Talents {
     public static final Talent SNIFFER_WHISKERS = register(new Talent("sniffer_whiskers", 5, () -> new ItemStack(Items.SNIFFER_EGG), false, false, TalentCategory.UTILITY));
     public static final Talent GATE_PURR = register(new Talent("gate_purr", 5, () -> new ItemStack(Items.OAK_FENCE_GATE), false, false, TalentCategory.UTILITY));
 
+    // 2.0 Automation & Worker Talents
+    public static final Talent GREEN_PAW = register(new Talent("green_paw", 5, () -> new ItemStack(Items.WHEAT_SEEDS), false, false, TalentCategory.UTILITY));
+    public static final Talent TIMBER_CLAWS = register(new Talent("timber_claws", 5, () -> new ItemStack(Items.IRON_AXE), false, false, TalentCategory.UTILITY));
+    public static final Talent LOGISTICS_WHISKERS = register(new Talent("logistics_whiskers", 5, () -> new ItemStack(Items.HOPPER), false, false, TalentCategory.UTILITY));
+    public static final Talent WORK_ETHIC = register(new Talent("work_ethic", 5, () -> new ItemStack(Items.CLOCK), false, false, TalentCategory.UTILITY));
+
+    // 2.0 TacZ Gunnery Talents (hidden when TacZ is absent)
+    public static final Talent MARKSMAN = register(new Talent("marksman", 5, () -> new ItemStack(Items.SPYGLASS), false, false, TalentCategory.COMBAT, "tacz"));
+    public static final Talent QUICK_RELOAD = register(new Talent("quick_reload", 5, () -> new ItemStack(Items.CROSSBOW), false, false, TalentCategory.COMBAT, "tacz"));
+    public static final Talent AMMO_SCAVENGER = register(new Talent("ammo_scavenger", 5, () -> new ItemStack(Items.GUNPOWDER), false, false, TalentCategory.UTILITY, "tacz"));
+
     // End-Game Talents requiring Dire Treats:
     public static final Talent SKY_FELINE = register(new Talent("sky_feline", 5, () -> new ItemStack(Items.ELYTRA), true, false, TalentCategory.DIRE));
     public static final Talent MOLE_CAT = register(new Talent("mole_cat", 5, () -> new ItemStack(Items.DIAMOND_PICKAXE), true, false, TalentCategory.DIRE));
@@ -82,7 +93,7 @@ public class Talents {
     public static List<Talent> getByCategory(TalentCategory category) {
         List<Talent> list = new ArrayList<>();
         for (Talent t : TALENTS.values()) {
-            if (t.getCategory() == category) list.add(t);
+            if (t.getCategory() == category && t.isAvailable()) list.add(t);
         }
         return Collections.unmodifiableList(list);
     }
