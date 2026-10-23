@@ -103,13 +103,19 @@ public class FelineCombatEngine {
      * Executes Pounce 2.0 with a realistic physics parabolic launch trajectory.
      */
     public static boolean launchPounce(TalentedCat cat, Vec3 targetPos) {
+        return launchPounce(cat, targetPos, true);
+    }
+
+    public static boolean launchPounce(TalentedCat cat, Vec3 targetPos, boolean deductEnergy) {
         if (cat == null || cat.level().isClientSide || !cat.isAlive() || cat.isIncapacitated()) {
             return false;
         }
 
-        int energyCost = 25;
-        if (!FelineEnergyEngine.consumeEnergy(cat, energyCost)) {
-            return false;
+        if (deductEnergy) {
+            int energyCost = 20;
+            if (!FelineEnergyEngine.consumeEnergy(cat, energyCost)) {
+                return false;
+            }
         }
 
         int pounceTalent = Math.max(1, cat.getTalentLevel(Talents.POUNCE));

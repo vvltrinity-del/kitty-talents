@@ -115,6 +115,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Integer> DATA_LAST_SHOT_TICK =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_ENERGY =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
 
     private boolean isDualStriking = false;
 
@@ -169,10 +171,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     private com.kittytalents.combat.CatRole catRole = com.kittytalents.combat.CatRole.NONE;
     private com.kittytalents.combat.FelineElement primaryElement = com.kittytalents.combat.FelineElement.PHYSICAL;
     private com.kittytalents.combat.FelineElement secondaryElement = com.kittytalents.combat.FelineElement.PHYSICAL;
-    private String abilitySlot1 = "";
-    private String abilitySlot2 = "";
-    private String abilitySlot3 = "";
-    private String abilityUltimate = "";
+    private String abilitySlot1 = "pounce";
+    private String abilitySlot2 = "feline_hiss";
+    private String abilitySlot3 = "healing_purr";
+    private String abilityUltimate = "catnip_frenzy";
     private int energy = 100;
 
     public com.kittytalents.combat.CatRole getCatRole() { return catRole; }
@@ -184,18 +186,23 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public com.kittytalents.combat.FelineElement getSecondaryElement() { return secondaryElement; }
     public void setSecondaryElement(com.kittytalents.combat.FelineElement element) { this.secondaryElement = element; }
 
-    public String getAbilitySlot1() { return abilitySlot1; }
-    public void setAbilitySlot1(String slot) { this.abilitySlot1 = slot; }
-    public String getAbilitySlot2() { return abilitySlot2; }
-    public void setAbilitySlot2(String slot) { this.abilitySlot2 = slot; }
-    public String getAbilitySlot3() { return abilitySlot3; }
-    public void setAbilitySlot3(String slot) { this.abilitySlot3 = slot; }
-    public String getAbilityUltimate() { return abilityUltimate; }
-    public void setAbilityUltimate(String slot) { this.abilityUltimate = slot; }
+    public String getAbilitySlot1() { return (abilitySlot1 == null || abilitySlot1.isEmpty()) ? "pounce" : abilitySlot1; }
+    public void setAbilitySlot1(String slot) { this.abilitySlot1 = (slot == null || slot.isEmpty()) ? "pounce" : slot; }
+    public String getAbilitySlot2() { return (abilitySlot2 == null || abilitySlot2.isEmpty()) ? "feline_hiss" : abilitySlot2; }
+    public void setAbilitySlot2(String slot) { this.abilitySlot2 = (slot == null || slot.isEmpty()) ? "feline_hiss" : slot; }
+    public String getAbilitySlot3() { return (abilitySlot3 == null || abilitySlot3.isEmpty()) ? "healing_purr" : abilitySlot3; }
+    public void setAbilitySlot3(String slot) { this.abilitySlot3 = (slot == null || slot.isEmpty()) ? "healing_purr" : slot; }
+    public String getAbilityUltimate() { return (abilityUltimate == null || abilityUltimate.isEmpty()) ? "catnip_frenzy" : abilityUltimate; }
+    public void setAbilityUltimate(String slot) { this.abilityUltimate = (slot == null || slot.isEmpty()) ? "catnip_frenzy" : slot; }
 
-    public int getEnergy() { return energy; }
-    public int getMaxEnergy() { return 100; }
-    public void setEnergy(int energy) { this.energy = energy; }
+    public int getEnergy() { return this.entityData != null ? this.entityData.get(DATA_ENERGY) : energy; }
+    public int getMaxEnergy() { return com.kittytalents.combat.FelineEnergyEngine.getMaxEnergy(this); }
+    public void setEnergy(int energy) {
+        this.energy = Math.max(0, energy);
+        if (this.entityData != null) {
+            this.entityData.set(DATA_ENERGY, this.energy);
+        }
+    }
 
     private int outOfCombatTicks = 100;
     public int getOutOfCombatTicks() { return outOfCombatTicks; }
@@ -274,6 +281,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.define(DATA_CLOCKED_IN, true);
         this.entityData.define(DATA_WORK_STATUS, "Idle");
         this.entityData.define(DATA_LAST_SHOT_TICK, -100);
+        this.entityData.define(DATA_ENERGY, 100);
     }
 
     @Override
@@ -1528,6 +1536,31 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     @Override
+    public void lerpTo(double x, double y, double z, float yRot, float xRot, int lerpSteps, boolean teleport) {
+        if (this.level().isClientSide && this.isControlledByLocalInstance() && !teleport) {
+            return;
+        }
+        super.lerpTo(x, y, z, yRot, xRot, lerpSteps, teleport);
+    }
+
+    @Override
+    public void lerpHeadTo(float yRot, int steps) {
+        if (this.level().isClientSide && this.isControlledByLocalInstance()) {
+            return;
+        }
+        super.lerpHeadTo(yRot, steps);
+    }
+
+    @Override
+    public void aiStep() {
+        if (this.level().isClientSide && this.isControlledByLocalInstance()) {
+            this.lerpSteps = 0;
+            this.lerpHeadSteps = 0;
+        }
+        super.aiStep();
+    }
+
+    @Override
     public boolean isControlledByLocalInstance() {
         if (this.level().isClientSide) {
             if (isTwined()) {
@@ -2415,11 +2448,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 this.secondaryElement = com.kittytalents.combat.FelineElement.PHYSICAL;
             }
         }
-        if (tag.contains("AbilitySlot1")) this.abilitySlot1 = tag.getString("AbilitySlot1");
-        if (tag.contains("AbilitySlot2")) this.abilitySlot2 = tag.getString("AbilitySlot2");
-        if (tag.contains("AbilitySlot3")) this.abilitySlot3 = tag.getString("AbilitySlot3");
-        if (tag.contains("AbilityUltimate")) this.abilityUltimate = tag.getString("AbilityUltimate");
-        if (tag.contains("Energy")) this.energy = tag.getInt("Energy");
+        if (tag.contains("AbilitySlot1")) setAbilitySlot1(tag.getString("AbilitySlot1"));
+        if (tag.contains("AbilitySlot2")) setAbilitySlot2(tag.getString("AbilitySlot2"));
+        if (tag.contains("AbilitySlot3")) setAbilitySlot3(tag.getString("AbilitySlot3"));
+        if (tag.contains("AbilityUltimate")) setAbilityUltimate(tag.getString("AbilityUltimate"));
+        if (tag.contains("Energy")) setEnergy(tag.getInt("Energy"));
 
         trustedPlayers.clear();
         if (tag.contains("TrustedPlayers", Tag.TAG_LIST)) {

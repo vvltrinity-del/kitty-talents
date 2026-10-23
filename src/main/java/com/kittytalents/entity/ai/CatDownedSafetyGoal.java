@@ -21,21 +21,26 @@ public class CatDownedSafetyGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return cat.isIncapacitated();
+        return cat.isIncapacitated() || cat.isTwined();
     }
 
     @Override
     public boolean canContinueToUse() {
-        return cat.isIncapacitated();
+        return cat.isIncapacitated() || cat.isTwined();
     }
 
     @Override
     public void start() {
         cat.getNavigation().stop();
         cat.setTarget(null);
-        cat.setOrderedToSit(true);
-        Vec3 motion = cat.getDeltaMovement();
-        cat.setDeltaMovement(0.0D, motion.y, 0.0D);
+        if (cat.isIncapacitated()) {
+            cat.setOrderedToSit(true);
+            Vec3 motion = cat.getDeltaMovement();
+            cat.setDeltaMovement(0.0D, motion.y, 0.0D);
+        } else if (cat.isTwined()) {
+            cat.setOrderedToSit(false);
+            cat.setInSittingPose(false);
+        }
     }
 
     @Override
@@ -46,9 +51,11 @@ public class CatDownedSafetyGoal extends Goal {
         if (cat.getTarget() != null) {
             cat.setTarget(null);
         }
-        Vec3 motion = cat.getDeltaMovement();
-        if (Math.abs(motion.x) > 0.001D || Math.abs(motion.z) > 0.001D) {
-            cat.setDeltaMovement(0.0D, motion.y, 0.0D);
+        if (cat.isIncapacitated()) {
+            Vec3 motion = cat.getDeltaMovement();
+            if (Math.abs(motion.x) > 0.001D || Math.abs(motion.z) > 0.001D) {
+                cat.setDeltaMovement(0.0D, motion.y, 0.0D);
+            }
         }
     }
 }

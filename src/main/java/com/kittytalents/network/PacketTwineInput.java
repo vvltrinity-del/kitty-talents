@@ -136,10 +136,13 @@ public class PacketTwineInput {
                 if (com.kittytalents.compat.tacz.TacZCompat.isGun(cat.getEquippedWeapon())) {
                     com.kittytalents.compat.tacz.TacZCompat.setAiming(cat, pounce);
                 } else if (pounce) {
-                    if (cat.getTalentLevel(Talents.POUNCE) > 0 && cat.onGround()) {
+                    long now = cat.level().getGameTime();
+                    long lastRmbPounce = cat.getPersistentData().getLong("KT_LastRmbPounce");
+                    if (cat.onGround() && now >= lastRmbPounce + 20) {
+                        cat.getPersistentData().putLong("KT_LastRmbPounce", now);
                         Vec3 look = cat.getLookAngle();
-                        double pounceSpeed = 1.35D + cat.getTalentLevel(Talents.POUNCE) * 0.08D;
-                        cat.setDeltaMovement(look.x * pounceSpeed, 0.52D, look.z * pounceSpeed);
+                        double pounceSpeed = 1.25D + cat.getTalentLevel(Talents.POUNCE) * 0.10D;
+                        cat.setDeltaMovement(look.x * pounceSpeed, 0.48D, look.z * pounceSpeed);
                         cat.hasImpulse = true;
                         cat.playSound(net.minecraft.sounds.SoundEvents.FOX_BITE, 1.0F, 1.2F);
 
@@ -152,32 +155,6 @@ public class PacketTwineInput {
                             }
                             break;
                         }
-                    }
-                }
-
-                // Ability 1 (V): Feline Hiss AoE
-                if (ability1) {
-                    cat.playSound(net.minecraft.sounds.SoundEvents.CAT_HISS, 1.2F, 1.1F);
-                    net.minecraft.world.phys.AABB aoe = cat.getBoundingBox().inflate(6.0D);
-                    for (net.minecraft.world.entity.LivingEntity le : cat.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, aoe, e -> e != cat && e != sender && !cat.isAlliedTo(e))) {
-                        le.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WEAKNESS, 160, 1));
-                        if (le instanceof net.minecraft.world.entity.monster.Creeper creeper) {
-                            Vec3 diff = creeper.position().subtract(cat.position());
-                            Vec3 repel = diff.lengthSqr() > 1.0E-4D ? diff.normalize() : new Vec3(0, 1.0D, 0);
-                            creeper.setDeltaMovement(repel.x * 0.85D, 0.25D, repel.z * 0.85D);
-                        }
-                    }
-                    if (cat.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-                        sl.sendParticles(net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER, cat.getX(), cat.getY() + 0.5D, cat.getZ(), 8, 0.5D, 0.3D, 0.5D, 0.05D);
-                    }
-                }
-
-                // Ability 2 (G): Torch placement / Tool action
-                if (ability2) {
-                    if (cat.getTalentLevel(Talents.TORCH_KITTY) > 0) {
-                        cat.tryPlaceTorchManual();
-                    } else if (cat.getTalentLevel(Talents.KITTY_TOOLS) > 0) {
-                        cat.tryUseEquippedTool();
                     }
                 }
             }

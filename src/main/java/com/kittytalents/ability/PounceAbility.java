@@ -31,13 +31,13 @@ public class PounceAbility extends CatAbility {
     protected boolean execute(TalentedCat cat, Player player) {
         if (!cat.onGround() && !cat.isInWater()) return false;
 
-        Vec3 targetPos = null;
-        if (cat.getTarget() != null && cat.getTarget().isAlive()) {
+        Vec3 targetPos;
+        if (!cat.isTwined() && cat.getTarget() != null && cat.getTarget().isAlive()) {
             targetPos = cat.getTarget().position();
-        } else if (player != null) {
-            targetPos = player.getLookAngle().scale(8.0).add(cat.position());
+        } else {
+            targetPos = cat.getLookAngle().scale(8.0).add(cat.position());
         }
 
-        return FelineCombatEngine.launchPounce(cat, targetPos);
+        return FelineCombatEngine.launchPounce(cat, targetPos, false);
     }
 }

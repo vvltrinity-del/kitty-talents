@@ -321,10 +321,12 @@ public class ForgeEvents {
                     new com.kittytalents.network.PacketSyncTrustedPlayers(cat.getId(), cat.getTrustedPlayers()),
                     player
             );
-            com.kittytalents.network.PacketHandler.sendToPlayer(
-                    new com.kittytalents.network.PacketSyncTwine(cat.getId(), cat.isTwined()),
-                    player
-            );
+            if (cat.isTwinedWith(player)) {
+                com.kittytalents.network.PacketHandler.sendToPlayer(
+                        new com.kittytalents.network.PacketSyncTwine(cat.getId(), true),
+                        player
+                );
+            }
         }
     }
 

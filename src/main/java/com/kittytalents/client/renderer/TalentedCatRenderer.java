@@ -74,14 +74,15 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, TalentedCatMod
     @Override
     public void render(TalentedCat cat, float entityYaw, float partialTicks, PoseStack poseStack, net.minecraft.client.renderer.MultiBufferSource buffer, int packedLight) {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-        boolean isFirstPersonTwine = (mc.getCameraEntity() == cat && mc.options.getCameraType().isFirstPerson());
-        
-        TalentedCatModel model = this.getModel();
+        boolean isFirstPersonTwine = mc.options.getCameraType().isFirstPerson() &&
+                (mc.getCameraEntity() == cat || (com.kittytalents.client.ClientTwineHandler.isTwined() &&
+                        com.kittytalents.client.ClientTwineHandler.activeTwinedCatId == cat.getId()));
         if (isFirstPersonTwine) {
-            model.getHeadPart().visible = false;
-        } else {
-            model.getHeadPart().visible = true;
+            return;
         }
+
+        TalentedCatModel model = this.getModel();
+        model.getHeadPart().visible = true;
 
         boolean isNekomata = cat.getMutation() == com.kittytalents.entity.CatBreedingManager.MutationType.NEKOMATA;
         if (isNekomata) {
@@ -90,9 +91,7 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, TalentedCatMod
         }
 
         super.render(cat, entityYaw, partialTicks, poseStack, buffer, packedLight);
-        
-        // Restore visibility after rendering
-        model.getHeadPart().visible = true;
+
         if (isNekomata) {
             model.getTail1().visible = true;
             model.getTail2().visible = true;

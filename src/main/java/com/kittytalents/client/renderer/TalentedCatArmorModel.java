@@ -47,16 +47,16 @@ public class TalentedCatArmorModel extends CatModel<TalentedCat> {
                         .texOffs(0, 6).addBox(-2.12F, -1.68F, 1.72F, 4.24F, 0.95F, 0.35F, deformation),
                 PartPose.offset(0.0F, 15.0F, -9.0F));
 
-        // Chestplate: a thin fitted strip along the cat's spine, rather than a
-        // cuboid that encloses the torso.  The body has the same transform as the
+        // Chestplate: a thin fitted strip along the cat's dorsal spine (z = -2.0F in body space),
+        // rather than a cuboid that encloses the torso. The body has the same transform as the
         // vanilla cat body, so it follows sitting, walking, and sleeping poses.
         PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create(),
                 PartPose.offsetAndRotation(0.0F, 12.0F, -10.0F, 1.5707964F, 0.0F, 0.0F));
         body.addOrReplaceChild("carapace", CubeListBuilder.create()
-                        .texOffs(18, 0).addBox(-2.12F, 3.15F, -8.12F, 4.24F, 11.0F, 1.15F, deformation),
+                        .texOffs(18, 0).addBox(-2.12F, 3.15F, -3.03F, 4.24F, 11.0F, 1.15F, deformation),
                 PartPose.ZERO);
         body.addOrReplaceChild("rump_plate", CubeListBuilder.create()
-                        .texOffs(18, 14).addBox(-2.12F, 14.15F, -8.12F, 4.24F, 4.0F, 1.15F, deformation),
+                        .texOffs(18, 14).addBox(-2.12F, 14.15F, -3.03F, 4.24F, 4.0F, 1.15F, deformation),
                 PartPose.ZERO);
 
         // Leg armor is intentionally limited to the lower leg/ankle.  It avoids
