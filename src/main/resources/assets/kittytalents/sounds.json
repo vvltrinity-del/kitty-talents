@@ -1,0 +1,104 @@
+{
+  "cat_claw_swipe": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:combat/cat_claw_swipe"
+    ]
+  },
+  "cat_claw_hit": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:combat/cat_claw_hit"
+    ]
+  },
+  "cat_bite": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:combat/cat_bite"
+    ]
+  },
+  "cat_pounce_launch": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:combat/cat_pounce_launch"
+    ]
+  },
+  "cat_pounce_impact": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:combat/cat_pounce_impact"
+    ]
+  },
+  "cat_dodge": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:combat/cat_dodge"
+    ]
+  },
+  "cat_perfect_dodge": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:combat/cat_perfect_dodge"
+    ]
+  },
+  "ability_cast": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:ability/ability_cast"
+    ]
+  },
+  "ability_hiss": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:ability/ability_hiss"
+    ]
+  },
+  "ability_purr": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:ability/ability_purr"
+    ]
+  },
+  "ability_elemental": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:ability/ability_elemental"
+    ]
+  },
+  "ability_ultimate": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:ability/ability_ultimate"
+    ]
+  },
+  "twine_enter": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:twine/twine_enter"
+    ]
+  },
+  "twine_exit": {
+    "category": "player",
+    "sounds": [
+      "kittytalents:twine/twine_exit"
+    ]
+  },
+  "cat_purr_deep": {
+    "category": "neutral",
+    "sounds": [
+      "kittytalents:companion/cat_purr_deep"
+    ]
+  },
+  "cat_grooming": {
+    "category": "neutral",
+    "sounds": [
+      "kittytalents:companion/cat_grooming"
+    ]
+  },
+  "cat_petting": {
+    "category": "neutral",
+    "sounds": [
+      "kittytalents:companion/cat_petting"
+    ]
+  }
+}

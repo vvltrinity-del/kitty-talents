@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "kittytalents:upgrade_productivity_5"
+    },
+    {
+      "item": "kittytalents:dire_treat"
+    }
+  ],
+  "result": {
+    "item": "kittytalents:upgrade_productivity_6"
+  }
+}

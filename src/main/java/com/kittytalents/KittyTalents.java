@@ -1,0 +1,47 @@
+package com.kittytalents;
+
+import com.kittytalents.network.PacketHandler;
+import com.kittytalents.registry.*;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+@Mod(KittyTalents.MODID)
+public class KittyTalents {
+    public static final String MODID = "kittytalents";
+    public static final Logger LOGGER = LogManager.getLogger(MODID);
+
+    public KittyTalents() {
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+        // Register registries
+        ModEntities.ENTITIES.register(modEventBus);
+        ModItems.ITEMS.register(modEventBus);
+        ModBlocks.BLOCKS.register(modEventBus);
+        ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        ModMenus.MENUS.register(modEventBus);
+        ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
+        ModSounds.SOUND_EVENTS.register(modEventBus);
+
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.COMMON,
+                com.kittytalents.config.KittyTalentsConfig.COMMON_SPEC
+        );
+
+        modEventBus.addListener(this::commonSetup);
+
+        // Register ourselves for server and other game events we are interested in
+        MinecraftForge.EVENT_BUS.register(this);
+    }
+
+    private void commonSetup(final FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> {
+            PacketHandler.register();
+        });
+        LOGGER.info("Kitty Talents initialized successfully!");
+    }
+}

@@ -1,0 +1,330 @@
+package com.kittytalents.event;
+
+import com.kittytalents.KittyTalents;
+import com.kittytalents.entity.TalentedCat;
+import com.kittytalents.registry.ModEntities;
+import com.kittytalents.registry.ModItems;
+import com.kittytalents.talent.Talents;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.animal.Cat;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.entity.player.PlayerWakeUpEvent;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+import java.util.List;
+
+@Mod.EventBusSubscriber(modid = KittyTalents.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+public class ForgeEvents {
+
+    @SubscribeEvent
+    public static void onCommandsRegister(net.minecraftforge.event.RegisterCommandsEvent event) {
+        com.kittytalents.command.KittyTalentsCommand.register(event.getDispatcher());
+    }
+
+    @SubscribeEvent
+    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        // Cow milking with Catnip Bucket
+        if ((event.getTarget() instanceof net.minecraft.world.entity.animal.Cow || event.getTarget() instanceof net.minecraft.world.entity.animal.MushroomCow) &&
+                !((net.minecraft.world.entity.animal.Animal) event.getTarget()).isBaby()) {
+            Player player = event.getEntity();
+            ItemStack held = player.getItemInHand(event.getHand());
+            if (held.is(ModItems.CATNIP_BUCKET.get())) {
+                player.playSound(SoundEvents.COW_MILK, 1.0F, 1.0F);
+                ItemStack milk = net.minecraft.world.item.ItemUtils.createFilledResult(held, player, new ItemStack(ModItems.CATNIP_MILK_BUCKET.get()));
+                player.setItemInHand(event.getHand(), milk);
+                event.setCancellationResult(InteractionResult.sidedSuccess(player.level().isClientSide));
+                event.setCanceled(true);
+                return;
+            }
+        }
+
+        if (event.getTarget() instanceof Cat cat && !(cat instanceof TalentedCat)) {
+            Player player = event.getEntity();
+            ItemStack held = player.getItemInHand(event.getHand());
+
+            if (held.is(ModItems.CATNIP_TREAT.get())) {
+                if (cat.isTame() && cat.isOwnedBy(player)) {
+                    Level level = cat.level();
+                    if (!level.isClientSide) {
+                        TalentedCat talentedCat = ModEntities.TALENTED_CAT.get().create(level);
+                        if (talentedCat != null) {
+                            talentedCat.moveTo(cat.getX(), cat.getY(), cat.getZ(), cat.getYRot(), cat.getXRot());
+                            talentedCat.tame(player);
+                            talentedCat.setVariant(cat.getVariant());
+                            talentedCat.setCatVariant(com.kittytalents.entity.CatVariant.fromVanillaCatVariant(cat.getVariant()));
+                            talentedCat.setFemale(cat.getRandom().nextBoolean());
+                            talentedCat.setCollarColor(cat.getCollarColor());
+                            talentedCat.setHealth(cat.getHealth());
+                            if (cat.hasCustomName()) {
+                                talentedCat.setCustomName(cat.getCustomName());
+                            }
+                            talentedCat.setCatLevel(1);
+                            talentedCat.setSkillPoints(1); // Bonus starter point!
+
+                            level.addFreshEntity(talentedCat);
+                            cat.discard();
+
+                            if (!player.getAbilities().instabuild) {
+                                held.shrink(1);
+                            }
+
+                            level.playSound(null, talentedCat.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8F, 1.2F);
+                            player.sendSystemMessage(Component.translatable("message.kittytalents.cat_trained", talentedCat.getName()));
+
+                            if (level instanceof ServerLevel serverLevel) {
+                                for (int i = 0; i < 12; i++) {
+                                    serverLevel.sendParticles(
+                                            ParticleTypes.HAPPY_VILLAGER,
+                                            talentedCat.getX() + (serverLevel.random.nextDouble() - 0.5D),
+                                            talentedCat.getY() + 0.5D + (serverLevel.random.nextDouble() - 0.5D),
+                                            talentedCat.getZ() + (serverLevel.random.nextDouble() - 0.5D),
+                                            1, 0, 0.1D, 0, 0.05D
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    event.setCancellationResult(InteractionResult.SUCCESS);
+                    event.setCanceled(true);
+                } else if (!cat.isTame()) {
+                    if (!cat.level().isClientSide) {
+                        player.sendSystemMessage(Component.translatable("message.kittytalents.must_tame_first"));
+                    }
+                    event.setCancellationResult(InteractionResult.SUCCESS);
+                    event.setCanceled(true);
+                }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerWakeUp(PlayerWakeUpEvent event) {
+        Player player = event.getEntity();
+        Level level = player.level();
+        if (!level.isClientSide) {
+            List<TalentedCat> cats = level.getEntitiesOfClass(
+                    TalentedCat.class,
+                    player.getBoundingBox().inflate(12.0D),
+                    cat -> cat.isOwnedBy(player) && !cat.isIncapacitated() && cat.getTalentLevel(Talents.MOUSER) > 0
+            );
+
+            for (TalentedCat cat : cats) {
+                int mouserLevel = cat.getTalentLevel(Talents.MOUSER);
+                ItemStack gift;
+                int roll = level.random.nextInt(100);
+                if (roll < 35) {
+                    gift = new ItemStack(Items.STRING, 1 + level.random.nextInt(2));
+                } else if (roll < 65) {
+                    gift = new ItemStack(Items.FEATHER, 1 + level.random.nextInt(3));
+                } else if (roll < 85) {
+                    gift = new ItemStack(Items.RAW_COPPER, 1);
+                } else if (roll < 95 && mouserLevel >= 3) {
+                    gift = new ItemStack(Items.RABBIT_FOOT, 1);
+                } else if (mouserLevel >= 5) {
+                    gift = new ItemStack(Items.EMERALD, 1);
+                } else {
+                    gift = new ItemStack(Items.COOKED_COD, 1);
+                }
+
+                ItemEntity itemEntity = new ItemEntity(level, player.getX(), player.getY() + 0.5D, player.getZ(), gift);
+                level.addFreshEntity(itemEntity);
+                player.sendSystemMessage(Component.translatable("message.kittytalents.morning_gift", cat.getName(), gift.getHoverName()));
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (!event.getLevel().isClientSide()) {
+            if (event.getState().is(Blocks.GRASS) || event.getState().is(Blocks.TALL_GRASS) || event.getState().is(Blocks.FERN)) {
+                if (event.getLevel().getRandom().nextFloat() < 0.15F) {
+                    BlockPos pos = event.getPos();
+                    ItemEntity itemEntity = new ItemEntity(
+                            (Level) event.getLevel(),
+                            pos.getX() + 0.5D,
+                            pos.getY() + 0.5D,
+                            pos.getZ() + 0.5D,
+                            new ItemStack(ModItems.CATNIP.get())
+                    );
+                    event.getLevel().addFreshEntity(itemEntity);
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Twine failsafes & dormant-body protection
+    // ------------------------------------------------------------------
+
+    @SubscribeEvent
+    public static void onPlayerLogout(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+            com.kittytalents.entity.TwineManager.endForPlayer(sp, null);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerChangeDim(net.minecraftforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+            com.kittytalents.entity.TwineManager.endForPlayer(sp, "Dimension changed - untwined.");
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+            com.kittytalents.entity.TwineManager.endForPlayer(sp, null);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTick(net.minecraftforge.event.TickEvent.PlayerTickEvent event) {
+        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || event.side.isClient()) return;
+        if (!(event.player instanceof net.minecraft.server.level.ServerPlayer sp)) return;
+        java.util.UUID catId = com.kittytalents.entity.TwineManager.getCatOf(sp.getUUID());
+        if (catId == null) return;
+
+        net.minecraft.world.entity.Entity e = ((ServerLevel) sp.level()).getEntity(catId);
+        if (!(e instanceof TalentedCat cat) || !cat.isAlive()) {
+            com.kittytalents.entity.TwineManager.endForPlayer(sp, "Your cat is out of range - untwined.");
+            return;
+        }
+
+        // Failsafe 1: Player HP critically low (< 25%)
+        if (sp.getHealth() <= sp.getMaxHealth() * 0.25F) {
+            sp.level().playSound(null, sp.getX(), sp.getY(), sp.getZ(), SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
+            com.kittytalents.entity.TwineManager.endForPlayer(sp, "Emergency Untwine! Player health critically low (< 25%)!");
+            return;
+        }
+
+        // Failsafe 2: Cat incapacitated
+        if (cat.isIncapacitated()) {
+            com.kittytalents.entity.TwineManager.endForPlayer(sp, "Your cat was incapacitated - untwined!");
+            return;
+        }
+
+        // Autonomous Player Bodyguard AI:
+        double distSq = sp.distanceToSqr(cat);
+
+        // Teleport if too far
+        if (distSq > 1024.0D) { // > 32 blocks
+            sp.teleportTo(cat.getX() - cat.getLookAngle().x * 2.0D, cat.getY(), cat.getZ() - cat.getLookAngle().z * 2.0D);
+            distSq = sp.distanceToSqr(cat);
+        }
+
+        // Find threats: hostiles targeting cat or player, or hostile monsters within 8 blocks
+        net.minecraft.world.phys.AABB scan = sp.getBoundingBox().inflate(8.0D);
+        List<net.minecraft.world.entity.LivingEntity> threats = sp.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, scan, target -> {
+            if (target == sp || target == cat || !target.isAlive()) return false;
+            if (target instanceof net.minecraft.world.entity.monster.Enemy) return true;
+            if (target instanceof net.minecraft.world.entity.Mob mob) {
+                return mob.getTarget() == cat || mob.getTarget() == sp;
+            }
+            return false;
+        });
+
+        net.minecraft.world.entity.LivingEntity closestThreat = null;
+        double minThreatDist = Double.MAX_VALUE;
+        for (net.minecraft.world.entity.LivingEntity threat : threats) {
+            double d = sp.distanceToSqr(threat);
+            if (d < minThreatDist) {
+                minThreatDist = d;
+                closestThreat = threat;
+            }
+        }
+
+        if (closestThreat != null) {
+            // Face the threat
+            sp.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, closestThreat.getEyePosition());
+            double threatDist = Math.sqrt(minThreatDist);
+
+            if (threatDist <= 3.5D) {
+                // In melee reach! Attack!
+                if (sp.getAttackStrengthScale(0.5F) >= 0.85F) {
+                    sp.attack(closestThreat);
+                    sp.swing(InteractionHand.MAIN_HAND, true);
+                    sp.resetAttackStrengthTicker();
+                }
+                sp.setDeltaMovement(0.0D, Math.min(0.0D, sp.getDeltaMovement().y), 0.0D);
+            } else if (distSq < 100.0D) { // Advance toward threat if near cat
+                net.minecraft.world.phys.Vec3 diff = closestThreat.position().subtract(sp.position());
+                net.minecraft.world.phys.Vec3 dir = diff.lengthSqr() > 1.0E-4D ? diff.normalize() : new net.minecraft.world.phys.Vec3(0, 0, 1);
+                sp.setDeltaMovement(dir.x * 0.28D, sp.getDeltaMovement().y, dir.z * 0.28D);
+            }
+        } else {
+            // Follow cat at 3-6 blocks distance
+            if (distSq > 36.0D) { // > 6 blocks
+                net.minecraft.world.phys.Vec3 diff = cat.position().subtract(sp.position());
+                net.minecraft.world.phys.Vec3 dir = diff.lengthSqr() > 1.0E-4D ? diff.normalize() : new net.minecraft.world.phys.Vec3(0, 0, 1);
+                double speed = (distSq > 100.0D || cat.isSprinting()) ? 0.35D : 0.24D;
+                sp.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, cat.position());
+                sp.setDeltaMovement(dir.x * speed, sp.getDeltaMovement().y, dir.z * speed);
+            } else if (distSq < 9.0D) { // < 3 blocks: hold ground
+                sp.setDeltaMovement(0.0D, Math.min(0.0D, sp.getDeltaMovement().y), 0.0D);
+            } else {
+                // In 3-6 block sweet spot
+                sp.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, cat.position());
+                sp.setDeltaMovement(0.0D, Math.min(0.0D, sp.getDeltaMovement().y), 0.0D);
+            }
+        }
+        sp.hurtMarked = true;
+    }
+
+    @SubscribeEvent
+    public static void onLivingDamage(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp && com.kittytalents.entity.TwineManager.isPlayerTwined(sp.getUUID())) {
+            float remainingHealth = sp.getHealth() - event.getAmount();
+            if (remainingHealth <= sp.getMaxHealth() * 0.25F) {
+                sp.level().playSound(null, sp.getX(), sp.getY(), sp.getZ(), SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
+                com.kittytalents.entity.TwineManager.endForPlayer(sp, "Emergency Untwine! Player health critically low (< 25%)!");
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingDrops(net.minecraftforge.event.entity.living.LivingDropsEvent event) {
+        if (event.getSource().getEntity() instanceof TalentedCat cat) {
+            if (cat.getMutation() == com.kittytalents.entity.CatBreedingManager.MutationType.NEKOMATA) {
+                java.util.List<ItemEntity> extraDrops = new java.util.ArrayList<>();
+                for (ItemEntity drop : event.getDrops()) {
+                    ItemStack copy = drop.getItem().copy();
+                    ItemEntity dup = new ItemEntity(cat.level(), drop.getX(), drop.getY(), drop.getZ(), copy);
+                    dup.setDeltaMovement(drop.getDeltaMovement());
+                    extraDrops.add(dup);
+                }
+                event.getDrops().addAll(extraDrops);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onStartTracking(net.minecraftforge.event.entity.player.PlayerEvent.StartTracking event) {
+        if (event.getTarget() instanceof TalentedCat cat && event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+            cat.syncTalents(player);
+            cat.syncEquipment(player);
+            com.kittytalents.network.PacketHandler.sendToPlayer(
+                    new com.kittytalents.network.PacketSyncTrustedPlayers(cat.getId(), cat.getTrustedPlayers()),
+                    player
+            );
+            com.kittytalents.network.PacketHandler.sendToPlayer(
+                    new com.kittytalents.network.PacketSyncTwine(cat.getId(), cat.isTwined()),
+                    player
+            );
+        }
+    }
+}

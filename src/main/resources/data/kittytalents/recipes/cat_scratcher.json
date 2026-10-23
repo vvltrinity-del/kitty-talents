@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " W ",
+    " S ",
+    " L "
+  ],
+  "key": {
+    "W": {
+      "item": "minecraft:white_wool"
+    },
+    "S": {
+      "item": "minecraft:string"
+    },
+    "L": {
+      "item": "minecraft:oak_log"
+    }
+  },
+  "result": {
+    "item": "kittytalents:cat_scratcher"
+  }
+}

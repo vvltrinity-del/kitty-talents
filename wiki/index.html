@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kitty Talents 3.0 Wiki — The Ultimate Feline Companion RPG</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f1115;
+      --bg-surface: #171a21;
+      --bg-panel: #212631;
+      --bg-input: #12141a;
+      --border-color: #2e3440;
+      --border-light: #3e4756;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #f59e0b;
+      --accent-glow: rgba(245, 158, 11, 0.25);
+      --accent-cyan: #38bdf8;
+      --accent-purple: #c084fc;
+      --accent-green: #4ade80;
+      --accent-red: #f87171;
+      --sidebar-width: 290px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* TOP NETWORK BAR */
+    .netbar {
+      background: #090a0d;
+      border-bottom: 1px solid var(--border-color);
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      z-index: 100;
+    }
+    .netbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .netbar-brand {
+      color: #cbd5e1;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .netbar-brand span {
+      color: var(--accent);
+    }
+    .badge-pill {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .netbar-right {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .netbar-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .netbar-link:hover {
+      color: var(--text-main);
+    }
+
+    /* MAIN HEADER */
+    header.wiki-header {
+      background: linear-gradient(180deg, rgba(23, 26, 33, 0.98) 0%, rgba(15, 17, 21, 0.98) 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      backdrop-filter: blur(12px);
+    }
+    .header-title-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .wiki-icon {
+      font-size: 2.2rem;
+      background: radial-gradient(circle, rgba(245,158,11,0.2) 0%, transparent 70%);
+      padding: 4px;
+      border-radius: 10px;
+    }
+    .header-titles h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+    .header-titles p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .search-box {
+      position: relative;
+      width: 320px;
+    }
+    .search-box input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 9px 14px 9px 36px;
+      color: #fff;
+      font-size: 0.88rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-box input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* LAYOUT CONTAINER */
+    .wiki-container {
+      display: flex;
+      flex: 1;
+      max-width: 1680px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* SIDEBAR */
+    aside.wiki-sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-color);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: sticky;
+      top: 75px;
+      height: calc(100vh - 75px);
+      overflow-y: auto;
+    }
+    aside.wiki-sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+    aside.wiki-sidebar::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+    .sidebar-section-title {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin-bottom: 8px;
+      font-weight: 700;
+      padding-left: 10px;
+    }
+    .sidebar-nav {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      color: #cbd5e1;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .sidebar-nav a:hover, .sidebar-nav a.active {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--accent);
+      transform: translateX(3px);
+    }
+    .sidebar-nav a .nav-emoji {
+      font-size: 1.05rem;
+    }
+
+    /* MAIN CONTENT AREA */
+    main.wiki-content {
+      flex: 1;
+      padding: 36px 48px;
+      max-width: calc(100% - var(--sidebar-width));
+    }
+
+    /* HERO BANNER */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(33, 38, 49, 0.9) 0%, rgba(23, 26, 33, 0.95) 100%),
+                  radial-gradient(circle at 85% 30%, rgba(245, 158, 11, 0.18) 0%, transparent 60%);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 36px 40px;
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .hero-banner::after {
+      content: "🐾";
+      position: absolute;
+      right: 20px;
+      bottom: -15px;
+      font-size: 11rem;
+      opacity: 0.04;
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2.3rem;
+      color: #ffffff;
+      margin-bottom: 12px;
+      line-height: 1.25;
+    }
+    .hero-quote {
+      font-style: italic;
+      color: #94a3b8;
+      font-size: 0.96rem;
+      max-width: 780px;
+      margin-bottom: 20px;
+      border-left: 3px solid var(--accent);
+      padding-left: 14px;
+    }
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .hero-tag {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-color);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+    }
+
+    /* GRID COLUMNS & SECTIONS */
+    .article-section {
+      margin-bottom: 50px;
+      scroll-margin-top: 90px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      margin-bottom: 24px;
+    }
+    .section-header h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.65rem;
+      color: #f8fafc;
+      letter-spacing: 0.5px;
+    }
+    .section-header .section-tag {
+      font-size: 0.75rem;
+      color: var(--accent);
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* WIKI INFOBOX */
+    .infobox-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 1100px) {
+      .infobox-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .wiki-infobox {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .infobox-title {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: var(--accent);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+      font-family: 'Cinzel', serif;
+    }
+    .infobox-image-box {
+      background: #0d1117;
+      padding: 24px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .infobox-image-box .icon-display {
+      font-size: 4rem;
+      filter: drop-shadow(0 0 16px var(--accent-glow));
+    }
+    .infobox-caption {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .infobox-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 9px 14px;
+      font-size: 0.83rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .infobox-label {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .infobox-value {
+      color: #fff;
+      text-align: right;
+    }
+
+    /* FEATURE CARDS */
+    .feature-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 22px;
+      transition: all 0.2s;
+    }
+    .feature-card:hover {
+      border-color: var(--border-light);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .feature-card .card-icon {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+    }
+    .feature-card h3 {
+      font-size: 1.12rem;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .feature-card p {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+    }
+
+    /* MINECRAFT CRAFTING GRID */
+    .crafting-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 30px;
+    }
+    .crafting-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 50px);
+      grid-template-rows: repeat(3, 50px);
+      gap: 5px;
+      background: #8b8b8b;
+      padding: 6px;
+      border: 3px solid #373737;
+      border-radius: 4px;
+      box-shadow: inset 2px 2px #ffffff, inset -2px -2px #555555;
+    }
+    .crafting-slot {
+      background: #8b8b8b;
+      border: 2px solid #373737;
+      border-right-color: #ffffff;
+      border-bottom-color: #ffffff;
+      box-shadow: inset 2px 2px #373737;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      user-select: none;
+      position: relative;
+    }
+    .crafting-arrow {
+      font-size: 2rem;
+      color: var(--text-muted);
+    }
+    .crafting-output {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .crafting-result-slot {
+      width: 60px;
+      height: 60px;
+      background: #8b8b8b;
+      border: 3px solid #373737;
+      border-right-color: #ffffff;
+      border-bottom-color: #ffffff;
+      box-shadow: inset 2px 2px #373737;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+    }
+    .crafting-desc h4 {
+      color: #fff;
+      font-size: 1.05rem;
+      margin-bottom: 4px;
+    }
+    .crafting-desc p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* INTERACTIVE TIER MATRIX */
+    .tier-matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      background: var(--bg-surface);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      font-size: 0.88rem;
+    }
+    .tier-matrix-table th {
+      background: #1e2430;
+      color: var(--accent);
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .tier-matrix-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: #e2e8f0;
+    }
+    .tier-matrix-table tr:hover {
+      background: rgba(255,255,255,0.02);
+    }
+    .tier-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.78rem;
+    }
+    .tier-coal { background: #334155; color: #cbd5e1; }
+    .tier-copper { background: #9a3412; color: #ffedd5; }
+    .tier-iron { background: #475569; color: #f8fafc; }
+    .tier-gold { background: #854d0e; color: #fef08a; }
+    .tier-lapis { background: #1e3a8a; color: #93c5fd; }
+    .tier-redstone { background: #991b1b; color: #fecaca; }
+    .tier-emerald { background: #065f46; color: #a7f3d0; }
+    .tier-diamond { background: #0e7490; color: #a5f3fc; }
+    .tier-netherite { background: #3b0764; color: #e9d5ff; }
+
+    /* CONTROLS KEYBOARD DISPLAY */
+    .key-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+    .key-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .kbd-chip {
+      background: #2d3340;
+      border: 1px solid #4a5568;
+      border-bottom: 2px solid #1a202c;
+      color: #f8fafc;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .key-desc {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+
+    /* CALLOUT BOXES */
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: rgba(245, 158, 11, 0.08);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      margin: 20px 0;
+    }
+    .callout.callout-info {
+      border-color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .callout.callout-neko {
+      border-color: var(--accent-purple);
+      background: rgba(192, 132, 252, 0.08);
+    }
+    .callout h4 {
+      color: #fff;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .callout p {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    /* TABBED SECTION */
+    .tabs-header {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 18px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: #fff;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-pane {
+      display: none;
+    }
+    .tab-pane.active {
+      display: block;
+      animation: fadeIn 0.2s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* FOOTER */
+    footer.wiki-footer {
+      background: #090a0d;
+      border-top: 1px solid var(--border-color);
+      padding: 30px 48px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: auto;
+    }
+    footer.wiki-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NETBAR -->
+  <div class="netbar">
+    <div class="netbar-left">
+      <a href="#" class="netbar-brand">
+        <span>🐾 KITTY TALENTS</span> WIKI
+      </a>
+      <span class="badge-pill">VERSION 3.0</span>
+      <span style="font-size:0.75rem; color:#64748b;">Minecraft 1.20.1 Forge</span>
+    </div>
+    <div class="netbar-right">
+      <a href="#getting-started" class="netbar-link">Getting Started</a>
+      <a href="#twine" class="netbar-link">Twining</a>
+      <a href="#combat-roles" class="netbar-link">Combat & Abilities</a>
+      <a href="#armor" class="netbar-link">Armor</a>
+      <a href="#breeding" class="netbar-link">Genetics</a>
+      <a href="#neko-night" class="netbar-link">Neko Night</a>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="wiki-header">
+    <div class="header-title-box">
+      <div class="wiki-icon">🐱</div>
+      <div class="header-titles">
+        <h1>Kitty Talents 3.0 Official Wiki</h1>
+        <p>The Fortunate Fox Studios — Feline Companion RPG & Twining System</p>
+      </div>
+    </div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="wikiSearchInput" placeholder="Search talents, items, recipes, roles...">
+    </div>
+  </header>
+
+  <div class="wiki-container">
+
+    <!-- SIDEBAR -->
+    <aside class="wiki-sidebar">
+      <div>
+        <div class="sidebar-section-title">Navigation</div>
+        <ul class="sidebar-nav">
+          <li><a href="#overview" class="active"><span class="nav-emoji">🏠</span> Overview</a></li>
+          <li><a href="#getting-started"><span class="nav-emoji">🐟</span> Getting Started</a></li>
+          <li><a href="#companion-gui"><span class="nav-emoji">📋</span> 7-Tab Companion RPG Menu</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="sidebar-section-title">Core Gameplay</div>
+        <ul class="sidebar-nav">
+          <li><a href="#twine"><span class="nav-emoji">👁️</span> Twining (Direct Control)</a></li>
+          <li><a href="#combat-roles"><span class="nav-emoji">⚔️</span> Combat Roles & Abilities</a></li>
+          <li><a href="#elements"><span class="nav-emoji">🔥</span> Elements & Statuses</a></li>
+          <li><a href="#armor"><span class="nav-emoji">🛡️</span> Armadillo Feline Armor</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="sidebar-section-title">Progression & World</div>
+        <ul class="sidebar-nav">
+          <li><a href="#breeding"><span class="nav-emoji">🧬</span> Deterministic Genetics</a></li>
+          <li><a href="#habitat"><span class="nav-emoji">🏡</span> Habitat & Automation</a></li>
+          <li><a href="#food-wellbeing"><span class="nav-emoji">🍗</span> Food Bowls & Wellbeing</a></li>
+          <li><a href="#neko-night"><span class="nav-emoji">🌙</span> Neko Night Event</a></li>
+          <li><a href="#compatibility"><span class="nav-emoji">🔫</span> TaCZ & Compatibility</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="wiki-content">
+
+      <!-- HERO BANNER -->
+      <section class="hero-banner" id="overview">
+        <div class="hero-eyebrow">✨ The Ultimate Companion Overhaul</div>
+        <h2 class="hero-title">Welcome to Kitty Talents 3.0!</h2>
+        <div class="hero-quote">
+          "Maybe she was trying to set an example by showing you how anyone, even a cat, could embark on a legendary adventure."
+          <br><small style="color:#64748b;">— Inspired by Doggy Talents & Okami, crafted with pure feline elegance.</small>
+        </div>
+        <div class="hero-tags">
+          <span class="hero-tag">⚡ Aniimo-Style Twining</span>
+          <span class="hero-tag">🧬 9 Deterministic Tiers</span>
+          <span class="hero-tag">🛡️ Contoured Feline Armor</span>
+          <span class="hero-tag">🌙 Neko Night World Event</span>
+          <span class="hero-tag">🔫 TaCZ Firearm AI</span>
+          <span class="hero-tag">🐾 17 Active Abilities</span>
+        </div>
+      </section>
+
+      <!-- SECTION: GETTING STARTED -->
+      <section class="article-section" id="getting-started">
+        <div class="section-header">
+          <h2>Getting Started</h2>
+          <span class="section-tag">BASICS</span>
+        </div>
+
+        <div class="infobox-grid">
+          <div>
+            <p style="margin-bottom: 16px;">
+              Welcome, benevolent cat lover! <strong>Kitty Talents 3.0</strong> turns wild felines into powerful, customizable companion RPG fighters.
+              Your cats now feature deep progression trees, direct first- and third-person possession (<strong>Twining</strong>), deterministic resource breeding, and emergency tactical weapon switching!
+            </p>
+
+            <div class="callout callout-info">
+              <h4>🌿 Natural Spawns in Jungles & Villages</h4>
+              <p>Wild Talented Cats now spawn naturally in <strong>Jungle biomes</strong> and around <strong>Villages</strong> (Plains, Savanna, Meadow, Forest, Taiga)! Keep an eye out for them lounging in trees or patrolling village paths.</p>
+            </div>
+
+            <h3 style="color:#fff; margin: 20px 0 10px;">Step 1: Taming & Training</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:12px;">
+              Feed any vanilla wild cat or wild Talented Cat raw salmon, raw cod, or a <strong>Catnip Treat</strong>. Once tamed, the cat becomes a registered Talented Cat companion bound to your UUID!
+            </p>
+
+            <h3 style="color:#fff; margin: 20px 0 10px;">Step 2: The Whistle & Work Clipboard</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">
+              Craft a <strong>Kitty Whistle</strong> to command all nearby companions simultaneously (Stay, Follow, Roar/Hiss shockwave, Quiet mode, and Return Home).
+              Use the <strong>Kitty Work Clipboard</strong> to assign cats to your production habitats without removing them from the physical world.
+            </p>
+          </div>
+
+          <!-- INFOBOX -->
+          <div class="wiki-infobox">
+            <div class="infobox-title">Talented Cat (Felis Catus)</div>
+            <div class="infobox-image-box">
+              <span class="icon-display">🐱</span>
+              <span class="infobox-caption">A Loyal, Battle-Ready Companion</span>
+            </div>
+            <div class="infobox-row">
+              <span class="infobox-label">Health</span>
+              <span class="infobox-value" style="color:var(--accent-red);">20.0 (Base) → 60.0+</span>
+            </div>
+            <div class="infobox-row">
+              <span class="infobox-label">Energy Pool</span>
+              <span class="infobox-value" style="color:var(--accent-cyan);">100 Feline Energy</span>
+            </div>
+            <div class="infobox-row">
+              <span class="infobox-label">Fall Damage</span>
+              <span class="infobox-value" style="color:var(--accent-green);">100% Immune</span>
+            </div>
+            <div class="infobox-row">
+              <span class="infobox-label">Hitbox</span>
+              <span class="infobox-value">0.6 × 0.7 (1×1 Squeeze)</span>
+            </div>
+            <div class="infobox-row">
+              <span class="infobox-label">Taming Item</span>
+              <span class="infobox-value">Raw Fish / Catnip Treat</span>
+            </div>
+            <div class="infobox-row">
+              <span class="infobox-label">Default Roles</span>
+              <span class="infobox-value">DPS, Tank, Healer, Scout</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: COMPANION RPG GUI -->
+      <section class="article-section" id="companion-gui">
+        <div class="section-header">
+          <h2>7-Tab Companion RPG Menu</h2>
+          <span class="section-tag">INTERFACE</span>
+        </div>
+        <p style="color:var(--text-muted); margin-bottom: 20px;">
+          Right-clicking your cat with an empty hand (or sneaking) opens the completely overhauled <strong>Companion RPG Screen</strong>. The menu is compact and features an ambient gradient that keeps the live Minecraft world visible behind your panels!
+        </p>
+
+        <div class="feature-cards">
+          <div class="feature-card">
+            <div class="card-icon">🏠</div>
+            <h3>1. Home Tab</h3>
+            <p>View companion summary, hunger gauge, satiety, happiness, mode toggles (Docile, Follow, Stay, Wander, Tactical, Guard), and bed bindings.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">⭐</div>
+            <h3>2. Talents Tab</h3>
+            <p>Spend earned talent points on active and passive perks. Reset anytime using the craftable <strong>Catnip Respec Elixir</strong>.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🛡️</div>
+            <h3>3. Gear Tab</h3>
+            <p>Equip Helmets, Chestplate Barding, Leggings, Paw Boots, Carried Weapons, Tools, and open the <strong>Kitty Pack</strong> backpack storage.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🎀</div>
+            <h3>4. Style Tab</h3>
+            <p>Customize dyed collars, collar tags, skin breeds (Panther, Snow Leopard, Nekomata), Hero Cape, and equip up to <strong>3 simultaneous cosmetics</strong>.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">📊</div>
+            <h3>5. Stats Tab</h3>
+            <p>Check raw combat attributes, damage multipliers, critical strike chance, dodge rating, elemental resistances, and production stats.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">⚔️</div>
+            <h3>6. Combat Tab</h3>
+            <p>Select emergent roles (DPS, Tank, Healer, Bruiser, Mage, etc.), configure Primary/Secondary Elemental Affinities, and cycle active ability loadouts.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">👁️</div>
+            <h3>7. Twine Tab</h3>
+            <p>Trigger <strong>Direct Twining Possession</strong> with one click. Review keyboard keybindings, mouse sensitivity, and innate feline capabilities.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: TWINING -->
+      <section class="article-section" id="twine">
+        <div class="section-header">
+          <h2>Twining System — "I Am My Cat"</h2>
+          <span class="section-tag">SIGNATURE MECHANIC</span>
+        </div>
+
+        <p style="color:var(--text-muted); margin-bottom: 20px;">
+          Inspired by <em>Aniimo</em> direct control, Twining seamlessly shifts your player camera into the cat's true eye level. You directly steer the cat's movement, jumps, dodge maneuvers, claws, abilities, and firearms.
+        </p>
+
+        <div class="callout">
+          <h4>🎯 HUD & Combat Indicators</h4>
+          <p>While Twined, an unobtrusive RPG HUD displays in real-time: Live Cat HP, Feline Energy Bar (0-100), Ultimate Charge Meter, Active Ability Cards with real-time countdown timers in seconds, and active status effect badges!</p>
+        </div>
+
+        <h3 style="color:#fff; margin: 24px 0 12px;">Twine Control Keybindings</h3>
+        <div class="key-grid">
+          <div class="key-item">
+            <span class="key-desc">Movement</span>
+            <span class="kbd-chip">W A S D</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Jump / Climb</span>
+            <span class="kbd-chip">SPACE</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Sprint</span>
+            <span class="kbd-chip">CTRL</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">4-Way / Perfect Dodge</span>
+            <span class="kbd-chip">ALT</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Basic Attack (Claws / Melee)</span>
+            <span class="kbd-chip">LEFT CLICK</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Pounce 2.0 (Ballistic Launch)</span>
+            <span class="kbd-chip">RIGHT CLICK</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Active Ability 1</span>
+            <span class="kbd-chip">V</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Active Ability 2</span>
+            <span class="kbd-chip">G</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Active Ability 3</span>
+            <span class="kbd-chip">B</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Ultimate Ability</span>
+            <span class="kbd-chip">R</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Untwine (Exit Possession)</span>
+            <span class="kbd-chip">U</span>
+          </div>
+          <div class="key-item">
+            <span class="key-desc">Special Interaction</span>
+            <span class="kbd-chip">Z / X</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: FELINE ARMOR -->
+      <section class="article-section" id="armor">
+        <div class="section-header">
+          <h2>Contoured Feline Armor</h2>
+          <span class="section-tag">ARMADILLO-STYLE REDESIGN</span>
+        </div>
+
+        <p style="color:var(--text-muted); margin-bottom: 20px;">
+          Adapted directly from <strong>Armadillo Scute & Wolf Armor</strong> anatomy, Kitty Talents 3.0 armor fits feline contours like a glove. It features a snug skull cap, an angled back carapace, clean leg bracer cuffs, and an animated tail sleeve!
+        </p>
+
+        <div class="feature-cards">
+          <div class="feature-card">
+            <div class="card-icon">🪖</div>
+            <h3>Snug Skull Cap (Helmet)</h3>
+            <p>Form-fitting cap protecting crown, brow, and ear bases. Eyes, muzzle, and whiskers remain completely unobstructed with zero bulky goggles.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🛡️</div>
+            <h3>Carapace Shell (Chestplate & Leggings)</h3>
+            <p>Contoured armadillo-style shell draping over the spine and flanks. Slopes smoothly at a 45° angle when sitting down to form a solid back armor shield.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🐾</div>
+            <h3>Leg Bracer Cuffs (Boots & Leggings)</h3>
+            <p>Crisp horizontal bands wrapping around the mid-forelegs and hind hocks, providing defensive plate reinforcement with unrestricted stride.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🐈</div>
+            <h3>Animated Tail Sleeve</h3>
+            <p>Protective armor casing covering the tail segments while leaving the natural tip exposed. Fully animates during walks, sitting, and loafing.</p>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top:24px;">
+          <h4>🎨 Full Player Armor Material Support</h4>
+          <p>Equip standard player armor: <strong>Leather</strong> (supports all 16 Minecraft dyes + RGB cauldren dyeing with authentic leather trim), <strong>Iron</strong>, <strong>Golden</strong>, <strong>Diamond</strong>, <strong>Netherite</strong>, <strong>Chainmail</strong>, and <strong>Turtle Shell</strong>!</p>
+        </div>
+      </section>
+
+      <!-- SECTION: GENETICS & PRODUCTION -->
+      <section class="article-section" id="breeding">
+        <div class="section-header">
+          <h2>Deterministic Genetics & Production</h2>
+          <span class="section-tag">PROGRESSION</span>
+        </div>
+
+        <p style="color:var(--text-muted); margin-bottom: 16px;">
+          Kitty Talents 3.0 eliminates RNG breeding in favor of a <strong>strict, deterministic tier matrix</strong>. Breeding two cats of the same tier guarantees an upgrade to the next tier!
+        </p>
+
+        <table class="tier-matrix-table">
+          <thead>
+            <tr>
+              <th>Parent 1 Tier</th>
+              <th>Parent 2 Tier</th>
+              <th>Guaranteed Offspring Tier</th>
+              <th>Passive Resource Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Standard Cat</td>
+              <td>Standard Cat</td>
+              <td><span class="tier-tag tier-coal">Coal Tier</span></td>
+              <td>Coal Lump, Charcoal, Torches</td>
+            </tr>
+            <tr>
+              <td><span class="tier-tag tier-coal">Coal Tier</span></td>
+              <td><span class="tier-tag tier-coal">Coal Tier</span></td>
+              <td><span class="tier-tag tier-copper">Copper Tier</span></td>
+              <td>Raw Copper, Copper Ingots</td>
+            </tr>
+            <tr>
+              <td><span class="tier-tag tier-copper">Copper Tier</span></td>
+              <td><span class="tier-tag tier-copper">Copper Tier</span></td>
+              <td><span class="tier-tag tier-iron">Iron Tier</span></td>
+              <td>Raw Iron, Iron Nuggets & Ingots</td>
+            </tr>
+            <tr>
+              <td><span class="tier-tag tier-iron">Iron Tier</span></td>
+              <td><span class="tier-tag tier-iron">Iron Tier</span></td>
+              <td><span class="tier-tag tier-gold">Gold Tier</span></td>
+              <td>Raw Gold, Gold Ingots</td>
+            </tr>
+            <tr>
+              <td><span class="tier-tag tier-gold">Gold Tier</span></td>
+              <td><span class="tier-tag tier-gold">Gold Tier</span></td>
+              <td><span class="tier-tag tier-lapis">Lapis Tier</span></td>
+              <td>Lapis Lazuli, Enchantment Dust</td>
+            </tr>
+            <tr>
+              <td><span class="tier-tag tier-lapis">Lapis Tier</span></td>
+              <td><span class="tier-tag tier-lapis">Lapis Tier</span></td>
+              <td><span class="tier-tag tier-redstone">Redstone Tier</span></td>
+              <td>Redstone Dust, Repeater Components</td>
+            </tr>
+            <tr>
+              <td><span class="tier-tag tier-redstone">Redstone Tier</span></td>
+              <td><span class="tier-tag tier-redstone">Redstone Tier</span></td>
+              <td><span class="tier-tag tier-emerald">Emerald Tier</span></td>
+              <td>Emeralds, Village Currency</td>
+            </tr>
+            <tr>
+              <td><span class="tier-tag tier-emerald">Emerald Tier</span></td>
+              <td><span class="tier-tag tier-emerald">Emerald Tier</span></td>
+              <td><span class="tier-tag tier-diamond">Diamond Tier</span></td>
+              <td>Diamond Shards, Diamonds</td>
+            </tr>
+            <tr>
+              <td><span class="tier-tag tier-diamond">Diamond Tier</span></td>
+              <td><span class="tier-tag tier-diamond">Diamond Tier</span></td>
+              <td><span class="tier-tag tier-netherite">Netherite Tier</span></td>
+              <td>Netherite Scrap, Ancient Debris Flakes</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-neko">
+          <h4>👻 Spirit Catnip & Guaranteed Nekomata</h4>
+          <p>Feeding <strong>Spirit Catnip</strong> to either parent during breeding guarantees the kitten is born as a twin-tailed <strong>Nekomata</strong>! Nekomata cats possess innate spirit affinity, bonus agility, and unique shadow abilities.</p>
+        </div>
+      </section>
+
+      <!-- SECTION: CRAFTING & RECIPES -->
+      <section class="article-section" id="crafting">
+        <div class="section-header">
+          <h2>Key Crafting Recipes</h2>
+          <span class="section-tag">WORKBENCH</span>
+        </div>
+
+        <!-- RECIPE: Deep Fried Chicken -->
+        <div class="crafting-container">
+          <div class="crafting-grid">
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot">🌾</div>
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot">🥚</div>
+            <div class="crafting-slot">🍗</div>
+            <div class="crafting-slot">🌿</div>
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot">🔥</div>
+            <div class="crafting-slot"></div>
+          </div>
+          <div class="crafting-arrow">➔</div>
+          <div class="crafting-output">
+            <div class="crafting-result-slot">🍗</div>
+            <div class="crafting-desc">
+              <h4>Deep Fried Chicken</h4>
+              <p>Delicious golden poultry! Restores <strong>15 Hunger & 15 Saturation</strong>.<br>Can be eaten by players, cats, and placed directly into Food Bowls!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECIPE: Food Bowl -->
+        <div class="crafting-container">
+          <div class="crafting-grid">
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot">🧱</div>
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot">🧱</div>
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot">🧱</div>
+            <div class="crafting-slot"></div>
+          </div>
+          <div class="crafting-arrow">➔</div>
+          <div class="crafting-output">
+            <div class="crafting-result-slot">🥣</div>
+            <div class="crafting-desc">
+              <h4>Cat Food Bowl</h4>
+              <p>Holds <strong>5 full stacks</strong> of cat-friendly food (fish, chicken, meat, treats). Nearby cats automatically walk over to eat when hungry!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECIPE: Cat Bed -->
+        <div class="crafting-container">
+          <div class="crafting-grid">
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot"></div>
+            <div class="crafting-slot">🧶</div>
+            <div class="crafting-slot">🧶</div>
+            <div class="crafting-slot">🧶</div>
+            <div class="crafting-slot">🪵</div>
+            <div class="crafting-slot">🪵</div>
+            <div class="crafting-slot">🪵</div>
+          </div>
+          <div class="crafting-arrow">➔</div>
+          <div class="crafting-output">
+            <div class="crafting-result-slot">🛏️</div>
+            <div class="crafting-desc">
+              <h4>Cozy Cat Bed</h4>
+              <p>Bind cats to their bed. Sleeping cats regenerate health, rapidly recover Energy (+3/sec), and consume near-zero server tick time!</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: NEKO NIGHT -->
+      <section class="article-section" id="neko-night">
+        <div class="section-header">
+          <h2>Special Event: Neko Night</h2>
+          <span class="section-tag">WORLD EVENT</span>
+        </div>
+
+        <div class="callout callout-neko">
+          <h4>🌕 The Moon Glows with Mystic Feline Energy</h4>
+          <p>
+            On rare nights under clear skies, the world triggers <strong>Neko Night</strong>!
+            The skies shimmer with violet feline auroras. Hostile monsters gain +25% attack damage and movement speed, while wild cats awaken with mystic power.
+          </p>
+        </div>
+
+        <div class="feature-cards">
+          <div class="feature-card">
+            <div class="card-icon">✨</div>
+            <h3>Rare Nekomata Spawns</h3>
+            <p>There is a special chance for wild twin-tailed Nekomata cats to spawn in the wild during Neko Night, carrying natural spirit abilities.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">💎</div>
+            <h3>Tiered Wild Cats</h3>
+            <p>Wild cats found during Neko Night have a rare chance to spawn already pre-tiered (Copper, Iron, or Gold production tiers)!</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">⚡</div>
+            <h3>Empowered Companion Buffs</h3>
+            <p>All tamed companions gain double Energy regeneration and enhanced critical strike chance while fighting under the Neko Night sky!</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: COMPATIBILITY -->
+      <section class="article-section" id="compatibility">
+        <div class="section-header">
+          <h2>Mod Integrations & Compatibility</h2>
+          <span class="section-tag">ECOSYSTEM</span>
+        </div>
+
+        <div class="feature-cards">
+          <div class="feature-card">
+            <div class="card-icon">🔫</div>
+            <h3>Timeless and Classics Zero (TaCZ)</h3>
+            <p>Equip cats with firearms in their mouth slot! Cats track ammunition from their backpack inventory. <strong>If ammo runs out, they automatically swap to a sword from their inventory or unequip the firearm to use their claws!</strong></p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🔮</div>
+            <h3>Apotheosis & AttributesLib</h3>
+            <p>Companion damage, health, and armor dynamically interact with Apotheosis attributes. Soft-fails cleanly when the mod is not installed.</p>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🖥️</div>
+            <h3>Dedicated Servers & LAN</h3>
+            <p>100% server-authoritative code. All client rendering, models, and audio are strictly isolated—guaranteeing <strong>zero NoClassDefFoundError crashes on dedicated Linux/Windows servers</strong>.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="wiki-footer">
+    <p>Kitty Talents 3.0 is crafted with ❤️ by <strong>The Fortunate Fox Studios</strong>. Inspired by Doggy Talents, Doggy Talents Next, and Aniimo.</p>
+    <p style="margin-top:6px;">All rights reserved. Designed for Minecraft 1.20.1 Forge.</p>
+  </footer>
+
+  <script>
+    // Live Search Filter
+    const searchInput = document.getElementById('wikiSearchInput');
+    const sections = document.querySelectorAll('.article-section');
+
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        sections.forEach(s => s.style.display = 'block');
+        return;
+      }
+      sections.forEach(s => {
+        const text = s.textContent.toLowerCase();
+        s.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    });
+
+    // Smooth Active Link Tracking
+    const navLinks = document.querySelectorAll('.sidebar-nav a');
+    window.addEventListener('scroll', () => {
+      let fromTop = window.scrollY + 100;
+      navLinks.forEach(link => {
+        const targetId = link.getAttribute('href');
+        if (targetId && targetId.startsWith('#')) {
+          const section = document.querySelector(targetId);
+          if (section) {
+            if (section.offsetTop <= fromTop && section.offsetTop + section.offsetHeight > fromTop) {
+              navLinks.forEach(l => l.classList.remove('active'));
+              link.classList.add('active');
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

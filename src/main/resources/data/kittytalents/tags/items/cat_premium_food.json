@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:golden_carrot",
+    "kittytalents:deep_fried_chicken",
+    "kittytalents:premium_feast",
+    "kittytalents:salmon_sushi",
+    "kittytalents:tuna_bowl"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "S",
+    "I"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:shears"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "item": "kittytalents:grooming_shears",
+    "count": 1
+  }
+}

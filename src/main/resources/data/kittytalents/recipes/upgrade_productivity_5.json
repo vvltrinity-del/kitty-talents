@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NNN",
+    "NUN",
+    "NNN"
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:netherite_scrap"
+    },
+    "U": {
+      "item": "kittytalents:upgrade_productivity_4"
+    }
+  },
+  "result": {
+    "item": "kittytalents:upgrade_productivity_5"
+  }
+}

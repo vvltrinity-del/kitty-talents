@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DDD",
+    "DUD",
+    "DDD"
+  ],
+  "key": {
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "U": {
+      "item": "kittytalents:upgrade_productivity_2"
+    }
+  },
+  "result": {
+    "item": "kittytalents:upgrade_productivity_3"
+  }
+}

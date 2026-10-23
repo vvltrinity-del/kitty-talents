@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " L ",
+    "PBP",
+    "PPP"
+  ],
+  "key": {
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "P": {
+      "tag": "minecraft:planks"
+    },
+    "B": {
+      "item": "minecraft:iron_bars"
+    }
+  },
+  "result": {
+    "item": "kittytalents:cat_carrier",
+    "count": 1
+  }
+}

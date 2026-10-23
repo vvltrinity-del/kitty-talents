@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PPP",
+    "PBP",
+    "PPP"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:oak_planks"
+    },
+    "B": {
+      "item": "kittytalents:cat_bed"
+    }
+  },
+  "result": {
+    "item": "kittytalents:kitty_habitat"
+  }
+}

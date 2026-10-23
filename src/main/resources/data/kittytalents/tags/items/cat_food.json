@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "#kittytalents:cat_fish",
+    "#kittytalents:cat_meat",
+    "#kittytalents:cat_premium_food",
+    "minecraft:golden_carrot",
+    "kittytalents:deep_fried_chicken",
+    "kittytalents:catnip_cookie",
+    "kittytalents:salmon_sushi",
+    "kittytalents:tuna_bowl",
+    "kittytalents:premium_feast"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "F F",
+    "FQF",
+    "F F"
+  ],
+  "key": {
+    "F": {
+      "item": "minecraft:feather"
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    }
+  },
+  "result": {
+    "item": "kittytalents:angel_wings"
+  }
+}

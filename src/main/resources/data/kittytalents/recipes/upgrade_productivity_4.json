@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EEE",
+    "EUE",
+    "EEE"
+  ],
+  "key": {
+    "E": {
+      "item": "minecraft:emerald"
+    },
+    "U": {
+      "item": "kittytalents:upgrade_productivity_3"
+    }
+  },
+  "result": {
+    "item": "kittytalents:upgrade_productivity_4"
+  }
+}

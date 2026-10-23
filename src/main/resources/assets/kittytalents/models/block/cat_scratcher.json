@@ -1,0 +1,34 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "minecraft:block/oak_log",
+    "log": "minecraft:block/oak_log",
+    "rope": "minecraft:block/stripped_oak_log",
+    "wool": "minecraft:block/white_wool"
+  },
+  "elements": [
+    {
+      "from": [2, 0, 2],
+      "to": [14, 2, 14],
+      "faces": {
+        "down":  { "uv": [2, 2, 14, 14], "texture": "#wool", "cullface": "down" },
+        "up":    { "uv": [2, 2, 14, 14], "texture": "#wool" },
+        "north": { "uv": [2, 14, 14, 16], "texture": "#wool" },
+        "south": { "uv": [2, 14, 14, 16], "texture": "#wool" },
+        "west":  { "uv": [2, 14, 14, 16], "texture": "#wool" },
+        "east":  { "uv": [2, 14, 14, 16], "texture": "#wool" }
+      }
+    },
+    {
+      "from": [6, 2, 6],
+      "to": [10, 16, 10],
+      "faces": {
+        "up":    { "uv": [6, 6, 10, 10], "texture": "#wool" },
+        "north": { "uv": [6, 2, 10, 16], "texture": "#rope" },
+        "south": { "uv": [6, 2, 10, 16], "texture": "#rope" },
+        "west":  { "uv": [6, 2, 10, 16], "texture": "#rope" },
+        "east":  { "uv": [6, 2, 10, 16], "texture": "#rope" }
+      }
+    }
+  ]
+}

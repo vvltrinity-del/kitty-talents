@@ -1,0 +1,21 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "minecraft:block/terracotta",
+    "bowl": "minecraft:block/terracotta"
+  },
+  "elements": [
+    {
+      "from": [3, 0, 3],
+      "to": [13, 3, 13],
+      "faces": {
+        "down":  { "uv": [3, 3, 13, 13], "texture": "#bowl", "cullface": "down" },
+        "up":    { "uv": [3, 3, 13, 13], "texture": "#bowl" },
+        "north": { "uv": [3, 13, 13, 16], "texture": "#bowl" },
+        "south": { "uv": [3, 13, 13, 16], "texture": "#bowl" },
+        "west":  { "uv": [3, 13, 13, 16], "texture": "#bowl" },
+        "east":  { "uv": [3, 13, 13, 16], "texture": "#bowl" }
+      }
+    }
+  ]
+}

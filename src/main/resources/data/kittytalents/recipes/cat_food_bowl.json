@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "   ",
+    "B B",
+    " B "
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:terracotta"
+    }
+  },
+  "result": {
+    "item": "kittytalents:cat_food_bowl"
+  }
+}

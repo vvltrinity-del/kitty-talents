@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "L L",
+    "GP "
+  ],
+  "key": {
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "P": {
+      "item": "minecraft:gold_nugget"
+    }
+  },
+  "result": {
+    "item": "kittytalents:feline_goggles",
+    "count": 1
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    " H ",
+    " F "
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:chest"
+    },
+    "H": {
+      "item": "minecraft:hopper"
+    },
+    "F": {
+      "item": "kittytalents:cat_food_bowl"
+    }
+  },
+  "result": {
+    "item": "kittytalents:feeding_station"
+  }
+}

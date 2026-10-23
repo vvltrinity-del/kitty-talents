@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SS",
+    "SS"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:string"
+    }
+  },
+  "result": {
+    "item": "kittytalents:yarn_ball",
+    "count": 1
+  }
+}
