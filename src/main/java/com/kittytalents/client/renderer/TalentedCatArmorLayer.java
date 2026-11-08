@@ -31,11 +31,15 @@ public class TalentedCatArmorLayer extends RenderLayer<TalentedCat, KTCatModel> 
     private final KTCatModel outerArmorModel;
     /** Hind-leg guards (the "leggings" slot) sit a little tighter so they never overlap the chest shell. */
     private final KTCatModel innerArmorModel;
+    private final KTCatModel feetArmorModel;
+    private final KTCatModel headArmorModel;
 
     public TalentedCatArmorLayer(RenderLayerParent<TalentedCat, KTCatModel> parent, EntityModelSet models) {
         super(parent);
         this.outerArmorModel = new KTCatModel(models.bakeLayer(KTCatModel.ARMOR_OUTER));
         this.innerArmorModel = new KTCatModel(models.bakeLayer(KTCatModel.ARMOR_INNER));
+        this.feetArmorModel = new KTCatModel(models.bakeLayer(KTCatModel.ARMOR_FEET));
+        this.headArmorModel = new KTCatModel(models.bakeLayer(KTCatModel.ARMOR_HEAD));
     }
 
     @Override
@@ -57,7 +61,12 @@ public class TalentedCatArmorLayer extends RenderLayer<TalentedCat, KTCatModel> 
         if (slot == EquipmentSlot.CHEST && stack.is(Items.ELYTRA)) return;
 
         if (stack.getItem() instanceof ArmorItem) {
-            KTCatModel model = (slot == EquipmentSlot.LEGS) ? this.innerArmorModel : this.outerArmorModel;
+            KTCatModel model = switch (slot) {
+                case LEGS -> this.innerArmorModel;
+                case FEET -> this.feetArmorModel;
+                case HEAD -> this.headArmorModel;
+                default -> this.outerArmorModel;
+            };
             this.getParentModel().copyPoseTo(model);
             switch (slot) {
                 case HEAD -> model.showOnly(model.head);

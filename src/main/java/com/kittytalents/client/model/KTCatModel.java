@@ -39,6 +39,9 @@ public class KTCatModel extends EntityModel<TalentedCat> {
     public static final ModelLayerLocation COLLAR = layer("collar");
     public static final ModelLayerLocation ARMOR_OUTER = layer("armor_outer");
     public static final ModelLayerLocation ARMOR_INNER = layer("armor_inner");
+    /** Boots (front legs) and helmet get their own shell sizes so no two armor shells share a surface (z-fighting). */
+    public static final ModelLayerLocation ARMOR_FEET = layer("armor_feet");
+    public static final ModelLayerLocation ARMOR_HEAD = layer("armor_head");
 
     /** Named attachment points. Each is an empty bone; its parent chain gives the full transform. */
     public enum Anchor { HEAD_TOP, MOUTH, BACK, NECK, TAIL_ROOT }
@@ -93,7 +96,20 @@ public class KTCatModel extends EntityModel<TalentedCat> {
     }
 
     public static LayerDefinition createArmorLayer(float inflate) {
-        return LayerDefinition.create(createMesh(new CubeDeformation(inflate), Shell.ARMOR), 64, 32);
+        ARMOR_INFLATE.set(inflate);
+        try {
+            return LayerDefinition.create(createMesh(new CubeDeformation(inflate), Shell.ARMOR), 64, 32);
+        } finally {
+            ARMOR_INFLATE.remove();
+        }
+    }
+
+    /** CubeDeformation hides its values; the inflate being built is passed alongside instead. */
+    private static final ThreadLocal<Float> ARMOR_INFLATE = new ThreadLocal<>();
+
+    private static float armorInflate(CubeDeformation def) {
+        Float f = ARMOR_INFLATE.get();
+        return f != null ? f : 0.25F;
     }
 
     /**
@@ -104,6 +120,11 @@ public class KTCatModel extends EntityModel<TalentedCat> {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
         boolean cat = shell == Shell.CAT;
+        // Armor leg shells inflate less sideways: the legs are only 0.2-0.4 px apart, and full inflation made the left
+        // and right shells overlap with coplanar faces (shimmering between the legs).
+        float inflate = def == CubeDeformation.NONE ? 0.0F : armorInflate(def);
+        CubeDeformation hindDef = cat ? def : new CubeDeformation(Math.min(inflate, 0.08F), inflate, inflate);
+        CubeDeformation frontDef = cat ? def : new CubeDeformation(Math.min(inflate, 0.17F), inflate, inflate);
 
         CubeListBuilder headCubes = CubeListBuilder.create().addBox("main", -2.5F, -2.0F, -3.0F, 5.0F, 4.0F, 5.0F, def);
         if (cat) {
@@ -118,8 +139,10 @@ public class KTCatModel extends EntityModel<TalentedCat> {
         head.addOrReplaceChild("mouth", CubeListBuilder.create(), PartPose.offset(0.0F, 1.6F, -3.2F));
 
         // Body box runs along local +Y (3 = chest, 19 = rump); local -Z is the belly (-8), -2 is the back.
+        // Armor: the chest shell stops 3 px short of the rump, where the leggings take over; full length stuck out
+        // under the cat as a "butt plate", worst when sitting.
         PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create().texOffs(20, 0)
-                        .addBox(-2.0F, 3.0F, -8.0F, 4.0F, 16.0F, 6.0F, def),
+                        .addBox(-2.0F, 3.0F, -8.0F, 4.0F, cat ? 16.0F : 13.0F, 6.0F, def),
                 PartPose.offsetAndRotation(0.0F, 12.0F, -10.0F, (float) Math.PI / 2F, 0.0F, 0.0F));
         // Top of the shoulders. Local axes: +Y toward the tail, +Z out of the back, +X the cat's left.
         body.addOrReplaceChild("back", CubeListBuilder.create(), PartPose.offset(0.0F, 4.0F, -2.0F));
@@ -134,10 +157,10 @@ public class KTCatModel extends EntityModel<TalentedCat> {
         PartDefinition tailB = tailRoot.addOrReplaceChild("tail_b", tailCube, PartPose.rotation(0.9F, 0.0F, 0.0F));
         tailB.addOrReplaceChild("tail_b_tip", tipCube, PartPose.offsetAndRotation(0.0F, 8.0F, 0.0F, 0.83F, 0.0F, 0.0F));
 
-        CubeListBuilder hind = CubeListBuilder.create().texOffs(8, 13).addBox(-1.0F, 0.0F, 1.0F, 2.0F, 6.0F, 2.0F, def);
+        CubeListBuilder hind = CubeListBuilder.create().texOffs(8, 13).addBox(-1.0F, 0.0F, 1.0F, 2.0F, 6.0F, 2.0F, hindDef);
         root.addOrReplaceChild("left_hind_leg", hind, PartPose.offset(1.1F, 18.0F, 5.0F));
         root.addOrReplaceChild("right_hind_leg", hind, PartPose.offset(-1.1F, 18.0F, 5.0F));
-        CubeListBuilder front = CubeListBuilder.create().texOffs(40, 0).addBox(-1.0F, 0.0F, 0.0F, 2.0F, 10.0F, 2.0F, def);
+        CubeListBuilder front = CubeListBuilder.create().texOffs(40, 0).addBox(-1.0F, 0.0F, 0.0F, 2.0F, 10.0F, 2.0F, frontDef);
         root.addOrReplaceChild("left_front_leg", front, PartPose.offset(1.2F, 14.1F, -5.0F));
         root.addOrReplaceChild("right_front_leg", front, PartPose.offset(-1.2F, 14.1F, -5.0F));
         return mesh;

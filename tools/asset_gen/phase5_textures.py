@@ -26,53 +26,63 @@ def mix(a, b, t):
 
 # ---------------------------------------------------------------------------------------------------------------
 def snow_leopard():
+    """Recoloured from the pristine source (tools/asset_gen/source/skin_12_base.png) every run, so it is repeatable."""
+    src = os.path.join(ROOT, "tools", "asset_gen", "source", "skin_12_base.png")
     path = os.path.join(TEX, "entity", "cat", "skin_12.png")
-    img = Image.open(path).convert("RGBA")
+    img = Image.open(src).convert("RGBA")
     px = img.load()
     w, h = img.size
     rnd = random.Random(12)
 
-    FUR_DARK, FUR_LIGHT = (176, 172, 164), (226, 222, 214)
-    BELLY = (243, 241, 236)
-    RING, CORE = (78, 78, 84), (158, 152, 142)
+    # Smoky warm grey, not white: snow leopards are pale but never paper-white except the belly.
+    FUR_DARK, FUR_LIGHT = (150, 146, 138), (204, 199, 189)
+    BELLY = (232, 229, 222)
+    RING, CORE, SPOT = (74, 71, 68), (165, 159, 150), (88, 85, 81)
 
-    # Head front face (eyes, nose, muzzle) and the nose box are kept exactly as drawn.
-    def protected(x, y):
+    def protected(x, y):  # head front face (eyes, nose, muzzle) and the nose box stay as drawn
         return (5 <= x < 10 and 5 <= y < 9) or (0 <= x < 7 and 24 <= y < 28)
 
-    # 1) base recolour, keeping the original shading
+    def is_tail(x, y):
+        return 0 <= x < 8 and 15 <= y < 24
+
     for y in range(h):
         for x in range(w):
             r, g, b, a = px[x, y]
             if a == 0 or protected(x, y):
                 continue
             l = lum((r, g, b))
-            col = BELLY if l > 0.9 else mix(FUR_DARK, FUR_LIGHT, min(1.0, l * 1.15))
+            col = BELLY if l > 0.9 else mix(FUR_DARK, FUR_LIGHT, min(1.0, l * 1.1))
             px[x, y] = (*col, a)
 
+    def paintable(x, y):
+        return 0 <= x < w and 0 <= y < h and px[x, y][3] > 0 and not protected(x, y) and lum(px[x, y][:3]) < 0.88
+
     def paint(x, y, col):
-        if 0 <= x < w and 0 <= y < h and px[x, y][3] > 0 and not protected(x, y) and lum(px[x, y][:3]) < 0.93:
+        if paintable(x, y):
             px[x, y] = (*col, px[x, y][3])
 
-    # 2) rosettes: a dark broken ring around a slightly darker core, on a jittered grid
-    rosette = [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (1, 1)]  # gap at the bottom = "broken" ring
-    tail_cols = set(range(0, 8))
-    for gy in range(1, h, 5):
-        for gx in range(1 + (gy // 5) % 2 * 3, w, 6):
-            if gx in tail_cols and 15 <= gy < 24:
-                continue  # tail gets rings instead
-            cx, cy = gx + rnd.randint(-1, 1), gy + rnd.randint(0, 1)
-            if not (0 <= cx < w and 0 <= cy < h) or px[cx, cy][3] == 0 or protected(cx, cy):
+    # Open rosettes: a 3x2 broken ring (no bottom-middle pixel) around a light core, sparse and jittered.
+    ring = [(-1, 0), (1, 0), (-1, -1), (0, -1), (1, -1), (-1, 1), (1, 1)]
+    for gy in range(2, h, 6):
+        for gx in range(2 + (gy // 6) % 2 * 3, w, 7):
+            cx, cy = gx + rnd.randint(-1, 1), gy + rnd.randint(-1, 1)
+            if is_tail(cx, cy) or not paintable(cx, cy):
                 continue
             paint(cx, cy, CORE)
-            for dx, dy in rosette:
-                if rnd.random() < 0.75:
+            for dx, dy in ring:
+                if rnd.random() < 0.7:
                     paint(cx + dx, cy + dy, RING)
-
-    # 3) tail (two 1x8x1 segments at u 0..4 and 4..8, v 15..24): dark rings every 3 rows, dark tip
+    # Small single spots fill the gaps (legs and head mostly).
+    for _ in range(70):
+        x, y = rnd.randrange(w), rnd.randrange(h)
+        if not is_tail(x, y) and paintable(x, y) and lum(px[x, y][:3]) > 0.5:
+            paint(x, y, SPOT)
+    # Thick spotted tail with a dark tip.
     for x in range(0, 8):
         for y in range(15, 24):
-            if (y - 15) % 3 == 1 or (x >= 4 and y >= 21):
+            if (x + y) % 3 == 0 and rnd.random() < 0.8:
+                paint(x, y, RING)
+            if x >= 4 and y >= 22:
                 paint(x, y, RING)
     img.save(path)
 
@@ -93,8 +103,17 @@ def armor_backs():
                 if px[bx, y][3] == 0 and px[sx, y][3] > 0:
                     px[bx, y] = px[sx, y]
                     filled += 1
+        # Leggings bottoms (they looked open from below). Hind legs: texOffs(8,13) 2x6x2 -> bottom face u12..14 v13..15,
+        # transparent in every texture; fill it from the bottom row (v20) of the front side face (u10..12).
+        # (Boots/front legs are fully painted already.)
+        bottoms = 0
+        for dy in range(2):
+            for dx in range(2):
+                if px[12 + dx, 13 + dy][3] == 0 and px[10 + dx, 20][3] > 0:
+                    px[12 + dx, 13 + dy] = px[10 + dx, 20]
+                    bottoms += 1
         img.save(path)
-        print(f"  {name}: filled {filled} back-plate pixels")
+        print(f"  {name}: filled {filled} back-plate pixels, {bottoms} leg-bottom pixels")
 
 
 # ---------------------------------------------------------------------------------------------------------------

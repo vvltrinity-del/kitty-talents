@@ -41,6 +41,9 @@ public class ClientModEvents {
         event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.COLLAR, com.kittytalents.client.model.KTCatModel::createCollarLayer);
         event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.ARMOR_OUTER, () -> com.kittytalents.client.model.KTCatModel.createArmorLayer(0.3F));
         event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.ARMOR_INNER, () -> com.kittytalents.client.model.KTCatModel.createArmorLayer(0.2F));
+        // Distinct sizes per slot: chest 0.30, leggings 0.20, boots 0.24, helmet 0.36 (no shared surfaces -> no z-fighting).
+        event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.ARMOR_FEET, () -> com.kittytalents.client.model.KTCatModel.createArmorLayer(0.24F));
+        event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.ARMOR_HEAD, () -> com.kittytalents.client.model.KTCatModel.createArmorLayer(0.36F));
     }
 
     @SubscribeEvent
