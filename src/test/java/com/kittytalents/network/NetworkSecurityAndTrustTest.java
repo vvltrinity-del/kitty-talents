@@ -8,16 +8,9 @@ import com.kittytalents.entity.WhistleCommand;
  */
 public class NetworkSecurityAndTrustTest {
 
-    public static void main(String[] args) {
-        testCommandTypeBoundaryClamping();
-        testSlotIdBoundaryValidation();
-        testVectorNormalizationNaNProtection();
-        testWhistleCommandTypeSafety();
-        testTrustPermissionInvariants();
-        System.out.println("ALL NETWORK SECURITY & TRUST TESTS PASSED SUCCESSFULLY.");
-    }
 
-    public static void testCommandTypeBoundaryClamping() {
+    @org.junit.jupiter.api.Test
+    public void testCommandTypeBoundaryClamping() {
         PacketTeamCommand.CommandType[] types = PacketTeamCommand.CommandType.values();
         assertTrue(types.length > 0, "CommandType must have valid enum values");
 
@@ -43,7 +36,8 @@ public class NetworkSecurityAndTrustTest {
         assertEqual(PacketTeamCommand.CommandType.ATTACK_MY_TARGET, safeOverflow);
     }
 
-    public static void testSlotIdBoundaryValidation() {
+    @org.junit.jupiter.api.Test
+    public void testSlotIdBoundaryValidation() {
         // Equipment slots: 0 to 10 inclusive
         for (int slot = 0; slot <= 10; slot++) {
             assertTrue(slot >= 0 && slot <= 10, "Slot " + slot + " must be valid");
@@ -56,7 +50,8 @@ public class NetworkSecurityAndTrustTest {
         }
     }
 
-    public static void testVectorNormalizationNaNProtection() {
+    @org.junit.jupiter.api.Test
+    public void testVectorNormalizationNaNProtection() {
         // Vector difference for co-located entities (dx = 0, dy = 0, dz = 0)
         double dx = 0.0;
         double dy = 0.0;
@@ -96,7 +91,8 @@ public class NetworkSecurityAndTrustTest {
         assertEqual(1.0, safeZ);
     }
 
-    public static void testWhistleCommandTypeSafety() {
+    @org.junit.jupiter.api.Test
+    public void testWhistleCommandTypeSafety() {
         WhistleCommand[] commands = WhistleCommand.values();
         assertTrue(commands.length >= 6, "Must define all whistle commands");
 
@@ -109,7 +105,8 @@ public class NetworkSecurityAndTrustTest {
         assertEqual("HEEL", WhistleCommand.valueOf("HEEL").name());
     }
 
-    public static void testTrustPermissionInvariants() {
+    @org.junit.jupiter.api.Test
+    public void testTrustPermissionInvariants() {
         // Permission Matrix Invariants:
         // 1. Rename: Only Primary Owner (NOT trusted, NOT stranger)
         // 2. Respec Talents: Only Primary Owner (NOT trusted, NOT stranger)

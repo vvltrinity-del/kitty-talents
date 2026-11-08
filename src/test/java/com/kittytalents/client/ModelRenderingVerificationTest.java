@@ -15,20 +15,9 @@ import java.io.IOException;
  */
 public class ModelRenderingVerificationTest {
 
-    public static void main(String[] args) throws Exception {
-        System.out.println("Running Model and Rendering Verification Suite...");
 
-        testArmorMeshHierarchy();
-        testArmorTexturesExistAndValid();
-        testLeatherDyeableArmorLayers();
-        testSnowLeopardTextureIntegrity();
-        testPantherTextureIntegrity();
-        testBackpackTextureExists();
-
-        System.out.println("ALL MODEL, RENDERING & COSMETICS TESTS PASSED SUCCESSFULLY!");
-    }
-
-    public static void testArmorMeshHierarchy() {
+    @org.junit.jupiter.api.Test
+    public void testArmorMeshHierarchy() {
         MeshDefinition mesh = TalentedCatArmorModel.createArmorMesh(new CubeDeformation(0.2F));
         PartDefinition root = mesh.getRoot();
 
@@ -36,36 +25,24 @@ public class ModelRenderingVerificationTest {
         PartDefinition head = root.getChild("head");
         assertNotNull(head, "Head part definition is missing");
 
-        // 2. Torso Barding Harness (CHEST) & Flank Guards (LEGS)
+        // 2. Torso: dorsal carapace (CHEST) + rump plate (LEGS) -- carapace remodel approved 2026-10-07
         PartDefinition body = root.getChild("body");
         assertNotNull(body, "Body part definition is missing");
-        assertNotNull(body.getChild("barding"), "Barding chest harness missing");
-        assertNotNull(body.getChild("flank_guards"), "Flank guards missing");
+        assertNotNull(body.getChild("carapace"), "Dorsal carapace missing");
+        assertNotNull(body.getChild("rump_plate"), "Rump plate missing");
 
-        // 3. Front Legs: Shoulder Guards (CHEST) & Paw Cuffs (FEET)
-        PartDefinition leftFront = root.getChild("left_front_leg");
-        PartDefinition rightFront = root.getChild("right_front_leg");
-        assertNotNull(leftFront, "Left front leg missing");
-        assertNotNull(rightFront, "Right front leg missing");
-        assertNotNull(leftFront.getChild("shoulder_guard"), "Left front shoulder guard missing");
-        assertNotNull(rightFront.getChild("shoulder_guard"), "Right front shoulder guard missing");
-        assertNotNull(leftFront.getChild("paw_cuff"), "Left front paw cuff missing");
-        assertNotNull(rightFront.getChild("paw_cuff"), "Right front paw cuff missing");
+        // 3. Every leg carries an armor cuff
+        for (String leg : new String[]{"left_front_leg", "right_front_leg", "left_hind_leg", "right_hind_leg"}) {
+            PartDefinition part = root.getChild(leg);
+            assertNotNull(part, leg + " missing");
+            assertNotNull(part.getChild("cuff"), leg + " cuff missing");
+        }
 
-        // 4. Hind Legs: Thigh Guards (LEGS) & Paw Cuffs (FEET)
-        PartDefinition leftHind = root.getChild("left_hind_leg");
-        PartDefinition rightHind = root.getChild("right_hind_leg");
-        assertNotNull(leftHind, "Left hind leg missing");
-        assertNotNull(rightHind, "Right hind leg missing");
-        assertNotNull(leftHind.getChild("thigh_guard"), "Left hind thigh guard missing");
-        assertNotNull(rightHind.getChild("thigh_guard"), "Right hind thigh guard missing");
-        assertNotNull(leftHind.getChild("paw_cuff"), "Left hind paw cuff missing");
-        assertNotNull(rightHind.getChild("paw_cuff"), "Right hind paw cuff missing");
-
-        System.out.println("✓ Armor mesh hierarchy verified (cowl, goggles, barding, flank guards, shoulders, paw cuffs).");
+        System.out.println("✓ Armor mesh hierarchy verified (head, carapace, rump plate, leg cuffs).");
     }
 
-    public static void testArmorTexturesExistAndValid() throws IOException {
+    @org.junit.jupiter.api.Test
+    public void testArmorTexturesExistAndValid() throws IOException {
         String[] armors = {
                 "cat_armor_iron.png",
                 "cat_armor_golden.png",
@@ -88,7 +65,8 @@ public class ModelRenderingVerificationTest {
         System.out.println("✓ All 8 armor texture files verified (64x32 dimensions).");
     }
 
-    public static void testLeatherDyeableArmorLayers() throws IOException {
+    @org.junit.jupiter.api.Test
+    public void testLeatherDyeableArmorLayers() throws IOException {
         File leatherBase = new File("src/main/resources/assets/kittytalents/textures/models/armor/cat_armor_leather.png");
         File leatherOverlay = new File("src/main/resources/assets/kittytalents/textures/models/armor/cat_armor_leather_overlay.png");
 
@@ -126,7 +104,8 @@ public class ModelRenderingVerificationTest {
         System.out.println("✓ Dyeable leather armor base (grayscale) and overlay (buckles/straps) verified.");
     }
 
-    public static void testSnowLeopardTextureIntegrity() throws IOException {
+    @org.junit.jupiter.api.Test
+    public void testSnowLeopardTextureIntegrity() throws IOException {
         File f = new File("src/main/resources/assets/kittytalents/textures/entity/cat/skin_12.png");
         assertTrue(f.exists(), "Snow leopard texture skin_12.png missing");
         BufferedImage img = ImageIO.read(f);
@@ -153,7 +132,8 @@ public class ModelRenderingVerificationTest {
         System.out.println("✓ Snow Leopard texture verified (bright blue symmetrical eyes, pupils, solid ears).");
     }
 
-    public static void testPantherTextureIntegrity() throws IOException {
+    @org.junit.jupiter.api.Test
+    public void testPantherTextureIntegrity() throws IOException {
         File f = new File("src/main/resources/assets/kittytalents/textures/entity/cat/panther.png");
         assertTrue(f.exists(), "Panther texture missing");
         BufferedImage img = ImageIO.read(f);
@@ -174,7 +154,8 @@ public class ModelRenderingVerificationTest {
         System.out.println("✓ Panther texture verified (black coat with bright blue eyes and complete backside).");
     }
 
-    public static void testBackpackTextureExists() throws IOException {
+    @org.junit.jupiter.api.Test
+    public void testBackpackTextureExists() throws IOException {
         File f = new File("src/main/resources/assets/kittytalents/textures/models/accessories/cat_backpack.png");
         assertTrue(f.exists(), "Backpack texture cat_backpack.png missing");
         BufferedImage img = ImageIO.read(f);

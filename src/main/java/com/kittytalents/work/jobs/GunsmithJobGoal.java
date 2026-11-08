@@ -1,6 +1,6 @@
 package com.kittytalents.work.jobs;
 
-import com.kittytalents.compat.TacZCompat;
+import com.kittytalents.compat.tacz.TacZCompat;
 import com.kittytalents.entity.TalentedCat;
 import com.kittytalents.work.AbstractCatJobGoal;
 import com.kittytalents.work.CatJob;

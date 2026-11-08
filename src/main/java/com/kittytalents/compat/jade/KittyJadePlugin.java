@@ -2,7 +2,7 @@ package com.kittytalents.compat.jade;
 
 import com.kittytalents.KittyTalents;
 import com.kittytalents.block.*;
-import com.kittytalents.compat.TacZCompat;
+import com.kittytalents.compat.tacz.TacZCompat;
 import com.kittytalents.entity.CatMode;
 import com.kittytalents.entity.TalentedCat;
 import net.minecraft.ChatFormatting;

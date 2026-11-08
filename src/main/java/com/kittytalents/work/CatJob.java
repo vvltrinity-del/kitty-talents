@@ -1,6 +1,6 @@
 package com.kittytalents.work;
 
-import com.kittytalents.compat.TacZCompat;
+import com.kittytalents.compat.tacz.TacZCompat;
 import com.kittytalents.entity.TalentedCat;
 import com.kittytalents.talent.Talent;
 import com.kittytalents.talent.Talents;

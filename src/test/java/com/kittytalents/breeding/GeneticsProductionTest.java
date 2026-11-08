@@ -1,5 +1,6 @@
 package com.kittytalents.breeding;
 
+import com.kittytalents.entity.CatBreedingManager;
 import com.kittytalents.entity.CatVariant;
 import com.kittytalents.entity.ProductionTier;
 
@@ -9,28 +10,24 @@ import com.kittytalents.entity.ProductionTier;
  */
 public class GeneticsProductionTest {
 
-    public static void main(String[] args) {
-        testDeterministicTierProgression();
-        testBreedPreservationOnTierEvolution();
-        testCrossBreedDeterministicMatrix();
-        System.out.println("ALL GENETICS & PRODUCTION TESTS PASSED SUCCESSFULLY.");
-    }
 
-    public static void testDeterministicTierProgression() {
+    @org.junit.jupiter.api.Test
+    public void testDeterministicTierProgression() {
         // Standard -> Coal -> Copper -> Iron -> Gold -> Lapis -> Redstone -> Emerald -> Diamond -> Netherite
-        assertEqual(ProductionTier.COAL, CatBreedingManager.getEvolutionTier(ProductionTier.STANDARD, ProductionTier.STANDARD));
-        assertEqual(ProductionTier.COPPER, CatBreedingManager.getEvolutionTier(ProductionTier.COAL, ProductionTier.COAL));
-        assertEqual(ProductionTier.IRON, CatBreedingManager.getEvolutionTier(ProductionTier.COPPER, ProductionTier.COPPER));
-        assertEqual(ProductionTier.GOLD, CatBreedingManager.getEvolutionTier(ProductionTier.IRON, ProductionTier.IRON));
-        assertEqual(ProductionTier.LAPIS, CatBreedingManager.getEvolutionTier(ProductionTier.GOLD, ProductionTier.GOLD));
-        assertEqual(ProductionTier.REDSTONE, CatBreedingManager.getEvolutionTier(ProductionTier.LAPIS, ProductionTier.LAPIS));
-        assertEqual(ProductionTier.EMERALD, CatBreedingManager.getEvolutionTier(ProductionTier.REDSTONE, ProductionTier.REDSTONE));
-        assertEqual(ProductionTier.DIAMOND, CatBreedingManager.getEvolutionTier(ProductionTier.EMERALD, ProductionTier.EMERALD));
-        assertEqual(ProductionTier.NETHERITE, CatBreedingManager.getEvolutionTier(ProductionTier.DIAMOND, ProductionTier.DIAMOND));
-        assertEqual(ProductionTier.NETHERITE, CatBreedingManager.getEvolutionTier(ProductionTier.NETHERITE, ProductionTier.NETHERITE));
+        assertEqual(ProductionTier.COAL, CatBreedingManager.getChildTier(ProductionTier.STANDARD, ProductionTier.STANDARD));
+        assertEqual(ProductionTier.COPPER, CatBreedingManager.getChildTier(ProductionTier.COAL, ProductionTier.COAL));
+        assertEqual(ProductionTier.IRON, CatBreedingManager.getChildTier(ProductionTier.COPPER, ProductionTier.COPPER));
+        assertEqual(ProductionTier.GOLD, CatBreedingManager.getChildTier(ProductionTier.IRON, ProductionTier.IRON));
+        assertEqual(ProductionTier.LAPIS, CatBreedingManager.getChildTier(ProductionTier.GOLD, ProductionTier.GOLD));
+        assertEqual(ProductionTier.REDSTONE, CatBreedingManager.getChildTier(ProductionTier.LAPIS, ProductionTier.LAPIS));
+        assertEqual(ProductionTier.EMERALD, CatBreedingManager.getChildTier(ProductionTier.REDSTONE, ProductionTier.REDSTONE));
+        assertEqual(ProductionTier.DIAMOND, CatBreedingManager.getChildTier(ProductionTier.EMERALD, ProductionTier.EMERALD));
+        assertEqual(ProductionTier.NETHERITE, CatBreedingManager.getChildTier(ProductionTier.DIAMOND, ProductionTier.DIAMOND));
+        assertEqual(ProductionTier.NETHERITE, CatBreedingManager.getChildTier(ProductionTier.NETHERITE, ProductionTier.NETHERITE));
     }
 
-    public static void testBreedPreservationOnTierEvolution() {
+    @org.junit.jupiter.api.Test
+    public void testBreedPreservationOnTierEvolution() {
         // Purebred Panther + Panther must produce Panther, NOT recolor to Coal or Iron variant!
         CatVariant purebredPanther = CatBreedingManager.getChildVariant(CatVariant.PANTHER, CatVariant.PANTHER, ProductionTier.DIAMOND);
         assertEqual(CatVariant.PANTHER, purebredPanther);
@@ -42,7 +39,8 @@ public class GeneticsProductionTest {
         assertEqual(CatVariant.TIGER, purebredTiger);
     }
 
-    public static void testCrossBreedDeterministicMatrix() {
+    @org.junit.jupiter.api.Test
+    public void testCrossBreedDeterministicMatrix() {
         // Tabby + All Black -> Panther
         CatVariant panther = CatBreedingManager.getChildVariant(CatVariant.TABBY, CatVariant.ALL_BLACK);
         assertEqual(CatVariant.PANTHER, panther);
