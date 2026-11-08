@@ -247,28 +247,55 @@ public class KittyAiGameTests {
     }
 
     /**
-     * Stress: 100 cats in mixed modes plus 10 hostiles. Measures the mean server tick time over 200 ticks and fails
-     * if it exceeds 25 ms (half the 50 ms budget). Result is logged so regressions are visible.
+     * Stress (Phase 8): tamed cats in mixed modes around their owner, plus 10 hostiles, grown in steps 0 -> 10 -> 50
+     * -> 100 inside one test (separate tests ran concurrently and shared the counter). After each step a 60-tick
+     * warm-up, then 200 measured ticks of the cats' own tick time (TickCost, only cats spawned here). Logged per step;
+     * fails if 100 cats cost more than 25 ms per tick (half the 50 ms budget).
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "stress")
+    @GameTest(template = "arena", timeoutTicks = 1200, batch = "stress")
     public static void testHundredCatsTickBudget(GameTestHelper h) {
         CatMode[] modes = {CatMode.FOLLOW, CatMode.GUARD, CatMode.WANDER, CatMode.AGGRESSIVE, CatMode.STAY,
                 CatMode.HUNTING, CatMode.SUPPORT, CatMode.DOCILE, CatMode.WORK, CatMode.TACTICAL};
-        for (int i = 0; i < 100; i++) {
-            cat(h, new BlockPos(1 + (i % 10) * 3, 2, 1 + (i / 10) * 3), modes[i % modes.length]);
-        }
+        var owner = KittyTalentGameTests.joinFakeOwner(h, new BlockPos(15, 2, 15));
         for (int i = 0; i < 10; i++) dummy(h, new BlockPos(2 + i * 3, 2, 30));
         var server = h.getLevel().getServer();
-        long[] start = new long[2];
-        h.runAfterDelay(40, () -> { start[0] = System.nanoTime(); start[1] = server.getTickCount(); }); // warm-up
-        h.runAfterDelay(240, () -> {
-            double ticks = server.getTickCount() - start[1];
-            double msPerTick = (System.nanoTime() - start[0]) / 1.0e6 / Math.max(1, ticks);
-            double avgTickMs = server.getAverageTickTime();
-            org.slf4j.LoggerFactory.getLogger("KittyTalents/Stress").info(
-                    "100 cats: wall {} ms/tick over {} ticks, server avg tick {} ms", String.format("%.2f", msPerTick),
-                    (long) ticks, String.format("%.2f", avgTickMs));
-            h.assertTrue(avgTickMs < 25.0, "100 cats cost " + avgTickMs + " ms per tick (budget 25 ms)");
+        var log = org.slf4j.LoggerFactory.getLogger("KittyTalents/Stress");
+        int[] steps = {0, 10, 50, 100};
+        int[] spawned = {0};
+        long[] startTick = {0};
+        double[] lastMs = {0};
+        int t = 0;
+        for (int step : steps) {
+            h.runAfterDelay(t, () -> {
+                for (int i = spawned[0]; i < step; i++) {
+                    CatMode m = modes[i % modes.length];
+                    TalentedCat c = cat(h, new BlockPos(1 + (i % 10) * 3, 2, 1 + (i / 10) * 3), m);
+                    c.tame(owner);
+                    c.setOrderedToSit(false);
+                    c.setCatMode(m);
+                    c.tickCostTracked = true;
+                }
+                spawned[0] = step;
+            });
+            h.runAfterDelay(t + 60, () -> {
+                startTick[0] = server.getTickCount();
+                com.kittytalents.util.TickCost.reset();
+                com.kittytalents.util.TickCost.enabled = true;
+            });
+            h.runAfterDelay(t + 260, () -> {
+                com.kittytalents.util.TickCost.enabled = false;
+                double ticks = Math.max(1, server.getTickCount() - startTick[0]);
+                double catMs = com.kittytalents.util.TickCost.nanos() / 1.0e6 / ticks;
+                lastMs[0] = catMs;
+                log.info("{} cats: {} ms/tick for the cats ({} us per cat), whole server {} ms/tick", step,
+                        String.format("%.3f", catMs), String.format("%.1f", step == 0 ? 0 : catMs * 1000.0 / step),
+                        String.format("%.2f", server.getAverageTickTime()));
+            });
+            t += 270;
+        }
+        h.runAfterDelay(t, () -> {
+            KittyTalentGameTests.leave(h, owner);
+            h.assertTrue(lastMs[0] < 25.0, "100 cats cost " + lastMs[0] + " ms per tick (budget 25 ms)");
             h.succeed();
         });
     }

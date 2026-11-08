@@ -1457,6 +1457,21 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         super.lerpHeadTo(yRot, steps);
     }
 
+
+    /** Set by the stress tests on the cats they spawn, so TickCost times only those (transient, never saved). */
+    public boolean tickCostTracked;
+
+    @Override
+    public void tick() {
+        if (!com.kittytalents.util.TickCost.enabled || !tickCostTracked || this.level().isClientSide) {
+            tickCat();
+            return;
+        }
+        long t = System.nanoTime();
+        tickCat();
+        com.kittytalents.util.TickCost.add(System.nanoTime() - t);
+    }
+
     @Override
     public void aiStep() {
         if (this.level().isClientSide && this.isControlledByLocalInstance()) {
@@ -1514,8 +1529,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     @Override
     public void handleStopJump() {}
 
-    @Override
-    public void tick() {
+    /** The cat's tick body; {@link #tick} wraps it with the optional stress-test timer. */
+    private void tickCat() {
         super.tick();
 
         if (!this.level().isClientSide && this.isVehicle()) {

@@ -26,8 +26,20 @@ public final class CompanionHud implements IGuiOverlay {
 
     private CompanionHud() {}
 
-    /** Cats that get a card, nearest first. */
+    private static List<TalentedCat> cached = List.of();
+    private static long cachedTick = Long.MIN_VALUE;
+
+    /** Cats that get a card, nearest first. Recomputed once per game tick, not every frame. */
     public static List<TalentedCat> shownCats(Minecraft mc) {
+        long now = mc.level.getGameTime();
+        if (now != cachedTick) {
+            cachedTick = now;
+            cached = findCats(mc);
+        }
+        return cached;
+    }
+
+    private static List<TalentedCat> findCats(Minecraft mc) {
         LocalPlayer me = mc.player;
         double range = KittyTalentsClientConfig.COMPANION_HUD_RANGE.get();
         return mc.level.getEntitiesOfClass(TalentedCat.class, me.getBoundingBox().inflate(range), cat ->
