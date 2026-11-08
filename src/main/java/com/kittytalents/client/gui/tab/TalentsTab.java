@@ -121,9 +121,12 @@ public class TalentsTab implements CatTab {
                 s.rebuild();
             }).style(KTButton.Style.CHIP).selected(category == i));
         }
-        s.add(new KTButton(x + s.cw() - respecW, y, respecW, 14, KTText.t("talents.respec", "Respec"),
-                b -> PacketHandler.sendToServer(new PacketRespecTalents(cat.getId())))
-                .style(KTButton.Style.RED).tip(KTText.t("talents.respec.tip", "Refund every trained rank")));
+        // Training and respec are owner-only (CatAction.TRAIN / RESPEC); co-owners don't get the buttons.
+        if (com.kittytalents.core.perm.CatPermissions.can(net.minecraft.client.Minecraft.getInstance().player, cat, com.kittytalents.core.perm.CatAction.RESPEC)) {
+            s.add(new KTButton(x + s.cw() - respecW, y, respecW, 14, KTText.t("talents.respec", "Respec"),
+                    b -> PacketHandler.sendToServer(new PacketRespecTalents(cat.getId())))
+                    .style(KTButton.Style.RED).tip(KTText.t("talents.respec.tip", "Refund every trained rank")));
+        }
 
         // List rows
         scroll = Math.min(scroll, maxScroll(s));
@@ -141,7 +144,7 @@ public class TalentsTab implements CatTab {
         }
 
         // Detail: TRAIN
-        if (selected != null) {
+        if (selected != null && com.kittytalents.core.perm.CatPermissions.can(net.minecraft.client.Minecraft.getInstance().player, cat, com.kittytalents.core.perm.CatAction.TRAIN)) {
             int lvl = cat.getTalentLevel(selected);
             boolean max = lvl >= selected.getMaxLevel();
             Component label = max ? KTText.t("talents.mastered", "MAXED") : KTText.t("talents.train", "TRAIN");
@@ -243,6 +246,8 @@ public class TalentsTab implements CatTab {
         int costY = ly + lh - 21;
         if (lvl >= max) {
             g.drawString(font, KTText.s("talents.max", "Fully trained"), dx + 10, costY, 0xFF6EE7A0, false);
+        } else if (!com.kittytalents.core.perm.CatPermissions.can(net.minecraft.client.Minecraft.getInstance().player, cat, com.kittytalents.core.perm.CatAction.TRAIN)) {
+            g.drawString(font, KTText.s("talents.owner_only", "Only the owner can train this cat"), dx + 10, costY, KTTheme.TEXT_DIM, false);
         } else if (selected.isDireTalent() && !cat.isDireAwakened()) {
             g.drawString(font, KTText.s("talents.needs_dire", "Needs a Dire Treat"), dx + 10, costY, 0xFFC084FC, false);
         } else {

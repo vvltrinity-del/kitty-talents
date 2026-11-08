@@ -86,6 +86,17 @@ public class HomeTab implements CatTab {
         boolean compact = compact(s);
         // Name + co-owner fields: stacked under their own header, or side by side when space is short
         y += compact ? 22 : 34;
+        var me = Minecraft.getInstance().player;
+        if (!com.kittytalents.core.perm.CatPermissions.can(me, cat, com.kittytalents.core.perm.CatAction.RENAME)) {
+            // Co-owner: renaming and managing co-owners are the owner's; they may only leave.
+            if (me != null && cat.isTrusted(me)) {
+                s.add(new KTButton(x, y, 90, 16, KTText.t("home.trust.leave", "Leave co-owners"),
+                        b -> PacketHandler.sendToServer(new PacketManageTrust(cat.getId(), 1, me.getUUID().toString())))
+                        .style(KTButton.Style.CHIP).color(0xFFFCA5A5)
+                        .tip(KTText.t("home.trust.leave.tip", "Stop being a co-owner of this cat")));
+            }
+            return;
+        }
         int fieldW = compact ? (w - 4) / 2 - 50 : w - 58;
         EditBox name = new EditBox(font, x + 1, y + 1, fieldW - 2, 14, KTText.t("home.name", "Name"));
         name.setMaxLength(32);
@@ -104,7 +115,6 @@ public class HomeTab implements CatTab {
 
         // Owner-only removal chips: "✕ name"
         y += 20;
-        var me = Minecraft.getInstance().player;
         if (me != null && me.getUUID().equals(cat.getOwnerUUID())) {
             int chipX = x;
             for (Map.Entry<UUID, String> e : cat.getTrustedPlayers().entrySet()) {

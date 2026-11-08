@@ -66,6 +66,7 @@ public class StyleTab implements CatTab {
                 s.rebuild();
             }).icon(icons[i]).left().selected(sub == i));
         }
+        if (com.kittytalents.core.perm.CatPermissions.can(s.mc().player, cat, com.kittytalents.core.perm.CatAction.RENAME))
         s.add(new KTButton(x, s.cy() + s.ch() - 26, w, 18, KTText.t("style.random_name", "Random Name"), b -> {
             String rand = RANDOM_CAT_NAMES[(int) (Math.random() * RANDOM_CAT_NAMES.length)];
             PacketHandler.sendToServer(new PacketRenameCat(cat.getId(), rand));
