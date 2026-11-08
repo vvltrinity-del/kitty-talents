@@ -830,7 +830,10 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         graphics.fill(statsX - 8, statsY - 8, statsX + 164, statsY + 98, 0x661F2937);
 
         graphics.drawString(this.font, "Name: " + cat.getName().getString(), statsX, statsY, 0xFFFFFFFF, false);
-        graphics.drawString(this.font, "Level: " + cat.getCatLevel(), statsX, statsY + 12, 0xFFFCD34D, false);
+        int maxLvl = com.kittytalents.config.KittyTalentsConfig.COMMON.maxCatLevel.get();
+        String xpText = cat.getCatLevel() >= maxLvl ? " (max)"
+                : "  XP " + cat.getCatXp() + "/" + com.kittytalents.core.progression.CatProgression.xpForNextLevel(cat.getCatLevel());
+        graphics.drawString(this.font, "Level: " + cat.getCatLevel() + xpText, statsX, statsY + 12, 0xFFFCD34D, false);
         graphics.drawString(this.font, "Gender: " + (cat.isFemale() ? "Female ♀" : "Male ♂"), statsX, statsY + 24, cat.isFemale() ? 0xFFF472B6 : 0xFF60A5FA, false);
         graphics.drawString(this.font, "Owner: " + (cat.getOwner() != null ? cat.getOwner().getName().getString() : (cat.isTame() ? "You" : "Untamed")), statsX, statsY + 36, 0xFFE5E7EB, false);
         java.util.Map<java.util.UUID, String> trusted = cat.getTrustedPlayers();
