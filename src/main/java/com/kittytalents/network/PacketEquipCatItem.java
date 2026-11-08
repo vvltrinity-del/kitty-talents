@@ -65,7 +65,8 @@ public class PacketEquipCatItem {
         ctx.get().setPacketHandled(true);
     }
 
-    private static void handleSlotInteraction(ServerPlayer sender, TalentedCat cat, int slotId, boolean isShiftClick) {
+    /** Server-side slot click. Public for GameTests. */
+    public static void handleSlotInteraction(ServerPlayer sender, TalentedCat cat, int slotId, boolean isShiftClick) {
         ItemStack currentEquipped = switch (slotId) {
             case 0 -> cat.getEquippedWeapon();
             case 1, 2, 3, 4 -> cat.getArmorSlotItem(slotId);
@@ -104,16 +105,66 @@ public class PacketEquipCatItem {
                 }
                 sender.playSound(SoundEvents.ARMOR_EQUIP_GENERIC, 1.0F, 1.0F);
             } else if (carried.isEmpty() && !currentEquipped.isEmpty()) {
-                // Pick up stack directly onto player cursor
+                // Unequip straight into the player's inventory. (The cat screen has no inventory slots, so an item
+                // put on the cursor could not be placed anywhere until the menu closed.)
                 setSlotItem(cat, slotId, ItemStack.EMPTY);
-                sender.containerMenu.setCarried(currentEquipped);
+                if (!sender.getInventory().add(currentEquipped)) {
+                    sender.drop(currentEquipped, false);
+                }
                 sender.playSound(SoundEvents.ITEM_PICKUP, 0.7F, 1.2F);
+            } else if (carried.isEmpty() && currentEquipped.isEmpty()) {
+                // Click-to-equip: take the first item from the player's inventory that fits this slot.
+                equipFromInventory(sender, cat, slotId);
             }
         }
 
         sender.containerMenu.broadcastChanges();
         cat.updateAttributes();
         cat.syncEquipment();
+    }
+
+    /** Hotbar first, then main inventory, then offhand. Reports rank requirements or "nothing fits". */
+    private static void equipFromInventory(ServerPlayer sender, TalentedCat cat, int slotId) {
+        net.minecraft.world.entity.player.Inventory inv = sender.getInventory();
+        ItemStack rankBlocked = ItemStack.EMPTY;
+        int size = inv.items.size() + inv.offhand.size();
+        for (int i = 0; i < size; i++) {
+            ItemStack stack = i < inv.items.size() ? inv.items.get(i) : inv.offhand.get(i - inv.items.size());
+            if (stack.isEmpty() || !fitsSlotType(slotId, stack)) continue;
+            if (isValidItemForSlot(cat, slotId, stack, null)) {
+                setSlotItem(cat, slotId, stack.split(1));
+                inv.setChanged();
+                sender.playSound(SoundEvents.ARMOR_EQUIP_GENERIC, 1.0F, 1.0F);
+                return;
+            }
+            if (rankBlocked.isEmpty()) rankBlocked = stack;
+        }
+        if (!rankBlocked.isEmpty()) {
+            isValidItemForSlot(cat, slotId, rankBlocked, sender); // sends the "need higher rank" message
+        } else {
+            sender.sendSystemMessage(Component.translatable("message.kittytalents.no_item_for_slot"));
+            sender.playSound(SoundEvents.VILLAGER_NO, 0.6F, 1.0F);
+        }
+    }
+
+    /** Item category check only (no talent-rank gating), used to find candidates. */
+    private static boolean fitsSlotType(int slotId, ItemStack stack) {
+        net.minecraft.world.item.Item item = stack.getItem();
+        return switch (slotId) {
+            case 0 -> com.kittytalents.compat.tacz.TacZCompat.isGun(stack) || item instanceof SwordItem
+                    || item instanceof net.minecraft.world.item.TridentItem;
+            case 1, 2, 3, 4 -> item instanceof ArmorItem armor && armor.getType() == switch (slotId) {
+                case 1 -> ArmorItem.Type.HELMET;
+                case 2 -> ArmorItem.Type.CHESTPLATE;
+                case 3 -> ArmorItem.Type.LEGGINGS;
+                default -> ArmorItem.Type.BOOTS;
+            };
+            case 5 -> item instanceof com.kittytalents.item.CatAccessoryItem;
+            case 6 -> item instanceof net.minecraft.world.item.DiggerItem || item instanceof net.minecraft.world.item.ShearsItem
+                    || item instanceof net.minecraft.world.item.FishingRodItem;
+            case 7, 8, 9 -> item instanceof com.kittytalents.item.CatAccessoryItem || item instanceof com.kittytalents.item.CatCollarItem;
+            default -> false;
+        };
     }
 
     private static void setSlotItem(TalentedCat cat, int slotId, ItemStack stack) {
@@ -133,8 +184,7 @@ public class PacketEquipCatItem {
                 if (com.kittytalents.compat.tacz.TacZCompat.isGun(stack)) {
                     int armoryLvl = cat.getTalentLevel(Talents.CAT_ARMORY);
                     if (armoryLvl < 1) {
-                        sender.sendSystemMessage(Component.translatable("message.kittytalents.need_higher_armory", 1, stack.getHoverName()));
-                        sender.playSound(SoundEvents.VILLAGER_NO, 1.0F, 1.0F);
+                        deny(sender, "message.kittytalents.need_higher_armory", 1, stack);
                         return false;
                     }
                     return true;
@@ -143,8 +193,7 @@ public class PacketEquipCatItem {
                     int armoryLvl = cat.getTalentLevel(Talents.CAT_ARMORY);
                     int req = getRequiredArmoryLevel(sword);
                     if (armoryLvl < req) {
-                        sender.sendSystemMessage(Component.translatable("message.kittytalents.need_higher_armory", req, stack.getHoverName()));
-                        sender.playSound(SoundEvents.VILLAGER_NO, 1.0F, 1.0F);
+                        deny(sender, "message.kittytalents.need_higher_armory", req, stack);
                         return false;
                     }
                     return true;
@@ -163,8 +212,7 @@ public class PacketEquipCatItem {
                     int armorLvl = cat.getTalentLevel(Talents.CAT_ARMOR);
                     int req = getRequiredArmorLevel(armor);
                     if (armorLvl < req) {
-                        sender.sendSystemMessage(Component.translatable("message.kittytalents.need_higher_armor", req, stack.getHoverName()));
-                        sender.playSound(SoundEvents.VILLAGER_NO, 1.0F, 1.0F);
+                        deny(sender, "message.kittytalents.need_higher_armor", req, stack);
                         return false;
                     }
                     return true;
@@ -187,6 +235,13 @@ public class PacketEquipCatItem {
                 return false;
             }
         }
+    }
+
+    /** Rank-requirement feedback; {@code sender == null} means a quiet check. */
+    private static void deny(@javax.annotation.Nullable ServerPlayer sender, String key, int rank, ItemStack stack) {
+        if (sender == null) return;
+        sender.sendSystemMessage(Component.translatable(key, rank, stack.getHoverName()));
+        sender.playSound(SoundEvents.VILLAGER_NO, 1.0F, 1.0F);
     }
 
     private static int getRequiredArmoryLevel(SwordItem sword) {

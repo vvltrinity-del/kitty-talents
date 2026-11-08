@@ -244,6 +244,26 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
             }
         }).bounds(actionX + 104, actionY - 48, 54, 16).build());
 
+        // Co-owner removal (owner only): one "x Name" button per trusted player, right of the stats panel.
+        // Stopgap until the Phase 6 UI redesign.
+        net.minecraft.client.player.LocalPlayer me = net.minecraft.client.Minecraft.getInstance().player;
+        if (me != null && me.getUUID().equals(cat.getOwnerUUID())) {
+            int listX = (int) (this.width * 0.58F) + 170;
+            int listY = (int) (this.height * 0.35F) - 8;
+            int shown = 0;
+            for (java.util.Map.Entry<java.util.UUID, String> e : cat.getTrustedPlayers().entrySet()) {
+                if (shown >= 6) break;
+                java.util.UUID id = e.getKey();
+                String name = e.getValue().isEmpty() ? "Player" : e.getValue();
+                Button remove = Button.builder(Component.literal("✕ " + name).withStyle(ChatFormatting.RED),
+                        b -> PacketHandler.sendToServer(new PacketManageTrust(cat.getId(), 1, id.toString())))
+                        .bounds(listX, listY + shown * 18, 96, 16).build();
+                remove.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Remove " + name + " as co-owner")));
+                this.addRenderableWidget(remove);
+                shown++;
+            }
+        }
+
         // Rename box
         String currentName = cat.hasCustomName() ? cat.getCustomName().getString() : cat.getName().getString();
         this.nameEditBox = new EditBox(this.font, actionX, actionY - 26, 100, 16, Component.literal("Name"));

@@ -285,6 +285,28 @@ public class KittyTalentsGameTests {
         });
     }
 
+    /** Gear screen: clicking an empty slot equips from the player's inventory; clicking a filled slot returns it. */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testGearClickEquipsFromInventoryAndUnequipsToInventory(GameTestHelper helper) {
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        cat.setTalentLevel(Talents.CAT_ARMOR, 2); // iron armor needs rank 2
+        net.minecraft.server.level.ServerPlayer player = net.minecraftforge.common.util.FakePlayerFactory.getMinecraft(helper.getLevel());
+        player.getInventory().clearContent();
+        player.getInventory().setItem(5, new ItemStack(Items.DIAMOND_HELMET)); // needs rank 3: must be skipped
+        player.getInventory().setItem(9, new ItemStack(Items.IRON_HELMET));
+
+        com.kittytalents.network.PacketEquipCatItem.handleSlotInteraction(player, cat, 1, false);
+        helper.assertTrue(cat.getArmorSlotItem(1).is(Items.IRON_HELMET), "Click should equip the first helmet the cat can wear, got " + cat.getArmorSlotItem(1));
+        helper.assertTrue(player.getInventory().getItem(9).isEmpty(), "Equipped helmet should leave the inventory");
+        helper.assertTrue(player.getInventory().getItem(5).is(Items.DIAMOND_HELMET), "Too-high-rank helmet must stay in the inventory");
+
+        com.kittytalents.network.PacketEquipCatItem.handleSlotInteraction(player, cat, 1, false);
+        helper.assertTrue(cat.getArmorSlotItem(1).isEmpty(), "Second click should unequip");
+        helper.assertTrue(player.containerMenu.getCarried().isEmpty(), "Unequipped item must not be stuck on the cursor");
+        helper.assertTrue(player.getInventory().countItem(Items.IRON_HELMET) == 1, "Unequipped helmet should be back in the inventory");
+        helper.succeed();
+    }
+
     private static boolean anySlotOnCooldown(TalentedCat cat) {
         for (String id : new String[]{cat.getAbilitySlot1(), cat.getAbilitySlot2(), cat.getAbilitySlot3(), cat.getAbilityUltimate()}) {
             if (id != null && !id.isEmpty() && cat.getAbilityCooldown(id) > 0) return true;

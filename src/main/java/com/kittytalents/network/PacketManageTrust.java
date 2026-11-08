@@ -1,7 +1,6 @@
 package com.kittytalents.network;
 
 import com.kittytalents.entity.TalentedCat;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -10,7 +9,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.network.NetworkEvent;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -60,20 +58,12 @@ public class PacketManageTrust {
                             return;
                         }
 
+                        // Only a real player who is online right now can be made a co-owner: no offline names from the
+                        // profile cache, and no FakePlayers (machines/automation mods acting as players).
                         ServerPlayer targetPlayer = sender.server.getPlayerList().getPlayerByName(targetName);
-                        UUID targetUuid = null;
-                        String actualName = targetName;
-
-                        if (targetPlayer != null) {
-                            targetUuid = targetPlayer.getUUID();
-                            actualName = targetPlayer.getGameProfile().getName();
-                        } else {
-                            Optional<GameProfile> cached = sender.server.getProfileCache().get(targetName);
-                            if (cached.isPresent()) {
-                                targetUuid = cached.get().getId();
-                                actualName = cached.get().getName();
-                            }
-                        }
+                        if (targetPlayer instanceof net.minecraftforge.common.util.FakePlayer) targetPlayer = null;
+                        UUID targetUuid = targetPlayer != null ? targetPlayer.getUUID() : null;
+                        String actualName = targetPlayer != null ? targetPlayer.getGameProfile().getName() : targetName;
 
                         if (targetUuid == null) {
                             sender.sendSystemMessage(Component.translatable("message.kittytalents.trust_player_not_found", targetName).withStyle(ChatFormatting.RED));
@@ -112,6 +102,10 @@ public class PacketManageTrust {
                             cat.removeTrustedPlayer(targetUuid);
                             sender.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 0.8F, 0.8F);
                             sender.sendSystemMessage(Component.translatable("message.kittytalents.trust_removed", removedName).withStyle(ChatFormatting.YELLOW));
+                            ServerPlayer removed = sender.server.getPlayerList().getPlayer(targetUuid);
+                            if (removed != null && !isSelfRevoke) {
+                                removed.sendSystemMessage(Component.translatable("message.kittytalents.trust_revoked", cat.getName().getString()).withStyle(ChatFormatting.YELLOW));
+                            }
 
                             cat.syncTrust();
                         } catch (Exception ignored) {
