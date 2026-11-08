@@ -33,8 +33,8 @@ public class CatFoodBowlMenu extends AbstractContainerMenu {
         ItemStackHandler handler = blockEntity != null ? blockEntity.getInventory() : new ItemStackHandler(5);
 
         // 5 Food Bowl Slots centered horizontally
-        int startX = 44;
-        int slotY = 36;
+        int startX = 48;
+        int slotY = 45;
         for (int i = 0; i < 5; i++) {
             this.addSlot(new SlotItemHandler(handler, i, startX + i * 18, slotY) {
                 @Override
@@ -45,17 +45,17 @@ public class CatFoodBowlMenu extends AbstractContainerMenu {
         }
 
         // Player Inventory (3 rows x 9 columns)
-        int playerInvY = 84;
+        int playerInvY = 96;
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, playerInvY + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 12 + col * 18, playerInvY + row * 18));
             }
         }
 
         // Player Hotbar
-        int hotbarY = 142;
+        int hotbarY = 154;
         for (int col = 0; col < 9; ++col) {
-            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, hotbarY));
+            this.addSlot(new Slot(playerInventory, col, 12 + col * 18, hotbarY));
         }
     }
 

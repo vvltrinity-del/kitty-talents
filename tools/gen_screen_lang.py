@@ -29,7 +29,8 @@ def string_array(src, name):
 entries = {}
 HUD = ROOT / "src/main/java/com/kittytalents/client/hud"
 sources = {p.name: p.read_text(encoding="utf-8")
-           for p in list(GUI.glob("CatTalentScreen.java")) + list((GUI / "tab").glob("*.java")) + list(HUD.glob("*.java"))}
+           for p in list(GUI.glob("*.java")) + list((GUI / "tab").glob("*.java")) + list((GUI / "theme").glob("*.java"))
+           + list(HUD.glob("*.java"))}
 
 for src in sources.values():
     for key, fallback in re.findall(r"KTText\.[ts]\(\s*" + STR + r"\s*,\s*" + STR, src):

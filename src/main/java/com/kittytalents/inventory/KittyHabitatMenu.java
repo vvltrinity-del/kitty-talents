@@ -15,46 +15,80 @@ import net.minecraftforge.items.SlotItemHandler;
 public class KittyHabitatMenu extends AbstractContainerMenu {
     private final KittyHabitatBlockEntity habitat;
     private final ContainerLevelAccess access;
+    private final net.minecraft.world.inventory.ContainerData data;
+
+    /** Screen size; slot positions below are laid out for it (see KittyHabitatScreen). */
+    public static final int WIDTH = 232, HEIGHT = 234;
+    public static final int BUTTON_DISMISS = 0, BUTTON_PAUSE = 1;
 
     public KittyHabitatMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buf) {
-        this(containerId, playerInventory, (KittyHabitatBlockEntity) playerInventory.player.level().getBlockEntity(buf.readBlockPos()));
+        this(containerId, playerInventory, (KittyHabitatBlockEntity) playerInventory.player.level().getBlockEntity(buf.readBlockPos()),
+                new net.minecraft.world.inventory.SimpleContainerData(5));
     }
 
     public KittyHabitatMenu(int containerId, Inventory playerInventory, KittyHabitatBlockEntity habitat) {
+        this(containerId, playerInventory, habitat, habitat.dataAccess);
+    }
+
+    private KittyHabitatMenu(int containerId, Inventory playerInventory, KittyHabitatBlockEntity habitat,
+                             net.minecraft.world.inventory.ContainerData data) {
         super(ModMenus.KITTY_HABITAT_MENU.get(), containerId);
         this.habitat = habitat;
+        this.data = data;
         this.access = ContainerLevelAccess.create(habitat.getLevel(), habitat.getBlockPos());
+        addDataSlots(data);
 
-        // 4 Upgrade Slots (0..3)
+        // 4 Upgrade slots (0..3), left panel
         for (int i = 0; i < 4; i++) {
-            this.addSlot(new SlotItemHandler(habitat.getInventory(), i, 16 + i * 20, 94));
+            this.addSlot(new SlotItemHandler(habitat.getInventory(), i, 14 + i * 20, 84));
         }
-
-        // 4 Output Slots (4..7)
+        // 4 Output slots (4..7), right panel
         for (int i = 0; i < 4; i++) {
-            this.addSlot(new SlotItemHandler(habitat.getInventory(), 4 + i, 108 + i * 20, 94));
+            this.addSlot(new SlotItemHandler(habitat.getInventory(), 4 + i, 130 + i * 20, 103));
         }
+        // Supplies: 8 = food, 9 = catalyst, left panel
+        this.addSlot(new SlotItemHandler(habitat.getInventory(), KittyHabitatBlockEntity.SLOT_FOOD_IN, 14, 106));
+        this.addSlot(new SlotItemHandler(habitat.getInventory(), KittyHabitatBlockEntity.SLOT_CATALYST_IN, 34, 106));
 
-        // 2 Input Slots: 8 = Food Input, 9 = Catalyst Input
-        this.addSlot(new SlotItemHandler(habitat.getInventory(), KittyHabitatBlockEntity.SLOT_FOOD_IN, 56, 66));
-        this.addSlot(new SlotItemHandler(habitat.getInventory(), KittyHabitatBlockEntity.SLOT_CATALYST_IN, 76, 66));
-
-        // Player Inventory (3 rows of 9)
-        int startY = 126;
+        // Player inventory and hotbar, centred
+        int startX = (WIDTH - 162) / 2 + 1, startY = 147;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 16 + col * 18, startY + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, startX + col * 18, startY + row * 18));
             }
         }
-
-        // Hotbar (9 slots)
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, 16 + col * 18, startY + 58));
+            this.addSlot(new Slot(playerInventory, col, startX + col * 18, startY + 58));
         }
     }
 
     public KittyHabitatBlockEntity getHabitat() {
         return habitat;
+    }
+
+    // Live values (synced every tick while open, like a furnace).
+    public int getProgress() { return data.get(0); }
+    public int getMaxProgress() { return Math.max(1, data.get(1)); }
+    public int getTotalCycles() { return data.get(2); }
+    public boolean isPaused() { return data.get(3) != 0; }
+    public KittyHabitatBlockEntity.Status getStatus() {
+        int i = data.get(4);
+        var all = KittyHabitatBlockEntity.Status.values();
+        return all[Math.max(0, Math.min(all.length - 1, i))];
+    }
+
+    /** Server side of the screen buttons (the screen used to change only its client copy, so nothing happened). */
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id == BUTTON_DISMISS) {
+            habitat.dismissWorker();
+            return true;
+        }
+        if (id == BUTTON_PAUSE) {
+            habitat.setPaused(!habitat.isPaused());
+            return true;
+        }
+        return false;
     }
 
     @Override

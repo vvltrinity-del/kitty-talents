@@ -1,11 +1,13 @@
 package com.kittytalents.client.gui;
 
+import com.kittytalents.client.gui.theme.KTButton;
+import com.kittytalents.client.gui.theme.KTTheme;
+import com.kittytalents.client.gui.theme.KTText;
 import com.kittytalents.entity.WhistleCommand;
 import com.kittytalents.network.PacketHandler;
 import com.kittytalents.network.PacketWhistleCommand;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -14,107 +16,105 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/** Kitty Whistle (Phase 6 theme): searchable, scrolling grid of commands sent to all your cats nearby. */
 public class KittyWhistleScreen extends Screen {
+    private static final int COLS = 3, ROW_H = 18, GAP = 3;
+
     private EditBox searchBox;
-    private final List<WhistleCommand> filteredCommands = new ArrayList<>();
+    private final List<WhistleCommand> filtered = new ArrayList<>();
+    private int scroll;
+    private int px, py, pw, ph;
 
     public KittyWhistleScreen() {
-        super(Component.literal("Kitty Whistle Command Center"));
+        super(KTText.t("whistle.title", "KITTY WHISTLE"));
     }
+
+    private int gridY() { return py + 54; }
+    private int gridH() { return ph - 54 - 30; }
+    private int visibleRows() { return Math.max(1, (gridH() - 8) / (ROW_H + GAP)); }
+    private int rows() { return (filtered.size() + COLS - 1) / COLS; }
+    private int maxScroll() { return Math.max(0, rows() - visibleRows()); }
 
     @Override
     protected void init() {
-        super.init();
-        this.clearWidgets();
-
-        int centerX = this.width / 2;
-        int topY = 32;
-
-        this.searchBox = new EditBox(this.font, centerX - 100, topY, 200, 18, Component.literal("Search Commands"));
-        this.searchBox.setResponder(this::onSearchChanged);
-        this.addWidget(this.searchBox);
-
-        updateFilteredCommands("");
+        pw = Math.min(400, width - 20);
+        ph = Math.min(244, height - 20);
+        px = (width - pw) / 2;
+        py = (height - ph) / 2;
+        String query = searchBox != null ? searchBox.getValue() : "";
+        searchBox = new EditBox(font, px + 15, py + 33, pw - 30, 14, KTText.t("whistle.search", "Search"));
+        searchBox.setHint(KTText.t("whistle.search.hint", "Search commands...").withStyle(ChatFormatting.DARK_GRAY));
+        searchBox.setValue(query);
+        searchBox.setResponder(q -> { scroll = 0; rebuild(); });
+        rebuild();
     }
 
-    private void onSearchChanged(String query) {
-        updateFilteredCommands(query);
-    }
-
-    private void updateFilteredCommands(String query) {
-        this.clearWidgets();
-        this.addWidget(this.searchBox);
-
-        filteredCommands.clear();
-        String lower = query.toLowerCase(Locale.ROOT).trim();
-        for (WhistleCommand cmd : WhistleCommand.values()) {
-            if (lower.isEmpty() || cmd.getDisplayName().toLowerCase(Locale.ROOT).contains(lower)) {
-                filteredCommands.add(cmd);
-            }
+    private void rebuild() {
+        clearWidgets();
+        addRenderableWidget(searchBox);
+        filtered.clear();
+        String q = searchBox.getValue().toLowerCase(Locale.ROOT).trim();
+        for (WhistleCommand c : WhistleCommand.values()) {
+            if (q.isEmpty() || c.getDisplayName().toLowerCase(Locale.ROOT).contains(q)) filtered.add(c);
         }
-
-        int centerX = this.width / 2;
-        int startY = 60;
-        int cols = 3;
-        int btnW = 120;
-        int btnH = 20;
-        int gap = 6;
-        int totalW = (cols * btnW) + ((cols - 1) * gap);
-        int startX = centerX - (totalW / 2);
-
-        for (int i = 0; i < filteredCommands.size(); i++) {
-            WhistleCommand cmd = filteredCommands.get(i);
-            int col = i % cols;
-            int row = i / cols;
-
-            int btnX = startX + col * (btnW + gap);
-            int btnY = startY + row * (btnH + gap);
-
-            this.addRenderableWidget(Button.builder(Component.literal(cmd.getDisplayName()), b -> {
+        scroll = Math.max(0, Math.min(scroll, maxScroll()));
+        int gx = px + 14, gw = pw - 28 - 8, bw = (gw - (COLS - 1) * GAP) / COLS;
+        int first = scroll * COLS, last = Math.min(filtered.size(), first + visibleRows() * COLS);
+        for (int i = first; i < last; i++) {
+            WhistleCommand cmd = filtered.get(i);
+            int col = (i - first) % COLS, row = (i - first) / COLS;
+            addRenderableWidget(new KTButton(gx + col * (bw + GAP), gridY() + 5 + row * (ROW_H + GAP), bw, ROW_H,
+                    KTText.t("whistle.cmd." + cmd.name().toLowerCase(Locale.ROOT), cmd.getDisplayName()), b -> {
                 PacketHandler.sendToServer(new PacketWhistleCommand(cmd));
-                this.onClose();
-            }).bounds(btnX, btnY, btnW, btnH).build());
+                onClose();
+            }).tip(Component.literal(cmd.getDescription())));
         }
-
-        // Close button at bottom
-        this.addRenderableWidget(Button.builder(Component.literal("Close"), b -> this.onClose())
-                .bounds(centerX - 40, this.height - 28, 80, 20).build());
+        addRenderableWidget(new KTButton(px + pw / 2 - 35, py + ph - 26, 70, 18, KTText.t("whistle.close", "Close"), b -> onClose())
+                .style(KTButton.Style.RED));
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        int next = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.signum(delta)));
+        if (next != scroll) {
+            scroll = next;
+            rebuild();
+        }
+        return true;
+    }
 
-        int centerX = this.width / 2;
-        graphics.drawCenteredString(this.font, this.title, centerX, 12, 0xFFE080);
-        graphics.drawCenteredString(this.font, "Execute commands to all nearby companion cats simultaneously", centerX, 22, 0x888888);
-
-        this.searchBox.render(graphics, mouseX, mouseY, partialTick);
-        super.render(graphics, mouseX, mouseY, partialTick);
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        renderBackground(g);
+        KTTheme.frame(g, px, py, pw, ph);
+        KTTheme.banner(g, font, px + 6, py + 6, pw - 12, 16, title);
+        g.drawCenteredString(font, KTText.t("whistle.subtitle", "Every one of your cats nearby hears it."), px + pw / 2, py + 23 + 1, KTTheme.TEXT_DIM);
+        int gx = px + 8, gy = gridY(), gw = pw - 16, gh = gridH();
+        KTTheme.inset(g, gx, gy, gw, gh);
+        if (maxScroll() > 0) {
+            int trackX = gx + gw - 8, trackY = gy + 5, trackH = gh - 10;
+            g.fill(trackX, trackY, trackX + 3, trackY + trackH, 0x66000000);
+            int thumbH = Math.max(12, trackH * visibleRows() / Math.max(1, rows()));
+            int thumbY = trackY + (trackH - thumbH) * scroll / maxScroll();
+            g.fill(trackX, thumbY, trackX + 3, thumbY + thumbH, KTTheme.GOLD_EDGE);
+        }
+        if (filtered.isEmpty()) {
+            g.drawCenteredString(font, KTText.t("whistle.none", "No matching commands"), gx + gw / 2, gy + 14, KTTheme.TEXT_DIM);
+        }
+        super.render(g, mouseX, mouseY, partialTick);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (this.searchBox != null && this.searchBox.isFocused()) {
-            if (keyCode == 256) { // Escape
-                this.searchBox.setFocused(false);
+        if (searchBox != null && searchBox.isFocused()) {
+            if (keyCode == 256) {
+                searchBox.setFocused(false);
                 return true;
             }
-            if (this.searchBox.keyPressed(keyCode, scanCode, modifiers)) {
-                return true;
-            }
-            return true;
+            searchBox.keyPressed(keyCode, scanCode, modifiers);
+            return true; // typing never closes the screen
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        boolean handled = super.mouseClicked(mouseX, mouseY, button);
-        if (this.searchBox != null && !this.searchBox.isMouseOver(mouseX, mouseY)) {
-            this.searchBox.setFocused(false);
-        }
-        return handled;
     }
 
     @Override

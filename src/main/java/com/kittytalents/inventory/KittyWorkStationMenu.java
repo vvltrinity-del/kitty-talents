@@ -28,31 +28,31 @@ public class KittyWorkStationMenu extends AbstractContainerMenu {
         for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 9; col++) {
                 int idx = row * 9 + col;
-                this.addSlot(new SlotItemHandler(station.getInventory(), idx, 16 + col * 18, 52 + row * 18));
+                this.addSlot(new SlotItemHandler(station.getInventory(), idx, 18 + col * 18, 53 + row * 18));
             }
         }
 
         // 4 Supply Input Slots (18..21): y = 98
         for (int i = 0; i < 4; i++) {
-            this.addSlot(new SlotItemHandler(station.getInventory(), 18 + i, 16 + i * 18, 98));
+            this.addSlot(new SlotItemHandler(station.getInventory(), 18 + i, 18 + i * 18, 105));
         }
 
         // 2 Upgrade Slots (22..23): y = 98, right side
         for (int i = 0; i < 2; i++) {
-            this.addSlot(new SlotItemHandler(station.getInventory(), 22 + i, 142 + i * 18, 98));
+            this.addSlot(new SlotItemHandler(station.getInventory(), 22 + i, 144 + i * 18, 105));
         }
 
         // Player Inventory (3 rows of 9)
-        int startY = 128;
+        int startY = 146;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 16 + col * 18, startY + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 18 + col * 18, startY + row * 18));
             }
         }
 
         // Hotbar (9 slots)
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, 16 + col * 18, startY + 58));
+            this.addSlot(new Slot(playerInventory, col, 18 + col * 18, startY + 58));
         }
     }
 

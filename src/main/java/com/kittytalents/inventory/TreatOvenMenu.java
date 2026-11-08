@@ -28,14 +28,14 @@ public class TreatOvenMenu extends AbstractContainerMenu {
 
         // 3 Ingredient Slots (0..2)
         for (int i = 0; i < 3; i++) {
-            this.addSlot(new SlotItemHandler(oven.getInventory(), i, 30 + i * 20, 32));
+            this.addSlot(new SlotItemHandler(oven.getInventory(), i, 27 + i * 20, 47));
         }
 
         // Fuel Slot (3)
-        this.addSlot(new SlotItemHandler(oven.getInventory(), TreatOvenBlockEntity.SLOT_FUEL, 50, 72));
+        this.addSlot(new SlotItemHandler(oven.getInventory(), TreatOvenBlockEntity.SLOT_FUEL, 47, 85));
 
         // Output Slot (4)
-        this.addSlot(new SlotItemHandler(oven.getInventory(), TreatOvenBlockEntity.SLOT_OUTPUT, 134, 50) {
+        this.addSlot(new SlotItemHandler(oven.getInventory(), TreatOvenBlockEntity.SLOT_OUTPUT, 147, 57) {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
                 return false;
@@ -43,16 +43,16 @@ public class TreatOvenMenu extends AbstractContainerMenu {
         });
 
         // Player Inventory (3 rows of 9)
-        int startY = 108;
+        int startY = 128;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 16 + col * 18, startY + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 18 + col * 18, startY + row * 18));
             }
         }
 
         // Hotbar (9 slots)
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, 16 + col * 18, startY + 58));
+            this.addSlot(new Slot(playerInventory, col, 18 + col * 18, startY + 58));
         }
     }
 

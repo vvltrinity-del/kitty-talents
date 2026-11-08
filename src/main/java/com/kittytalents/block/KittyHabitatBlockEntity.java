@@ -150,7 +150,25 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     private int maxProgress = 160;
     private int totalCycles = 0;
     private int totalResources = 0;
-    private String statusMessage = "Idle - No Worker Assigned";
+    /** What the habitat is doing. Synced to open screens through {@link #dataAccess} (the text used to be server-only). */
+    public enum Status { IDLE, WORKING, PAUSED, PAUSED_REDSTONE, WORKER_DOWN, WORKER_STARVING, OUTPUT_FULL }
+    private Status status = Status.IDLE;
+
+    /** Live values for an open screen: progress, max progress, total cycles, paused flag, status ordinal. */
+    public final net.minecraft.world.inventory.ContainerData dataAccess = new net.minecraft.world.inventory.ContainerData() {
+        @Override public int get(int i) {
+            return switch (i) {
+                case 0 -> progress;
+                case 1 -> maxProgress;
+                case 2 -> totalCycles;
+                case 3 -> isPaused ? 1 : 0;
+                case 4 -> status.ordinal();
+                default -> 0;
+            };
+        }
+        @Override public void set(int i, int v) {}
+        @Override public int getCount() { return 5; }
+    };
 
     private int simulationCooldown = 0;
     private TalentedCat cachedWorkerCat = null;
@@ -180,7 +198,26 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     public int getAssignedCatLevel() { return assignedCatLevel; }
     public boolean isAssignedCatFemale() { return assignedCatFemale; }
     public String getAssignedCatRole() { return assignedCatRole; }
-    public String getStatusMessage() { return statusMessage; }
+    public Status getStatus() { return status; }
+    /** English status text (kept for Jade and older callers). */
+    public String getStatusMessage() { return statusText(status, assignedCatResourceTier); }
+    public static String statusText(Status st, ProductionTier tier) {
+        return switch (st) {
+            case IDLE -> "Idle - No Worker Assigned";
+            case WORKING -> "Working (" + tier.getDisplayName() + ")";
+            case PAUSED -> "Paused";
+            case PAUSED_REDSTONE -> "Paused (Redstone)";
+            case WORKER_DOWN -> "Worker Incapacitated";
+            case WORKER_STARVING -> "Worker Starving (<20 Hunger)";
+            case OUTPUT_FULL -> "Output Full";
+        };
+    }
+
+    /** Screen "Dismiss Worker": a housed cat is released beside the habitat; a linked worker is just unassigned. */
+    public void dismissWorker() {
+        if (hasStoredCat()) releaseHousedCat(worldPosition.above());
+        else removeWorker();
+    }
     public boolean hasStoredCat() { return storedCat != null && !storedCat.isEmpty(); }
     public CompoundTag getStoredCatTag() { return storedCat; }
 
@@ -252,7 +289,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         this.assignedCatFemale = female;
         this.assignedCatRole = role;
         this.progress = 0;
-        this.statusMessage = "Working (" + this.assignedCatResourceTier.getDisplayName() + ")";
+        this.status = Status.WORKING;
         setChanged();
         if (this.level != null && !this.level.isClientSide) {
             this.level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
@@ -286,7 +323,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         this.assignedCatLevel = 1;
         this.assignedCatRole = "";
         this.progress = 0;
-        this.statusMessage = "Idle - No Worker Assigned";
+        this.status = Status.IDLE;
         setChanged();
         if (this.level != null && !this.level.isClientSide) {
             this.level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
@@ -295,9 +332,18 @@ public class KittyHabitatBlockEntity extends BlockEntity {
 
     public static void tick(Level level, BlockPos pos, BlockState state, KittyHabitatBlockEntity habitat) {
         if (level.isClientSide) return;
+        Status before = habitat.status;
+        tickInner(level, pos, habitat);
+        if (habitat.status != before) { // keep the client copy (Jade, screens) in step with the status
+            habitat.setChanged();
+            level.sendBlockUpdated(pos, state, state, 3);
+        }
+    }
+
+    private static void tickInner(Level level, BlockPos pos, KittyHabitatBlockEntity habitat) {
 
         if (habitat.assignedCatUUID == null && !habitat.hasStoredCat()) {
-            habitat.statusMessage = "Idle - No Worker Assigned";
+            habitat.status = Status.IDLE;
             habitat.workerValid = false;
             habitat.cachedWorkerCat = null;
             if (habitat.progress > 0) {
@@ -308,7 +354,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         }
 
         if (habitat.isPaused || level.hasNeighborSignal(pos)) {
-            habitat.statusMessage = level.hasNeighborSignal(pos) ? "Paused (Redstone)" : "Paused";
+            habitat.status = level.hasNeighborSignal(pos) ? Status.PAUSED_REDSTONE : Status.PAUSED;
             return;
         }
 
@@ -330,12 +376,12 @@ public class KittyHabitatBlockEntity extends BlockEntity {
                 if (e instanceof TalentedCat cat) {
                     activeCat = cat;
                     if (cat.isIncapacitated()) {
-                        habitat.statusMessage = "Worker Incapacitated";
+                        habitat.status = Status.WORKER_DOWN;
                         habitat.workerValid = false;
                         return;
                     }
                     if (cat.getHunger() <= 20) {
-                        habitat.statusMessage = "Worker Starving (<20 Hunger)";
+                        habitat.status = Status.WORKER_STARVING;
                         habitat.workerValid = false;
                         return;
                     }
@@ -351,7 +397,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
                 habitat.assignedCatFemale = activeCat.isFemale();
             }
 
-            habitat.statusMessage = "Working (" + habitat.assignedCatResourceTier.getDisplayName() + ")";
+            habitat.status = Status.WORKING;
             habitat.cachedCycleMultiplier = ("NEKOMATA".equalsIgnoreCase(habitat.assignedCatMutation) ||
                     (activeCat != null && activeCat.getMutation() == com.kittytalents.entity.CatBreedingManager.MutationType.NEKOMATA)) ? 2 : 1;
 
@@ -428,7 +474,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         if (!habitat.workerValid) return;
 
         if (habitat.cachedProducedItem.isEmpty() || !habitat.canInsertOutput(habitat.cachedProducedItem)) {
-            habitat.statusMessage = "Output Full";
+            habitat.status = Status.OUTPUT_FULL;
             return;
         }
 
@@ -550,6 +596,8 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         tag.putInt("TotalCycles", totalCycles);
         tag.putInt("TotalResources", totalResources);
         tag.putBoolean("IsPaused", isPaused);
+        tag.putInt("Status", status.ordinal());
+        tag.putInt("MaxProgress", maxProgress);
         tag.putInt("Energy", energyStorage.getEnergyStored());
         tag.putInt("HousedHunger", housedHunger);
         if (storedCat != null && !storedCat.isEmpty()) {
@@ -582,6 +630,8 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         totalCycles = tag.getInt("TotalCycles");
         totalResources = tag.getInt("TotalResources");
         isPaused = tag.getBoolean("IsPaused");
+        if (tag.contains("Status")) status = Status.values()[Math.max(0, Math.min(Status.values().length - 1, tag.getInt("Status")))];
+        if (tag.contains("MaxProgress")) maxProgress = Math.max(1, tag.getInt("MaxProgress"));
         housedHunger = tag.contains("HousedHunger") ? tag.getInt("HousedHunger") : 100;
         if (tag.contains("Energy")) {
             energyStorage.receiveEnergy(tag.getInt("Energy"), false);

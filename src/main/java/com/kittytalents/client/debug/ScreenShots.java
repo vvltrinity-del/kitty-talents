@@ -34,6 +34,9 @@ public final class ScreenShots {
     private static final int TABS = 7;
     /** After the tab shots: one frame with the Twine HUD and companion cards drawn over the world. */
     private static final int HUD_STEP = GUI_SCALES.length * TABS;
+    /** After the HUD: the other themed screens, each at both GUI scales. */
+    private static final String[] EXTRAS = { "habitat", "codex", "whistle", "pack", "bowl", "station", "oven" };
+    private static final int LAST_STEP = HUD_STEP + EXTRAS.length * GUI_SCALES.length;
 
     private static int ticksInWorld;
     private static int step = -1, frames;
@@ -65,6 +68,9 @@ public final class ScreenShots {
         String file;
         if (step == HUD_STEP) {
             file = "hud.png";
+        } else if (step > HUD_STEP) {
+            int e = step - HUD_STEP - 1;
+            file = "gui" + GUI_SCALES[e / EXTRAS.length] + "_" + EXTRAS[e % EXTRAS.length] + ".png";
         } else {
             file = "gui" + GUI_SCALES[step / TABS] + "_tab" + (step % TABS) + ".png";
         }
@@ -74,7 +80,7 @@ public final class ScreenShots {
             KittyTalents.LOGGER.error("[ScreenShots] failed", e);
         }
         step++;
-        if (step > HUD_STEP) {
+        if (step > LAST_STEP) {
             done = true;
             KittyTalents.LOGGER.info("[ScreenShots] wrote {} images to {}", step, dir.getAbsolutePath());
             mc.setScreen(null);
@@ -96,6 +102,16 @@ public final class ScreenShots {
 
     private static void open(Minecraft mc) {
         frames = 0;
+        if (step > HUD_STEP) {
+            int e = step - HUD_STEP - 1;
+            int scale = GUI_SCALES[e / EXTRAS.length];
+            if (mc.options.guiScale().get() != scale) {
+                mc.options.guiScale().set(scale);
+                mc.resizeDisplay();
+            }
+            mc.setScreen(extraScreen(mc, EXTRAS[e % EXTRAS.length]));
+            return;
+        }
         if (step == HUD_STEP) {
             mc.setScreen(null);
             mc.options.guiScale().set(3);
@@ -125,6 +141,58 @@ public final class ScreenShots {
         if (mc.screen instanceof CatTalentScreen screen) {
             screen.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
             screen.showTab(step % TABS);
+        }
+    }
+
+    /** Block and pack screens on client-only block entities (no world access), with sample contents. */
+    private static net.minecraft.client.gui.screens.Screen extraScreen(Minecraft mc, String name) {
+        var inv = mc.player.getInventory();
+        var pos = net.minecraft.core.BlockPos.ZERO;
+        switch (name) {
+            case "habitat" -> {
+                var be = new com.kittytalents.block.KittyHabitatBlockEntity(pos, com.kittytalents.registry.ModBlocks.KITTY_HABITAT.get().defaultBlockState());
+                be.assignWorker(cat.getUUID(), "Hermes", com.kittytalents.entity.CatVariant.TABBY,
+                        com.kittytalents.entity.ProductionTier.IRON, 70, false, "Nimble", "NONE");
+                net.minecraft.nbt.CompoundTag t = be.saveWithoutMetadata();
+                net.minecraft.nbt.CompoundTag catTag = cat.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+                t.put("StoredCat", catTag);
+                t.putInt("TotalCycles", 1771);
+                t.putInt("Progress", 60);
+                be.load(t);
+                be.getInventory().setStackInSlot(4, new ItemStack(Items.IRON_INGOT, 12));
+                be.getInventory().setStackInSlot(0, new ItemStack(ModItems.UPGRADE_PRODUCTIVITY_1.get()));
+                var menu = new com.kittytalents.inventory.KittyHabitatMenu(0, inv, be);
+                return new com.kittytalents.client.gui.KittyHabitatScreen(menu, inv, Component.literal("Habitat"));
+            }
+            case "codex" -> { return new com.kittytalents.client.gui.VariantChartScreen(); }
+            case "whistle" -> { return new com.kittytalents.client.gui.KittyWhistleScreen(); }
+            case "pack" -> {
+                cat.setTalentLevel(Talents.KITTY_PACK, 5);
+                cat.getCatPack().setItem(2, new ItemStack(Items.COOKED_SALMON, 9));
+                var menu = new com.kittytalents.inventory.CatPackMenu(0, inv, cat);
+                return new com.kittytalents.client.gui.CatPackScreen(menu, inv, Component.literal("Mittens's Pack"));
+            }
+            case "bowl" -> {
+                var be = new com.kittytalents.block.CatFoodBowlBlockEntity(pos, com.kittytalents.registry.ModBlocks.CAT_FOOD_BOWL.get().defaultBlockState());
+                be.getInventory().setStackInSlot(0, new ItemStack(Items.COOKED_COD, 16));
+                var data = new net.minecraft.world.inventory.SimpleContainerData(3);
+                data.set(0, 16);
+                data.set(1, 2);
+                var menu = new com.kittytalents.inventory.CatFoodBowlMenu(0, inv, be, data);
+                return new com.kittytalents.client.gui.CatFoodBowlScreen(menu, inv, Component.literal("Cat Food Bowl"));
+            }
+            case "station" -> {
+                var be = new com.kittytalents.block.KittyWorkStationBlockEntity(pos, com.kittytalents.registry.ModBlocks.KITTY_WORK_STATION.get().defaultBlockState());
+                be.getInventory().setStackInSlot(0, new ItemStack(Items.WHEAT, 32));
+                var menu = new com.kittytalents.inventory.KittyWorkStationMenu(0, inv, be);
+                return new com.kittytalents.client.gui.KittyWorkStationScreen(menu, inv, Component.literal("Work Station"));
+            }
+            default -> {
+                var be = new com.kittytalents.block.TreatOvenBlockEntity(pos, com.kittytalents.registry.ModBlocks.TREAT_OVEN.get().defaultBlockState());
+                be.getInventory().setStackInSlot(0, new ItemStack(ModItems.CATNIP.get(), 4));
+                var menu = new com.kittytalents.inventory.TreatOvenMenu(0, inv, be);
+                return new com.kittytalents.client.gui.TreatOvenScreen(menu, inv, Component.literal("Treat Oven"));
+            }
         }
     }
 

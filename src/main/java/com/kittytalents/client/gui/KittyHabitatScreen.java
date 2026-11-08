@@ -1,106 +1,187 @@
 package com.kittytalents.client.gui;
 
 import com.kittytalents.block.KittyHabitatBlockEntity;
+import com.kittytalents.block.KittyHabitatBlockEntity.Status;
+import com.kittytalents.client.gui.theme.KTButton;
+import com.kittytalents.client.gui.theme.KTContainerScreen;
+import com.kittytalents.client.gui.theme.KTTheme;
+import com.kittytalents.client.gui.theme.KTText;
+import com.kittytalents.entity.TalentedCat;
 import com.kittytalents.inventory.KittyHabitatMenu;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.ChatFormatting;
+import com.kittytalents.registry.ModEntities;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
-public class KittyHabitatScreen extends AbstractContainerScreen<KittyHabitatMenu> {
+import java.util.List;
+
+/**
+ * Kitty Production Habitat (Phase 6 theme): worker card with a portrait of the housed cat, upgrade and supply slots on
+ * the left; live status, cycles, progress, Dismiss / Pause and outputs on the right. Live values come from the menu's
+ * synced data, and the buttons go to the server through clickMenuButton.
+ */
+public class KittyHabitatScreen extends KTContainerScreen<KittyHabitatMenu> {
+    private static final int LW = 112, RW = 100, PH = 102;
+
     private final KittyHabitatBlockEntity habitat;
+    private KTButton pauseButton, dismissButton;
+    private TalentedCat portraitCat;
+    private CompoundTag portraitSource;
 
     public KittyHabitatScreen(KittyHabitatMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
+        super(menu, playerInventory, title, KittyHabitatMenu.WIDTH, KittyHabitatMenu.HEIGHT);
         this.habitat = menu.getHabitat();
-        this.imageWidth = 200;
-        this.imageHeight = 216;
     }
+
+    @Override
+    protected Component bannerTitle() {
+        return KTText.t("habitat.title", "KITTY PRODUCTION HABITAT");
+    }
+
+    private int rx() { return leftPos + 8 + LW + 4; }
+    private int ry() { return topPos + 26; }
 
     @Override
     protected void init() {
         super.init();
-        this.clearWidgets();
+        int bx = rx() + 5, bw = (RW - 12) / 2;
+        dismissButton = addRenderableWidget(new KTButton(bx, ry() + 46, bw, 16, KTText.t("habitat.dismiss", "Dismiss"),
+                b -> click(KittyHabitatMenu.BUTTON_DISMISS)).style(KTButton.Style.RED)
+                .tip(KTText.t("habitat.dismiss.tip", "Release the housed cat beside the habitat")));
+        pauseButton = addRenderableWidget(new KTButton(bx + bw + 2, ry() + 46, bw, 16, Component.empty(),
+                b -> click(KittyHabitatMenu.BUTTON_PAUSE)).style(KTButton.Style.PURPLE).color(0xFFF3E8FF));
+        updateButtons();
+    }
 
-        // Control buttons
-        this.addRenderableWidget(Button.builder(Component.literal("Dismiss Worker"), button -> {
-            habitat.removeWorker();
-            button.active = false;
-        }).bounds(this.leftPos + 104, this.topPos + 58, 86, 16).build());
+    private void click(int id) {
+        if (minecraft != null && minecraft.gameMode != null) minecraft.gameMode.handleInventoryButtonClick(menu.containerId, id);
+    }
 
-        this.addRenderableWidget(Button.builder(Component.literal(habitat.isPaused() ? "Resume" : "Pause"), button -> {
-            habitat.setPaused(!habitat.isPaused());
-            button.setMessage(Component.literal(habitat.isPaused() ? "Resume" : "Pause"));
-        }).bounds(this.leftPos + 104, this.topPos + 76, 86, 16).build());
+    private boolean hasWorker() {
+        return habitat.getAssignedCatUUID() != null || habitat.hasStoredCat();
+    }
+
+    private void updateButtons() {
+        if (pauseButton == null) return;
+        pauseButton.setMessage(menu.isPaused() ? KTText.t("habitat.resume", "Resume") : KTText.t("habitat.pause", "Pause"));
+        dismissButton.enabled(hasWorker());
     }
 
     @Override
-    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        // Dark translucent panel
-        int x = this.leftPos;
-        int y = this.topPos;
+    protected void containerTick() {
+        super.containerTick();
+        updateButtons();
+    }
 
-        graphics.fill(x, y, x + imageWidth, y + imageHeight, 0xDD15151C);
-        graphics.fill(x + 1, y + 1, x + imageWidth - 1, y + 19, 0xFF2A2A38);
-
-        // Header
-        graphics.drawString(this.font, "Kitty Production Habitat", x + 10, y + 6, 0xFFFACC15, false);
-
-        // Worker Panel Box (Left)
-        graphics.fill(x + 10, y + 24, x + 96, y + 84, 0x8820202A);
-
+    /** The housed cat rebuilt from the synced NBT (or the live linked worker, if loaded nearby). */
+    private TalentedCat portrait() {
+        if (minecraft == null || minecraft.level == null) return null;
+        CompoundTag stored = habitat.getStoredCatTag();
+        if (stored != null && !stored.isEmpty()) {
+            if (portraitCat == null || portraitSource != stored) {
+                portraitSource = stored;
+                portraitCat = ModEntities.TALENTED_CAT.get().create(minecraft.level);
+                if (portraitCat != null) {
+                    CompoundTag copy = stored.copy();
+                    copy.remove("UUID");
+                    portraitCat.load(copy);
+                    portraitCat.setOrderedToSit(false);
+                }
+            }
+            return portraitCat;
+        }
         if (habitat.getAssignedCatUUID() != null) {
-            graphics.drawString(this.font, habitat.getAssignedCatName(), x + 14, y + 28, 0xFF55FFFF, false);
-            graphics.drawString(this.font, habitat.getAssignedCatVariant().getDisplayName(), x + 14, y + 40, 0xFFAAAAAA, false);
-            graphics.drawString(this.font, "Lv." + habitat.getAssignedCatLevel() + " | " + (habitat.isAssignedCatFemale() ? "♀" : "♂"), x + 14, y + 52, 0xFFE0E0E0, false);
-            graphics.drawString(this.font, habitat.getAssignedCatRole(), x + 14, y + 64, 0xFF55FF55, false);
-        } else {
-            graphics.drawString(this.font, "No Worker", x + 18, y + 40, 0xFFFF5555, false);
-            graphics.drawString(this.font, "Use Clipboard", x + 14, y + 54, 0xFF888888, false);
+            for (Entity e : minecraft.level.entitiesForRendering()) {
+                if (e instanceof TalentedCat cat && habitat.getAssignedCatUUID().equals(cat.getUUID())) return cat;
+            }
         }
-
-        // Status line
-        graphics.drawString(this.font, "Status: " + habitat.getStatusMessage(), x + 104, y + 28, 0xFFE5E7EB, false);
-        graphics.drawString(this.font, "Cycles: " + habitat.getTotalCycles(), x + 104, y + 40, 0xFF9CA3AF, false);
-
-        // Progress Bar
-        int progress = habitat.getProgress();
-        int maxProgress = Math.max(1, habitat.getMaxProgress());
-        int barWidth = 84;
-        int filled = (progress * barWidth) / maxProgress;
-        graphics.fill(x + 104, y + 50, x + 104 + barWidth, y + 54, 0xFF374151);
-        graphics.fill(x + 104, y + 50, x + 104 + filled, y + 54, 0xFF10B981);
-
-        // Labels for slots
-        graphics.drawString(this.font, "Upgrades", x + 16, y + 84, 0xFF9CA3AF, false);
-        graphics.drawString(this.font, "Outputs", x + 108, y + 84, 0xFF9CA3AF, false);
-
-        // Draw slot outlines for Upgrades (0..3)
-        for (int i = 0; i < 4; i++) {
-            int slotX = x + 15 + i * 20;
-            int slotY = y + 93;
-            graphics.fill(slotX, slotY, slotX + 18, slotY + 18, 0xFF2D3748);
-        }
-
-        // Draw slot outlines for Outputs (4..7)
-        for (int i = 0; i < 4; i++) {
-            int slotX = x + 107 + i * 20;
-            int slotY = y + 93;
-            graphics.fill(slotX, slotY, slotX + 18, slotY + 18, 0xFF2D3748);
-        }
-
-        // Draw slot outlines for Food (8) & Catalyst (9)
-        graphics.fill(x + 55, y + 65, x + 73, y + 83, 0xFF1E3A5F);
-        graphics.fill(x + 75, y + 65, x + 93, y + 83, 0xFF3B2854);
+        return null;
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
-        super.render(graphics, mouseX, mouseY, partialTick);
-        this.renderTooltip(graphics, mouseX, mouseY);
+    protected void drawPanels(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        Font font = this.font;
+        int lx = leftPos + 8, ly = topPos + 26;
+
+        // ---- Worker card
+        KTTheme.inset(g, lx, ly, LW, PH);
+        int textW = 64;
+        if (hasWorker()) {
+            int tierColor = habitat.getAssignedCatResourceTier().getColorValue() | 0xFF000000;
+            g.drawString(font, fit(font, habitat.getAssignedCatName(), textW), lx + 6, ly + 6, KTTheme.TEXT_GOLD, true);
+            g.drawString(font, fit(font, habitat.getAssignedCatVariant().getDisplayName(), textW), lx + 6, ly + 16, KTTheme.TEXT, false);
+            g.drawString(font, "Lv. " + habitat.getAssignedCatLevel() + (habitat.isAssignedCatFemale() ? " ♀" : " ♂"),
+                    lx + 6, ly + 26, habitat.isAssignedCatFemale() ? 0xFFF9A8D4 : 0xFF93C5FD, false);
+            g.drawString(font, fit(font, habitat.getAssignedCatResourceTier().getDisplayName() + " tier", textW), lx + 6, ly + 36, tierColor, false);
+        } else {
+            g.drawString(font, KTText.s("habitat.no_worker", "No worker"), lx + 6, ly + 6, 0xFFF87171, true);
+            List<FormattedCharSequence> hint = font.split(KTText.t("habitat.no_worker.hint", "Use a Work Clipboard on the cat, then on the habitat."), textW);
+            for (int i = 0; i < Math.min(3, hint.size()); i++) g.drawString(font, hint.get(i), lx + 6, ly + 18 + i * 10, KTTheme.TEXT_DIM, false);
+        }
+        int px = lx + 72, py = ly + 5, pw = 34, ph = 39;
+        KTTheme.portrait(g, px, py, pw, ph);
+        TalentedCat cat = portrait();
+        if (cat != null) {
+            g.enableScissor(px + 4, py + 4, px + pw - 4, py + ph - 4);
+            int footX = px + pw / 2, footY = py + ph - 7;
+            InventoryScreen.renderEntityInInventoryFollowsMouse(g, footX, footY, 30, (float) footX - mouseX, (float) (footY - 20) - mouseY, cat);
+            g.disableScissor();
+        } else {
+            g.drawCenteredString(font, "?", px + pw / 2, py + ph / 2 - 4, KTTheme.TEXT_DIM);
+        }
+        KTTheme.header(g, font, lx + 6, ly + 47, LW - 12, KTText.t("habitat.upgrades", "Upgrades"));
+        g.drawString(font, KTText.s("habitat.supplies", "Supplies"), lx + 48, ly + 84, KTTheme.TEXT_DIM, false);
+
+        // ---- Status card
+        int rx = rx(), ry = ry();
+        KTTheme.inset(g, rx, ry, RW, PH);
+        Status st = menu.getStatus();
+        int stColor = switch (st) {
+            case WORKING -> 0xFF6EE7A0;
+            case PAUSED, PAUSED_REDSTONE -> 0xFFFCD34D;
+            default -> 0xFFF87171;
+        };
+        String label = KTText.s("habitat.status", "Status:") + " ";
+        g.drawString(font, label, rx + 6, ry + 6, KTTheme.TEXT_DIM, false);
+        List<FormattedCharSequence> stLines = font.split(Component.literal(
+                KTText.s("habitat.status." + st.name().toLowerCase(), KittyHabitatBlockEntity.statusText(st, habitat.getAssignedCatResourceTier()))),
+                RW - 12 - font.width(label));
+        for (int i = 0; i < Math.min(2, stLines.size()); i++) {
+            g.drawString(font, stLines.get(i), rx + 6 + font.width(label), ry + 6 + i * 10, stColor, false);
+        }
+        g.drawString(font, KTText.s("habitat.cycles", "Cycles: %s", menu.getTotalCycles()), rx + 6, ry + 27, KTTheme.TEXT_DIM, false);
+        float frac = menu.getProgress() / (float) menu.getMaxProgress();
+        KTTheme.bar(g, rx + 6, ry + 39, RW - 28, 5, frac, st == Status.WORKING ? 0xFF22C55E : 0xFF6B6760);
+        ItemStack product = hasWorker() ? habitat.getAssignedCatResourceTier().getProductionResult() : ItemStack.EMPTY;
+        if (!product.isEmpty()) {
+            g.pose().pushPose();
+            g.pose().translate(rx + RW - 19, ry + 35, 0);
+            g.pose().scale(0.75F, 0.75F, 1F);
+            g.renderItem(product, 0, 0);
+            g.pose().popPose();
+        }
+        KTTheme.header(g, font, rx + 6, ry + 66, RW - 12, KTText.t("habitat.outputs", "Outputs"));
+    }
+
+    @Override
+    protected void drawOverlay(GuiGraphics g, int mouseX, int mouseY) {
+        // Faint placeholder in the empty food slot.
+        var food = menu.slots.get(8);
+        if (!food.hasItem()) {
+            int fx = leftPos + food.x, fy = topPos + food.y;
+            g.renderItem(new ItemStack(Items.COOKED_COD), fx, fy);
+            g.fill(fx, fy, fx + 16, fy + 16, 0xB02A2A2E);
+        }
+    }
+
+    private static String fit(Font font, String s, int w) {
+        return font.width(s) <= w ? s : font.plainSubstrByWidth(s, w - font.width("…")) + "…";
     }
 }

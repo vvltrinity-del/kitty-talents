@@ -1,174 +1,160 @@
 package com.kittytalents.client.gui;
 
+import com.kittytalents.client.gui.theme.KTButton;
+import com.kittytalents.client.gui.theme.KTTheme;
+import com.kittytalents.client.gui.theme.KTText;
 import com.kittytalents.entity.ProductionTier;
-import net.minecraft.ChatFormatting;
+import com.kittytalents.registry.ModItems;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Feline Tier Evolution and Breeding Codex (Phase 6 theme): tier list on the left (tier colour and its produce as the
+ * icon), details on the right: habitat harvest, the breeding recipe that produces the tier, and the Nekomata rule.
+ */
 public class VariantChartScreen extends Screen {
-    private final List<ProductionTier> tiers = new ArrayList<>();
-    private final List<ProductionTier> filteredTiers = new ArrayList<>();
-    private ProductionTier selectedTier = ProductionTier.STANDARD;
-    private int scrollOffset = 0;
-    private EditBox searchBox;
+    private static final int LIST_W = 150, ROW_H = 20, ROW_GAP = 2;
+    private static final ProductionTier[] TIERS = ProductionTier.values();
+
+    private ProductionTier selected = ProductionTier.STANDARD;
+    private int scroll;
+    private int px, py, pw, ph;
 
     public VariantChartScreen() {
-        super(Component.literal("Feline Tier Evolution & Breeding Codex"));
-        for (ProductionTier t : ProductionTier.values()) {
-            tiers.add(t);
-        }
+        super(KTText.t("codex.title", "FELINE TIER EVOLUTION & BREEDING CODEX"));
     }
+
+    private int listY() { return py + 28; }
+    private int listH() { return ph - 36; }
+    private int visibleRows() { return Math.max(1, (listH() - 10) / (ROW_H + ROW_GAP)); }
+    private int maxScroll() { return Math.max(0, TIERS.length - visibleRows()); }
 
     @Override
     protected void init() {
-        super.init();
-        this.clearWidgets();
-
-        int panelWidth = Math.min(520, this.width - 40);
-        int panelHeight = Math.min(300, this.height - 40);
-        int startX = (this.width - panelWidth) / 2;
-        int startY = (this.height - panelHeight) / 2;
-
-        this.searchBox = new EditBox(this.font, startX + 16, startY + 28, 160, 16, Component.literal("Search"));
-        this.searchBox.setResponder(this::updateSearch);
-        this.addWidget(this.searchBox);
-
-        // Close Button
-        this.addRenderableWidget(Button.builder(Component.literal("Close"), button -> this.onClose())
-                .bounds(startX + panelWidth - 70, startY + panelHeight - 26, 60, 18).build());
-
-        updateSearch(searchBox.getValue());
+        pw = Math.min(420, width - 20);
+        ph = Math.min(244, height - 20);
+        px = (width - pw) / 2;
+        py = (height - ph) / 2;
+        rebuild();
     }
 
-    private void updateSearch(String query) {
-        filteredTiers.clear();
-        String lower = query.toLowerCase().trim();
-        for (ProductionTier t : tiers) {
-            if (lower.isEmpty() || t.getDisplayName().toLowerCase().contains(lower) || t.getId().contains(lower)) {
-                filteredTiers.add(t);
-            }
+    private void rebuild() {
+        clearWidgets();
+        scroll = Math.max(0, Math.min(scroll, maxScroll()));
+        int x = px + 13, w = LIST_W - 10 - 6, y = listY() + 5;
+        int end = Math.min(TIERS.length, scroll + visibleRows());
+        for (int i = scroll; i < end; i++) {
+            ProductionTier t = TIERS[i];
+            addRenderableWidget(new KTButton(x, y + (i - scroll) * (ROW_H + ROW_GAP), w, ROW_H,
+                    KTText.t("codex.tier." + t.getId(), "%s Tier", t.getDisplayName()), b -> {
+                selected = t;
+                rebuild();
+            }).icon(t.getProductionResult()).left().selected(t == selected).color(t.getColorValue() | 0xFF000000));
         }
-        scrollOffset = 0;
+        int dx = px + 8 + LIST_W + 6, dw = pw - LIST_W - 22;
+        addRenderableWidget(new KTButton(dx + dw - 66, py + ph - 30, 60, 18, KTText.t("codex.close", "Close"), b -> onClose())
+                .style(KTButton.Style.RED));
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (delta > 0) {
-            scrollOffset = Math.max(0, scrollOffset - 1);
-        } else if (delta < 0) {
-            int maxScroll = Math.max(0, filteredTiers.size() - 8);
-            scrollOffset = Math.min(maxScroll, scrollOffset + 1);
+        int next = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.signum(delta)));
+        if (next != scroll) {
+            scroll = next;
+            rebuild();
         }
         return true;
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int panelWidth = Math.min(520, this.width - 40);
-        int startX = (this.width - panelWidth) / 2;
-        int startY = (this.height - Math.min(300, this.height - 40)) / 2;
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        renderBackground(g);
+        Font font = this.font;
+        KTTheme.frame(g, px, py, pw, ph);
+        KTTheme.banner(g, font, px + 6, py + 6, pw - 12, 16, title);
 
-        int listX = startX + 16;
-        int listY = startY + 48;
-
-        for (int i = 0; i < 8; i++) {
-            int idx = scrollOffset + i;
-            if (idx >= filteredTiers.size()) break;
-            int itemY = listY + i * 24;
-            if (mouseX >= listX && mouseX <= listX + 160 && mouseY >= itemY && mouseY <= itemY + 22) {
-                this.selectedTier = filteredTiers.get(idx);
-                return true;
-            }
+        // Tier list
+        int lx = px + 8, ly = listY(), lh = listH();
+        KTTheme.inset(g, lx, ly, LIST_W, lh);
+        if (maxScroll() > 0) {
+            int trackX = lx + LIST_W - 8, trackY = ly + 5, trackH = lh - 10;
+            g.fill(trackX, trackY, trackX + 3, trackY + trackH, 0x66000000);
+            int thumbH = Math.max(12, trackH * visibleRows() / TIERS.length);
+            int thumbY = trackY + (trackH - thumbH) * scroll / maxScroll();
+            g.fill(trackX, thumbY, trackX + 3, thumbY + thumbH, KTTheme.GOLD_EDGE);
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+
+        // Details
+        int dx = lx + LIST_W + 6, dw = pw - LIST_W - 22, tx = dx + 8, tw = dw - 16;
+        KTTheme.inset(g, dx, ly, dw, lh);
+        int tierColor = selected.getColorValue() | 0xFF000000;
+        int y = ly + 7;
+        g.drawString(font, KTText.s("codex.tier_title", "%s TIER", selected.getDisplayName().toUpperCase()), tx, y, tierColor, true);
+        String rank = KTText.s("codex.rank", "Tier %s of %s", selected.ordinal() + 1, TIERS.length);
+        g.drawString(font, rank, dx + dw - 8 - font.width(rank), y, KTTheme.TEXT_DIM, false);
+
+        y += 15;
+        KTTheme.header(g, font, tx, y, tw, KTText.t("codex.harvest", "Habitat Harvest"));
+        y += 12;
+        ItemStack prod = selected.getProductionResult();
+        g.renderItem(prod, tx, y);
+        g.drawString(font, prod.getHoverName().getString() + " ×" + prod.getCount(), tx + 20, y + 1, 0xFFFCD34D, false);
+        int ticks = selected.getBaseIntervalTicks();
+        g.drawString(font, KTText.s("codex.interval", "every %s s (%s ticks)", String.format("%.1f", ticks / 20.0F), ticks),
+                tx + 20, y + 10, KTTheme.TEXT_DIM, false);
+
+        y += 24;
+        KTTheme.header(g, font, tx, y, tw, KTText.t("codex.breeding", "Breeding"));
+        y += 12;
+        if (selected == ProductionTier.STANDARD) {
+            y = wrap(g, font, KTText.t("codex.breeding.standard", "Wild village cats and newly tamed companions start here."), tx, y, tw, KTTheme.TEXT);
+        } else {
+            ProductionTier prev = TIERS[selected.ordinal() - 1];
+            ItemStack a = prev.getProductionResult();
+            g.renderItem(a, tx, y);
+            g.drawString(font, "+", tx + 20, y + 4, KTTheme.TEXT, false);
+            g.renderItem(a, tx + 28, y);
+            g.drawString(font, "→", tx + 48, y + 4, KTTheme.TEXT, false);
+            g.renderItem(prod, tx + 58, y);
+            g.drawString(font, font.plainSubstrByWidth(KTText.s("codex.breeding.recipe", "two %s cats", prev.getDisplayName()), tw - 80),
+                    tx + 78, y + 4, prev.getColorValue() | 0xFF000000, false);
+            y += 20;
+        }
+        g.renderItem(new ItemStack(ModItems.BREEDING_CATNIP.get()), tx, y - 2);
+        y = wrap(g, font, KTText.t("codex.breeding.item", "Breed with Breeding Catnip (or Spirit Catnip)."), tx + 20, y + 2, tw - 20, 0xFFA7F3D0) + 2;
+
+        KTTheme.header(g, font, tx, y, tw, KTText.t("codex.nekomata", "Spirit Catnip & Nekomata"));
+        y += 12;
+        y = wrap(g, font, KTText.t("codex.nekomata.text",
+                "Feed Spirit Catnip to either parent: the kitten is always a Nekomata, with two tails and double habitat yield."),
+                tx, y, tw, 0xFF67E8F9);
+
+        // Footnote beside the Close button, only when it fits under the text above.
+        Component note = KTText.t("codex.note", "Coats are cosmetic skins; tiers only change through breeding.");
+        int noteLines = font.split(note, tw - 70).size();
+        int noteY = ly + lh - 6 - noteLines * 10;
+        if (y + 2 <= noteY) wrap(g, font, note, tx, noteY, tw - 70, KTTheme.TEXT_DIM);
+        super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    /** Draws wrapped text; returns the y below it. */
+    private static int wrap(GuiGraphics g, Font font, Component text, int x, int y, int w, int color) {
+        List<FormattedCharSequence> lines = font.split(text, w);
+        for (FormattedCharSequence line : lines) {
+            g.drawString(font, line, x, y, color, false);
+            y += 10;
+        }
+        return y;
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
-
-        int panelWidth = Math.min(520, this.width - 40);
-        int panelHeight = Math.min(300, this.height - 40);
-        int startX = (this.width - panelWidth) / 2;
-        int startY = (this.height - panelHeight) / 2;
-
-        // Dark translucent panel
-        graphics.fill(startX, startY, startX + panelWidth, startY + panelHeight, 0xEE111827);
-        graphics.fill(startX + 1, startY + 1, startX + panelWidth - 1, startY + 22, 0xFF1F2937);
-
-        // Header Title
-        graphics.drawString(this.font, "FELINE TIER EVOLUTION & BREEDING CODEX", startX + 16, startY + 7, 0xFFF59E0B, false);
-
-        // Search Box render
-        if (searchBox != null) searchBox.render(graphics, mouseX, mouseY, partialTick);
-
-        // Left List: Tiers
-        int listX = startX + 16;
-        int listY = startY + 48;
-        for (int i = 0; i < 8; i++) {
-            int idx = scrollOffset + i;
-            if (idx >= filteredTiers.size()) break;
-
-            ProductionTier t = filteredTiers.get(idx);
-            boolean isSelected = (t == selectedTier);
-            int itemY = listY + i * 24;
-
-            graphics.fill(listX, itemY, listX + 160, itemY + 22, isSelected ? 0xFF374151 : 0xFF1F2937);
-            // Color indicator dot
-            graphics.fill(listX + 4, itemY + 6, listX + 14, itemY + 16, 0xFF000000 | t.getColorValue());
-
-            graphics.drawString(this.font, t.getDisplayName() + " Tier", listX + 18, itemY + 7, 0xFF000000 | t.getColorValue(), false);
-        }
-
-        // Right Detail Card
-        if (selectedTier != null) {
-            int detailX = startX + 190;
-            int detailY = startY + 30;
-            int detailW = panelWidth - 206;
-            int detailH = panelHeight - 65;
-
-            graphics.fill(detailX, detailY, detailX + detailW, detailY + detailH, 0xAA1F2937);
-
-            // Tier Name & Badge
-            graphics.drawString(this.font, selectedTier.getDisplayName().toUpperCase() + " TIER", detailX + 12, detailY + 10, 0xFF000000 | selectedTier.getColorValue(), false);
-            graphics.drawString(this.font, "Rank: Tier " + (selectedTier.ordinal() + 1) + " of 10", detailX + 12, detailY + 24, 0xFF9CA3AF, false);
-
-            // Production yield
-            graphics.drawString(this.font, "=== SIMULATED HABITAT HARVEST ===", detailX + 12, detailY + 44, 0xFFE5E7EB, false);
-            ItemStack prod = selectedTier.getProductionResult();
-            graphics.renderItem(prod, detailX + 12, detailY + 58);
-            graphics.drawString(this.font, prod.getHoverName().getString() + " (x" + prod.getCount() + ")", detailX + 34, detailY + 62, 0xFFFBBF24, false);
-            graphics.drawString(this.font, "Generation Interval: " + selectedTier.getBaseIntervalTicks() + " ticks", detailX + 12, detailY + 78, 0xFF9CA3AF, false);
-
-            // Guaranteed Breeding Evolution
-            graphics.drawString(this.font, "=== GUARANTEED BREEDING EVOLUTION ===", detailX + 12, detailY + 98, 0xFFE5E7EB, false);
-
-            String formula;
-            if (selectedTier == ProductionTier.STANDARD) {
-                formula = "Wild Village Cats / Tamed Companions (Starting Tier)";
-            } else {
-                ProductionTier prev = ProductionTier.values()[selectedTier.ordinal() - 1];
-                formula = prev.getDisplayName() + " Tier  +  " + prev.getDisplayName() + " Tier";
-            }
-
-            graphics.drawString(this.font, "Parent Recipe: " + formula, detailX + 12, detailY + 114, 0xFFA7F3D0, false);
-            graphics.drawString(this.font, "Breeding Item: Breeding Catnip (or Spirit Catnip)", detailX + 12, detailY + 128, 0xFFFCD34D, false);
-
-            // Mutation Notice
-            graphics.drawString(this.font, "=== SPIRIT CATNIP & NEKOMATA ===", detailX + 12, detailY + 148, 0xFFE5E7EB, false);
-            graphics.drawString(this.font, "✦ Feeding Spirit Catnip to either parent guarantees", detailX + 12, detailY + 162, 0xFF67E8F9, false);
-            graphics.drawString(this.font, "  a NEKOMATA mutation offspring (dual tails & 2x yield)!", detailX + 12, detailY + 174, 0xFF67E8F9, false);
-
-            graphics.drawString(this.font, "Note: Coat breeds are cosmetic skins; tiers evolve through breeding!", detailX + 12, detailY + 194, 0xFF9CA3AF, false);
-        }
-
-        super.render(graphics, mouseX, mouseY, partialTick);
+    public boolean isPauseScreen() {
+        return false;
     }
 }

@@ -30,21 +30,21 @@ public class CatPackMenu extends AbstractContainerMenu {
         // Cat inventory slots
         for (int r = 0; r < this.numRows; ++r) {
             for (int c = 0; c < 9; ++c) {
-                this.addSlot(new Slot(this.catContainer, c + r * 9, 8 + c * 18, 18 + r * 18));
+                this.addSlot(new Slot(this.catContainer, c + r * 9, 12 + c * 18, 31 + r * 18));
             }
         }
 
         // Player Inventory
-        int startY = 18 + this.numRows * 18 + 14;
+        int startY = 31 + this.numRows * 18 + 26;
         for (int l = 0; l < 3; ++l) {
             for (int k = 0; k < 9; ++k) {
-                this.addSlot(new Slot(playerInventory, k + l * 9 + 9, 8 + k * 18, startY + l * 18));
+                this.addSlot(new Slot(playerInventory, k + l * 9 + 9, 12 + k * 18, startY + l * 18));
             }
         }
 
         // Player Hotbar
         for (int i1 = 0; i1 < 9; ++i1) {
-            this.addSlot(new Slot(playerInventory, i1, 8 + i1 * 18, startY + 58));
+            this.addSlot(new Slot(playerInventory, i1, 12 + i1 * 18, startY + 58));
         }
     }
 

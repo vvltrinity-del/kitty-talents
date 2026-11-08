@@ -133,6 +133,25 @@ public final class KTTheme {
         for (int i = 0; i < 3; i++) g.fill(lx + 4 + i * 4, y + h / 2 - 1, lx + 6 + i * 4, y + h / 2 + 1, 0xFF6B6760);
     }
 
+    /** Centred title banner (block screens): spruce strip, gold text, diamond ornaments either side. */
+    public static void banner(GuiGraphics g, Font font, int x, int y, int w, int h, Component text) {
+        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, OUTLINE);
+        tile(g, SPRUCE, x, y, w, h);
+        g.fill(x, y, x + w, y + h, 0x99000000);
+        bevel(g, x, y, w, h, 0x33FFFFFF, 0x66000000);
+        int tw = font.width(text);
+        int tx = x + (w - tw) / 2, ty = y + (h - 8) / 2;
+        g.drawString(font, text, tx, ty, TEXT_GOLD, true);
+        int cy = y + h / 2;
+        for (int side = -1; side <= 1; side += 2) {
+            int ox = side < 0 ? tx - 9 : tx + tw + 5;
+            g.fill(ox + 1, cy - 2, ox + 3, cy + 2, GOLD_EDGE);
+            g.fill(ox, cy - 1, ox + 4, cy + 1, GOLD_EDGE);
+            int lx0 = side < 0 ? x + 6 : ox + 7, lx1 = side < 0 ? ox - 3 : x + w - 6;
+            if (lx1 > lx0) g.fill(lx0, cy, lx1, cy + 1, 0x66E0B04A);
+        }
+    }
+
     /** A folder tab above the frame. Active tabs are lighter and gold-edged. */
     public static void tab(GuiGraphics g, Font font, int x, int y, int w, int h, Component label, int color, boolean active, boolean hovered) {
         g.fill(x - 1, y - 1, x + w + 1, y + h + (active ? 0 : 1), OUTLINE);
