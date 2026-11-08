@@ -265,130 +265,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     @Override
     protected void registerGoals() {
-        CatAIInitializer.initializeGoals(this);
-        this.goalSelector.addGoal(0, new FloatGoal(this));
-        this.goalSelector.addGoal(1, new SitWhenOrderedToGoal(this) {
-            @Override
-            public boolean canUse() {
-                return super.canUse() && !isTwined();
-            }
-            @Override
-            public boolean canContinueToUse() {
-                return super.canContinueToUse() && !isTwined();
-            }
-        });
-        this.goalSelector.addGoal(2, new net.minecraft.world.entity.ai.goal.BreedGoal(this, 1.0D));
-        this.goalSelector.addGoal(2, new CatFoxPounceGoal(this));
-        this.goalSelector.addGoal(2, new com.kittytalents.entity.ai.CatGunAttackGoal(this, 1.25D, 8.0F, 22.0F));
-        this.goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.35D, true) {
-            @Override
-            public boolean canUse() {
-                return super.canUse() && !isTwined() && !isIncapacitated() && !isOrderedToSit() && getCatMode() != CatMode.DOCILE && !hasEquippedGun();
-            }
-        });
-        this.goalSelector.addGoal(4, new CatCreeperWardenGoal(this));
-        this.goalSelector.addGoal(5, new CatRestOnBedGoal(this));
-        this.goalSelector.addGoal(6, new FollowOwnerGoal(this, 1.25D, 10.0F, 2.5F, false) {
-            @Override
-            public boolean canUse() {
-                return super.canUse() && !isTwined() && !isIncapacitated() && !isOrderedToSit() &&
-                        (getCatMode() == CatMode.FOLLOW || getCatMode() == CatMode.GUARD || getCatMode() == CatMode.TACTICAL);
-            }
-
-            @Override
-            public boolean canContinueToUse() {
-                return super.canContinueToUse() && !isTwined() && !isIncapacitated() && !isOrderedToSit() &&
-                        (getCatMode() == CatMode.FOLLOW || getCatMode() == CatMode.GUARD || getCatMode() == CatMode.TACTICAL);
-            }
-
-            @Override
-            public void tick() {
-                super.tick();
-                LivingEntity owner = getOwner();
-                if (owner instanceof Player p && p.isSprinting()) {
-                    if (getNavigation().getPath() != null) {
-                        setSpeed((float) (getAttributeValue(Attributes.MOVEMENT_SPEED) * 1.6D));
-                    }
-                }
-            }
-        });
-        this.goalSelector.addGoal(7, new CatUseScratcherGoal(this));
-        this.goalSelector.addGoal(8, new CatEatFromBowlGoal(this));
-        this.goalSelector.addGoal(9, new CatFetchToyGoal(this));
-        this.goalSelector.addGoal(11, new CatComfortGoal(this));
-        this.goalSelector.addGoal(13, new com.kittytalents.entity.ai.CatPlaceTorchGoal(this));
-        this.goalSelector.addGoal(11, new WaterAvoidingRandomStrollGoal(this, 1.0D) {
-            @Override
-            public boolean canUse() {
-                return super.canUse() && !isTwined() && !isIncapacitated() && !isOrderedToSit() &&
-                        (getCatMode() == CatMode.WANDER || getCatMode() == CatMode.PATROL);
-            }
-
-            @Override
-            public boolean canContinueToUse() {
-                return super.canContinueToUse() && !isTwined() && !isIncapacitated() && !isOrderedToSit() &&
-                        (getCatMode() == CatMode.WANDER || getCatMode() == CatMode.PATROL);
-            }
-        });
-        this.goalSelector.addGoal(12, new LookAtPlayerGoal(this, Player.class, 8.0F) {
-            @Override
-            public boolean canUse() {
-                return super.canUse() && !isTwined();
-            }
-            @Override
-            public boolean canContinueToUse() {
-                return super.canContinueToUse() && !isTwined();
-            }
-        });
-        this.goalSelector.addGoal(12, new RandomLookAroundGoal(this) {
-            @Override
-            public boolean canUse() {
-                return super.canUse() && !isTwined();
-            }
-            @Override
-            public boolean canContinueToUse() {
-                return super.canContinueToUse() && !isTwined();
-            }
-        });
-
-        // Target Selectors
-        this.targetSelector.addGoal(1, new OwnerHurtByTargetGoal(this) {
-            @Override
-            public boolean canUse() {
-                return super.canUse() && !isIncapacitated() && getCatMode() != CatMode.DOCILE && getCatMode() != CatMode.WANDER;
-            }
-        });
-        this.targetSelector.addGoal(2, new OwnerHurtTargetGoal(this) {
-            @Override
-            public boolean canUse() {
-                return super.canUse() && !isIncapacitated() && getCatMode() != CatMode.DOCILE && getCatMode() != CatMode.WANDER;
-            }
-        });
-        this.targetSelector.addGoal(2, new com.kittytalents.entity.ai.TrustedPlayerHurtByTargetGoal(this));
-        this.targetSelector.addGoal(2, new com.kittytalents.entity.ai.TrustedPlayerHurtTargetGoal(this));
-        this.targetSelector.addGoal(3, new HurtByTargetGoal(this) {
-            @Override
-            public boolean canUse() {
-                return super.canUse() && !isIncapacitated() && getCatMode() != CatMode.DOCILE;
-            }
-        });
-        // Guard Mode: defends a 16 block area against monsters
-        this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Monster.class, 10, true, false, (mob) -> {
-            return !isIncapacitated() && getCatMode() == CatMode.GUARD && distanceToSqr(mob) <= 256.0D;
-        }));
-        // Aggressive Mode: actively searches out monsters
-        this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Monster.class, 10, true, false, (mob) -> {
-            return !isIncapacitated() && getCatMode() == CatMode.AGGRESSIVE;
-        }));
-        // Pest Hunter goal: attacks spiders, silverfish, endermites, phantoms
-        this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Spider.class, 10, true, false, (mob) -> {
-            return !isIncapacitated() && getTalentLevel(Talents.PEST_HUNTER) > 0 && getCatMode() != CatMode.DOCILE;
-        }));
-        this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Silverfish.class, 10, true, false, (mob) -> {
-            return !isIncapacitated() && getTalentLevel(Talents.PEST_HUNTER) > 0 && getCatMode() != CatMode.DOCILE;
-        }));
-        // Hunting Mode: hunts small pests and hostile prey
-        this.targetSelector.addGoal(5, new CatMouserGoal(this));
+        // All AI is assembled in one place, in documented priority bands (Phase 3).
+        com.kittytalents.ai.CatBrain.install(this);
     }
 
     public int getCatLevel() {
@@ -439,8 +317,27 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         return CatMode.byId(this.entityData.get(DATA_MODE));
     }
 
+    /** Where STAY / GUARD hold. Set when such a mode is chosen; saved with the cat. */
+    @Nullable private BlockPos modeAnchor = null;
+    @Nullable public BlockPos getModeAnchor() { return modeAnchor; }
+    public void setModeAnchor(@Nullable BlockPos pos) { this.modeAnchor = pos; }
+
+    /** Transient: true while CatRetreatGoal is running (blocks targeting and combat goals). */
+    private boolean retreating = false;
+    public boolean isRetreating() { return retreating; }
+    public void setRetreating(boolean value) { this.retreating = value; }
+
     public void setCatMode(CatMode mode) {
+        CatMode previous = getCatMode();
         this.entityData.set(DATA_MODE, mode.ordinal());
+        // Anchored modes hold where they were ordered; re-anchor when switching into one.
+        if (mode.usesAnchor() && (previous != mode || modeAnchor == null)) {
+            this.modeAnchor = this.blockPosition();
+        }
+        // A clocked-in cat is always in WORK mode, so leaving WORK clocks it out.
+        if (mode != CatMode.WORK && !this.level().isClientSide && jobData.isClockedIn()) {
+            setClockedIn(false);
+        }
         if (mode == CatMode.DOCILE) {
             this.setOrderedToSit(true);
             this.setTarget(null);
@@ -2014,6 +1911,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         tag.putFloat("Satiety", satiety);
         tag.putInt(CatSchema.KEY_SCHEMA, CatSchema.CURRENT);
         tag.putString(CatSchema.KEY_MODE_NAME, getCatMode().name());
+        if (modeAnchor != null) tag.put("ModeAnchor", NbtUtils.writeBlockPos(modeAnchor));
         if (spiritCatnipPrimed) tag.putBoolean(CatSchema.KEY_SPIRIT_PRIMED, true);
         tag.putBoolean("Incapacitated", isIncapacitated());
         tag.putInt("SkinId", getSkinId());
@@ -2050,7 +1948,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (tag.contains("SkillPoints")) setSkillPoints(tag.getInt("SkillPoints"));
         if (tag.contains("Hunger")) setHunger(tag.getInt("Hunger"));
         this.satiety = tag.getFloat("Satiety");
-        if (tag.contains(CatSchema.KEY_MODE_NAME)) setCatMode(CatMode.byName(tag.getString(CatSchema.KEY_MODE_NAME)));
+        String savedMode = tag.getString(CatSchema.KEY_MODE_NAME);
+        if (tag.contains(CatSchema.KEY_MODE_NAME)) setCatMode(CatMode.fromSavedName(savedMode));
+        // Anchor after the mode: setCatMode would otherwise re-anchor to the load position.
+        if (tag.contains("ModeAnchor")) this.modeAnchor = NbtUtils.readBlockPos(tag.getCompound("ModeAnchor"));
         this.spiritCatnipPrimed = tag.getBoolean(CatSchema.KEY_SPIRIT_PRIMED);
         if (tag.contains("Incapacitated")) setIncapacitated(tag.getBoolean("Incapacitated"));
         if (tag.contains("SkinId")) setSkinId(tag.getInt("SkinId"));
@@ -2080,16 +1981,15 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             jobData.load(tag.getCompound("JobData"));
         }
         // Migrate legacy FARM / MINE / FISH modes to WORK + corresponding CatJob
-        CatMode currentMode = getCatMode();
-        if (currentMode == CatMode.FARM) {
+        com.kittytalents.work.CatJob legacyJob = switch (savedMode.toUpperCase(java.util.Locale.ROOT)) {
+            case "FARM" -> com.kittytalents.work.CatJob.FARMER;
+            case "MINE" -> com.kittytalents.work.CatJob.MINER;
+            case "FISH" -> com.kittytalents.work.CatJob.FISHER;
+            default -> null;
+        };
+        if (legacyJob != null) {
             setCatMode(CatMode.WORK);
-            setCatJob(com.kittytalents.work.CatJob.FARMER);
-        } else if (currentMode == CatMode.MINE) {
-            setCatMode(CatMode.WORK);
-            setCatJob(com.kittytalents.work.CatJob.MINER);
-        } else if (currentMode == CatMode.FISH) {
-            setCatMode(CatMode.WORK);
-            setCatJob(com.kittytalents.work.CatJob.FISHER);
+            setCatJob(legacyJob);
         } else {
             this.entityData.set(DATA_JOB, (byte) jobData.getJob().ordinal());
             this.entityData.set(DATA_CLOCKED_IN, jobData.isClockedIn());

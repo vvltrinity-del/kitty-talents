@@ -21,7 +21,6 @@ public class CatRestOnBedGoal extends Goal {
     public CatRestOnBedGoal(TalentedCat cat) {
         this.cat = cat;
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
-        CatAIInitializer.initializeGoals(cat);
     }
 
     @Override

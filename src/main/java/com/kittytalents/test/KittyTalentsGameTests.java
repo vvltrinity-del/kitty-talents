@@ -140,7 +140,7 @@ public class KittyTalentsGameTests {
         TalentedCat loaded = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(4, 1, 4));
         loaded.load(tag);
 
-        helper.assertTrue(loaded.getCatMode() == CatMode.PATROL, "Legacy mode ordinal 8 should load as PATROL, got " + loaded.getCatMode());
+        helper.assertTrue(loaded.getCatMode() == CatMode.GUARD, "Legacy ordinal 8 (PATROL) should load as GUARD after the mode merge, got " + loaded.getCatMode());
         helper.assertTrue(loaded.getCatLevel() == 37, "Level must survive migration");
         helper.assertTrue(loaded.getTalentLevel(Talents.POUNCE) == 3, "Talents must survive migration");
         helper.assertTrue(loaded.getAbilityCooldown("pounce") == 4321L, "Ability cooldown should move out of ForgeData");
@@ -151,7 +151,7 @@ public class KittyTalentsGameTests {
         net.minecraft.nbt.CompoundTag resaved = loaded.saveWithoutId(new net.minecraft.nbt.CompoundTag());
         helper.assertTrue(resaved.getInt(com.kittytalents.core.persist.CatSchema.KEY_SCHEMA) == com.kittytalents.core.persist.CatSchema.CURRENT,
                 "Re-save should stamp the current schema version");
-        helper.assertTrue("PATROL".equals(resaved.getString(com.kittytalents.core.persist.CatSchema.KEY_MODE_NAME)), "Re-save should store mode by name");
+        helper.assertTrue("GUARD".equals(resaved.getString(com.kittytalents.core.persist.CatSchema.KEY_MODE_NAME)), "Re-save should store mode by name");
         helper.succeed();
     }
 

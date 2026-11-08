@@ -4,7 +4,7 @@ import com.kittytalents.ability.CatAbilities;
 import com.kittytalents.entity.CatMode;
 import com.kittytalents.entity.TalentedCat;
 import com.kittytalents.entity.ai.CatCreeperWardenGoal;
-import com.kittytalents.entity.ai.CatFoxPounceGoal;
+import com.kittytalents.ai.goal.CatPounceGoal;
 import com.kittytalents.entity.ai.CatPlaceTorchGoal;
 import com.kittytalents.network.PacketHandler;
 import com.kittytalents.registry.ModBlocks;
@@ -128,7 +128,7 @@ public class CatTestHarness {
             for (WrappedGoal wg : testCat.goalSelector.getAvailableGoals()) {
                 if (wg.getGoal() instanceof CatPlaceTorchGoal) hasTorchGoal = true;
                 if (wg.getGoal() instanceof CatCreeperWardenGoal) hasWardenGoal = true;
-                if (wg.getGoal() instanceof CatFoxPounceGoal) hasPounceGoal = true;
+                if (wg.getGoal() instanceof CatPounceGoal) hasPounceGoal = true;
             }
 
             if (hasTorchGoal) {
@@ -144,9 +144,9 @@ public class CatTestHarness {
             }
 
             if (hasPounceGoal) {
-                result.pass("AI Behavior: Fox Pounce Goal (CatFoxPounceGoal) registered");
+                result.pass("AI Behavior: Pounce Goal (CatPounceGoal) registered");
             } else {
-                result.warn("AI Behavior: CatFoxPounceGoal not found in goal selector");
+                result.warn("AI Behavior: CatPounceGoal not found in goal selector");
             }
 
             // Verify Mode Cycling Contract

@@ -124,7 +124,9 @@ public class FelineCombatEngine {
         double horizSpeed = Math.min(2.0, Math.max(0.8, horizDist * 0.22)) * (1.1 + pounceTalent * 0.06);
         double vertSpeed = 0.52 + (pounceTalent * 0.04);
 
-        Vec3 horizNorm = new Vec3(dir.x, 0, dir.z).normalize();
+        // Zero-length direction (target directly above/below) would normalize to NaN velocity: fall back to look.
+        Vec3 flat = horizDist > 1.0E-3 ? new Vec3(dir.x, 0, dir.z) : new Vec3(cat.getLookAngle().x, 0, cat.getLookAngle().z);
+        Vec3 horizNorm = flat.lengthSqr() > 1.0E-6 ? flat.normalize() : new Vec3(0, 0, 1);
         cat.setDeltaMovement(horizNorm.x * horizSpeed, vertSpeed, horizNorm.z * horizSpeed);
         cat.hasImpulse = true;
 
@@ -155,8 +157,9 @@ public class FelineCombatEngine {
 
             float baseDamage = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.5F + (pounceTalent * 2.0F);
 
+            // Only foes: never villagers, other players' pets, passive bystanders or friends.
             List<LivingEntity> enemies = cat.level().getEntitiesOfClass(LivingEntity.class, impactBox,
-                    e -> e != cat && e != cat.getOwner() && !cat.isAlliedTo(e));
+                    e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e));
 
             for (LivingEntity enemy : enemies) {
                 enemy.hurt(cat.damageSources().mobAttack(cat), baseDamage);

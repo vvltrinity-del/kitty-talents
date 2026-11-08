@@ -15,7 +15,6 @@ public class CatComfortGoal extends Goal {
 
     public CatComfortGoal(TalentedCat cat) {
         this.cat = cat;
-        CatAIInitializer.initializeGoals(cat);
     }
 
     @Override

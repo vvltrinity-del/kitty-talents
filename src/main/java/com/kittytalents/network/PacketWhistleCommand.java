@@ -93,7 +93,7 @@ public class PacketWhistleCommand {
                     }
                     case PATROL -> {
                         cat.setOrderedToSit(false);
-                        cat.setCatMode(CatMode.PATROL);
+                        cat.setCatMode(CatMode.GUARD); // PATROL merged into GUARD (patrols its post)
                     }
                     case HUNT -> {
                         cat.setOrderedToSit(false);
