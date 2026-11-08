@@ -272,6 +272,37 @@ public class KittyAiGameTests {
         });
     }
 
+    /** FOLLOW: catches up to a distant owner (previously untestable: fake players never resolved as owners). */
+    @GameTest(template = "arena", timeoutTicks = 200)
+    public static void testFollowCatchesUpToOwner(GameTestHelper h) {
+        var owner = KittyTalentGameTests.joinFakeOwner(h, new BlockPos(20, 2, 16));
+        TalentedCat c = cat(h, new BlockPos(4, 2, 16), CatMode.FOLLOW);
+        c.tame(owner);
+        c.setCatMode(CatMode.FOLLOW);
+        h.succeedWhen(() -> {
+            h.assertTrue(c.getOwner() == owner, "owner must resolve");
+            h.assertTrue(c.distanceTo(owner) < 4.5F, "FOLLOW cat should reach its owner, distance " + c.distanceTo(owner));
+            KittyTalentGameTests.leave(h, owner);
+        });
+    }
+
+    /** FOLLOW: defends the owner against whatever attacked them. */
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void testFollowDefendsOwner(GameTestHelper h) {
+        var owner = KittyTalentGameTests.joinFakeOwner(h, new BlockPos(8, 2, 8));
+        TalentedCat c = cat(h, new BlockPos(6, 2, 8), CatMode.FOLLOW);
+        c.tame(owner);
+        c.setCatMode(CatMode.FOLLOW);
+        Zombie attacker = dummy(h, new BlockPos(12, 2, 8));
+        Zombie bystander = dummy(h, new BlockPos(8, 2, 14));
+        owner.setLastHurtByMob(attacker);
+        h.succeedWhen(() -> {
+            h.assertTrue(c.getTarget() == attacker, "FOLLOW cat should go after its owner's attacker, target=" + c.getTarget());
+            h.assertTrue(bystander.isAlive(), "bystander untouched");
+            KittyTalentGameTests.leave(h, owner);
+        });
+    }
+
     @SuppressWarnings("unused")
     private static boolean alive(LivingEntity e) { return e != null && e.isAlive(); }
 }

@@ -340,7 +340,7 @@
   "talent.kittytalents.sky_feline.mastery": "Stormrider: your owner falls slowly near the cat.",
   "talent.kittytalents.mole_cat.mastery": "Prospector: underground, your owner gets Haste II near the cat.",
   "talent.kittytalents.frenzy_focus.mastery": "Bloodlust: melee hits heal the cat for 20% of the damage dealt.",
-  "talent.kittytalents.alchemy_kitty.mastery": "Splash Brew: hit afflictions splash onto foes around the target.",
+  "talent.kittytalents.alchemy_kitty.mastery": "Splash Brew: hit afflictions splash onto foes around the target, and each hit pulls your harmful effects off you and onto that enemy.",
   "talent.kittytalents.catnip_catastrophe.mastery": "Second Wind: the emergency shockwave also heals the cat by 30%.",
   "message.kittytalents.level_up": "%s reached level %s!",
   "gui.kittytalents.mastery": "Mastery"

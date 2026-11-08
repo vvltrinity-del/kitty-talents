@@ -150,6 +150,47 @@ public class KittyTalentGameTests {
         h.succeed();
     }
 
+    /**
+     * A fake player that is actually in the level, so cat.getOwner() resolves it. Call {@link #leave} when done.
+     */
+    static net.minecraftforge.common.util.FakePlayer joinFakeOwner(GameTestHelper h, BlockPos rel) {
+        var fp = net.minecraftforge.common.util.FakePlayerFactory.get(h.getLevel(),
+                new com.mojang.authlib.GameProfile(java.util.UUID.randomUUID(), "kt_owner_" + System.nanoTime() % 100000));
+        BlockPos at = h.absolutePos(rel);
+        fp.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+        h.getLevel().addNewPlayer(fp);
+        return fp;
+    }
+
+    static void leave(GameTestHelper h, net.minecraft.server.level.ServerPlayer fp) {
+        h.getLevel().removePlayerImmediately(fp, net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
+    }
+
+    /** User request: mastered Alchemy Kitty pulls the owner's debuffs onto the enemy it hits. */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testAlchemyMasteryMovesOwnerDebuffsToEnemy(GameTestHelper h) {
+        var owner = joinFakeOwner(h, new BlockPos(3, 2, 2));
+        try {
+            TalentedCat c = cat(h, new BlockPos(2, 2, 2));
+            c.tame(owner);
+            h.assertTrue(c.getOwner() == owner, "Owner must resolve for this test");
+            max(c, Talents.ALCHEMY_KITTY);
+            owner.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.POISON, 200, 1));
+            owner.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 0));
+            owner.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.DAMAGE_BOOST, 200, 0)); // beneficial: must stay
+            Mob pillager = h.spawn(EntityType.PILLAGER, new BlockPos(5, 2, 5));
+            pillager.setNoAi(true);
+            c.doHurtTarget(pillager);
+            h.assertFalse(owner.hasEffect(MobEffects.POISON) || owner.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "Owner debuffs should be gone");
+            h.assertTrue(owner.hasEffect(MobEffects.DAMAGE_BOOST), "Beneficial effects must stay on the owner");
+            h.assertTrue(pillager.hasEffect(MobEffects.POISON) && pillager.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "Enemy should receive the debuffs");
+            h.assertTrue(pillager.getEffect(MobEffects.POISON).getAmplifier() == 1, "Strength should carry over");
+            h.succeed();
+        } finally {
+            leave(h, owner);
+        }
+    }
+
     // ---------------------------------------------------------------- Abilities
 
     /** Frost Nova used to freeze everything around the cat, villagers included. */

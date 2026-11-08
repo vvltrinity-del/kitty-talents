@@ -118,7 +118,8 @@ final class MobilityAndDireTalents {
 
     /**
      * Brews a random buff for the owner every 80 s; hits may afflict Weakness, Freeze or Poison.
-     * Mastery "Splash Brew": hit afflictions splash onto foes within 3 blocks.
+     * Mastery "Splash Brew": hit afflictions splash onto foes within 3 blocks, and every hit draws the owner's harmful
+     * effects (poison, wither, slowness, ...) out of them and onto the enemy that was hit.
      * (Fixed: procs used to fire on any damage the cat caused, including its own AoE, now melee hits only.)
      */
     static final class AlchemyKitty implements TalentEffect {
@@ -133,6 +134,7 @@ final class MobilityAndDireTalents {
             ctx.cat.playSound(SoundEvents.BREWING_STAND_BREW, 0.8F, 1.2F);
         }
         @Override public void onHitDealt(TalentContext ctx, LivingEntity victim, float dmg) {
+            if (ctx.mastered()) transferOwnerDebuffs(ctx, victim);
             if (ctx.cat.getRandom().nextFloat() >= 0.15F + ctx.rank * 0.07F) return;
             int roll = ctx.cat.getRandom().nextInt(3);
             afflict(victim, roll);
@@ -142,6 +144,25 @@ final class MobilityAndDireTalents {
                 sl.sendParticles(ParticleTypes.WITCH, victim.getX(), victim.getY() + 0.5, victim.getZ(), 8, 0.2, 0.2, 0.2, 0.05);
             }
         }
+        /** Mastery: move every harmful effect from the nearby owner onto {@code victim} (same strength, remaining time). */
+        static void transferOwnerDebuffs(TalentContext ctx, LivingEntity victim) {
+            Player o = ctx.ownerWithin(16.0D);
+            if (o == null || !victim.isAlive()) return;
+            var harmful = o.getActiveEffects().stream()
+                    .filter(e -> e.getEffect().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL)
+                    .map(MobEffectInstance::new).toList();
+            if (harmful.isEmpty()) return;
+            for (MobEffectInstance e : harmful) {
+                o.removeEffect(e.getEffect());
+                victim.addEffect(new MobEffectInstance(e.getEffect(), e.getDuration(), e.getAmplifier()));
+            }
+            ctx.cat.playSound(SoundEvents.BREWING_STAND_BREW, 1.0F, 0.8F);
+            if (ctx.cat.level() instanceof ServerLevel sl) {
+                sl.sendParticles(ParticleTypes.WITCH, o.getX(), o.getY() + 1.0, o.getZ(), 10, 0.3, 0.5, 0.3, 0.05);
+                sl.sendParticles(ParticleTypes.WITCH, victim.getX(), victim.getY() + 0.8, victim.getZ(), 16, 0.3, 0.4, 0.3, 0.08);
+            }
+        }
+
         private static void afflict(LivingEntity e, int roll) {
             switch (roll) {
                 case 0 -> { e.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 1)); FelineStatusEffects.applyStatus(e, FelineStatusType.WEAKNESS, 2, 120); }
