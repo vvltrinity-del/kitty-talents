@@ -316,6 +316,13 @@ Phases 3 and 4 share `content/`, so coordinate there.
 1. **Mode list:** ✅ DECIDED (2026-11-07): merge the 21 modes into about 12, each with distinct behavior.
 2. **Animation:** ✅ DECIDED (2026-11-07): hand-written `CatAnimator`, no GeckoLib.
 
+3. **Pounce:** ✅ DECIDED (2026-11-07, from playtest): Pounce is **every cat's built-in default combat move**, used
+   automatically by the AI in fights as the mod's signature hook. It is not an unlockable ability. Phase 3/4: make Pounce
+   part of the base combat behavior for all cats. The Pounce talent (if kept) only *upgrades* it (range, damage,
+   cooldown), and the separate "pounce" ability slot default goes away.
+4. **UI:** user dislikes the current GUI. Full redesign in Phase 6 (playtest also showed overlapping text on Home,
+   Combat and Twine tabs, and Gear slots drawn over the 3D cat preview).
+
 Still open:
 3. **Talent tuning in datapacks:** expose talent and ability numbers to datapacks (server owners can rebalance), or keep them internal?
 4. **Save compatibility:** must 1.0 and 2.0 worlds load into 3.0? (The plan assumes **yes**.)
