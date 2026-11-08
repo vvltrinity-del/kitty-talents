@@ -1174,7 +1174,12 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         return Math.min(27, packLevel * 6);
     }
 
+    /**
+     * Cat Mount size: the cat only grows while someone rides it. (It used to be up to 2.6x bigger permanently, which
+     * made mounted-talent cats unable to fit through gaps in forests and get stuck pathing.)
+     */
     public float getCatScale() {
+        if (!this.isVehicle()) return 1.0F;
         int mountLvl = getTalentLevel(Talents.CAT_MOUNT);
         return switch (mountLvl) {
             case 1 -> 1.25F;
@@ -1189,6 +1194,18 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     @Override
     public EntityDimensions getDimensions(Pose pose) {
         return super.getDimensions(pose).scale(getCatScale());
+    }
+
+    @Override
+    protected void addPassenger(Entity passenger) {
+        super.addPassenger(passenger);
+        this.refreshDimensions(); // grow to steed size
+    }
+
+    @Override
+    protected void removePassenger(Entity passenger) {
+        super.removePassenger(passenger);
+        this.refreshDimensions(); // back to normal size
     }
 
     public void updateAttributes() {

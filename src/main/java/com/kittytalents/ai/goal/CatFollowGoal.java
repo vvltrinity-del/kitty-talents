@@ -20,6 +20,9 @@ public class CatFollowGoal extends Goal {
     private final TalentedCat cat;
     private LivingEntity owner;
     private int repath;
+    /** Stuck detection: position sampled every 20 ticks; two samples without progress = stuck. */
+    private net.minecraft.world.phys.Vec3 lastSample;
+    private int stuckSamples;
 
     public CatFollowGoal(TalentedCat cat) {
         this.cat = cat;
@@ -74,6 +77,8 @@ public class CatFollowGoal extends Goal {
     public void start() {
         owner = cat.getOwner();
         repath = 0;
+        lastSample = cat.position();
+        stuckSamples = 0;
     }
 
     @Override
@@ -89,6 +94,18 @@ public class CatFollowGoal extends Goal {
         if (cat.distanceToSqr(owner) > 24.0D * 24.0D && !cat.isLeashed()) {
             teleportNearOwner();
             return;
+        }
+        // Stuck behind foliage or a dead-end path: the vanilla pathfinder keeps retrying the same blocked route,
+        // so if the cat has barely moved for 2 seconds while the owner is 6+ blocks away, hop to the owner.
+        if (cat.tickCount % 20 == 0) {
+            boolean noProgress = cat.position().distanceToSqr(lastSample) < 0.25D;
+            stuckSamples = noProgress && cat.distanceToSqr(owner) > 36.0D ? stuckSamples + 1 : 0;
+            lastSample = cat.position();
+            if (stuckSamples >= 2 && !cat.isLeashed()) {
+                stuckSamples = 0;
+                teleportNearOwner();
+                return;
+            }
         }
         if (--repath > 0) return;
         repath = 10;

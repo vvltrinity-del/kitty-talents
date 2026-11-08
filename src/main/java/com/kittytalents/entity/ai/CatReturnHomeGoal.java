@@ -80,7 +80,8 @@ public class CatReturnHomeGoal extends Goal {
         cat.getNavigation().stop();
         BlockPos home = cat.getHomeBedPos();
         if (home != null && cat.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) <= 3.0D) {
-            cat.setOrderedToSit(true); // Rest at home
+            // Arrived: CatRestOnBedGoal takes over and curls the cat up on its bed (ordering it to sit here would
+            // block that goal, so the cat would only sit).
             if (com.kittytalents.talent.effect.TalentEngine.isMastered(cat, com.kittytalents.talent.Talents.HOME_WHISKERS)) {
                 cat.setHealth(cat.getMaxHealth()); // mastery "Hearth": arrives home fully healed
             }

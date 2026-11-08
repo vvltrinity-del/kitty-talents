@@ -84,8 +84,9 @@ public class CatRestOnBedGoal extends Goal {
         double distSqr = cat.distanceToSqr(bedPos.getX() + 0.5D, bedPos.getY(), bedPos.getZ() + 0.5D);
         if (distSqr < 2.5D) {
             cat.getNavigation().stop();
-            cat.setOrderedToSit(true);
-            cat.setLying(true); // curl up on the bed (synced; drives the lie-down animation)
+            // Curl up on the bed (synced; drives the lie-down animation). Not "ordered to sit": that started the
+            // higher-priority SitWhenOrderedToGoal, which pre-empted this goal and cut the sleep off immediately.
+            cat.setLying(true);
             restTicks++;
 
             // Rest & Healing bonus
