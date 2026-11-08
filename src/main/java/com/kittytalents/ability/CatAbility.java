@@ -100,6 +100,7 @@ public abstract class CatAbility {
         }
 
         if (execute(cat, player)) {
+            cat.playAnimation(TalentedCat.ANIM_CAST);
             FelineEnergyEngine.consumeEnergy(cat, energyCost);
             cat.setAbilityCooldown(id, currentTime);
 

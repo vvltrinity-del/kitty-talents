@@ -11,6 +11,10 @@ import net.minecraft.util.Mth;
  * Base poses match the vanilla cat exactly (crouch, walk, sprint, sit, lie down, relax), translated to the
  * hierarchical tail; on top of that it adds an idle tail sway and the Nekomata twin-tail splay, which is a
  * mirror image around the tail root in every pose.
+ *
+ * <p>One-shot moves (Phase 5, R32) are layered on top of the base pose, blended in and out over 3 ticks:
+ * pounce leap, dodge, ability cast and grooming, started by entity events from the server
+ * ({@link TalentedCat#playAnimation}). Stalking uses the synced crouch pose and sleeping the vanilla lie-down.</p>
  */
 public final class CatAnimator {
     private static final float PI = (float) Math.PI;
@@ -63,7 +67,8 @@ public final class CatAnimator {
             f.state = State.WALK;
         }
 
-        if (cat.isInSittingPose()) {
+        // Lying down (asleep) overrides sitting, as in vanilla: a resting cat is ordered to sit but curls up.
+        if (cat.isInSittingPose() && !cat.isLying()) {
             m.body.xRot = PI / 4F;
             m.body.y += -4.0F;
             m.body.z += 5.0F;
@@ -134,6 +139,8 @@ public final class CatAnimator {
             m.head.xRot = rotlerp(m.head.xRot, -0.58177644F, f.relaxOne);
         }
 
+        oneShot(m, cat, f, age);
+
         // Hierarchical tail: the tip's rotation is relative to the base segment.
         boolean twin = cat.getMutation() == CatBreedingManager.MutationType.NEKOMATA;
         boolean sitting = f.state == State.SIT;
@@ -148,6 +155,78 @@ public final class CatAnimator {
             m.tail.yRot = splay;
             m.tailB.x = -TWIN_BASE_OFFSET;
             m.tailB.yRot = -splay;
+        }
+    }
+
+    /** Duration in ticks of each one-shot animation. */
+    public static int duration(byte anim) {
+        return switch (anim) {
+            case TalentedCat.ANIM_POUNCE -> 14;
+            case TalentedCat.ANIM_DODGE -> 8;
+            case TalentedCat.ANIM_CAST -> 12;
+            case TalentedCat.ANIM_GROOM -> 80;
+            default -> 0;
+        };
+    }
+
+    /** 0..1 weight: ramps in over the first 3 ticks and out over the last 3. */
+    private static float weight(float t, int dur) {
+        if (t < 0 || t >= dur) return 0.0F;
+        float in = Mth.clamp(t / 3.0F, 0.0F, 1.0F), out = Mth.clamp((dur - t) / 3.0F, 0.0F, 1.0F);
+        float w = Math.min(in, out);
+        return w * w * (3.0F - 2.0F * w); // smoothstep
+    }
+
+    private static float toward(float from, float to, float w) {
+        return from + (to - from) * w;
+    }
+
+    private static void oneShot(KTCatModel m, TalentedCat cat, Frame f, float age) {
+        byte anim = cat.getAnimType();
+        int dur = duration(anim);
+        float t = age - cat.getAnimStartTick();
+        float w = weight(t, dur);
+        if (w <= 0.0F) return;
+        float p = Mth.clamp(t / dur, 0.0F, 1.0F); // progress through the move
+        switch (anim) {
+            case TalentedCat.ANIM_POUNCE -> {
+                // Launch nose-up, stretched out mid-air, then tip forward to land.
+                float pitch = Mth.lerp(p, -0.35F, 0.25F);
+                if (f.state != State.SIT) m.body.xRot += pitch * w;
+                m.head.xRot = toward(m.head.xRot, pitch, w);
+                m.leftFrontLeg.xRot = toward(m.leftFrontLeg.xRot, -1.3F, w);
+                m.rightFrontLeg.xRot = toward(m.rightFrontLeg.xRot, -1.3F, w);
+                m.leftHindLeg.xRot = toward(m.leftHindLeg.xRot, 1.1F, w);
+                m.rightHindLeg.xRot = toward(m.rightHindLeg.xRot, 1.1F, w);
+                f.tailAbsX = toward(f.tailAbsX, PI / 2F, w);
+                f.tailTipAbsX = toward(f.tailTipAbsX, PI / 2F, w);
+            }
+            case TalentedCat.ANIM_DODGE -> {
+                // Legs tucked under, head ducked and tilted, tail whipping.
+                m.leftFrontLeg.xRot = toward(m.leftFrontLeg.xRot, -0.7F, w);
+                m.rightFrontLeg.xRot = toward(m.rightFrontLeg.xRot, -0.7F, w);
+                m.leftHindLeg.xRot = toward(m.leftHindLeg.xRot, 0.7F, w);
+                m.rightHindLeg.xRot = toward(m.rightHindLeg.xRot, 0.7F, w);
+                m.head.xRot = toward(m.head.xRot, 0.35F, w);
+                m.head.zRot = toward(m.head.zRot, 0.3F, w);
+                m.tailRoot.yRot += Mth.sin(t * 1.4F) * 0.6F * w;
+            }
+            case TalentedCat.ANIM_CAST -> {
+                // Head up, one paw raised, tail straight up.
+                m.head.xRot = toward(m.head.xRot, -0.5F, w);
+                m.rightFrontLeg.xRot = toward(m.rightFrontLeg.xRot, -1.4F, w);
+                f.tailAbsX = toward(f.tailAbsX, 2.3F, w);
+                f.tailTipAbsX = toward(f.tailTipAbsX, 2.9F, w);
+            }
+            case TalentedCat.ANIM_GROOM -> {
+                // Classic cat groom: head turned round and down to lick the shoulder, one paw lifted slightly.
+                float lick = Mth.sin(age * 0.6F) * 0.15F;
+                m.head.yRot = toward(m.head.yRot, -1.0F, w);
+                m.head.xRot = toward(m.head.xRot, 0.65F + lick, w);
+                m.head.zRot = toward(m.head.zRot, -0.25F, w);
+                m.rightFrontLeg.xRot = toward(m.rightFrontLeg.xRot, m.rightFrontLeg.xRot - 0.35F, w);
+            }
+            default -> {}
         }
     }
 

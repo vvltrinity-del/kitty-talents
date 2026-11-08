@@ -85,6 +85,7 @@ public class CatRestOnBedGoal extends Goal {
         if (distSqr < 2.5D) {
             cat.getNavigation().stop();
             cat.setOrderedToSit(true);
+            cat.setLying(true); // curl up on the bed (synced; drives the lie-down animation)
             restTicks++;
 
             // Rest & Healing bonus
@@ -141,6 +142,7 @@ public class CatRestOnBedGoal extends Goal {
         restTicks = 0;
         navThrottle = 0;
 
+        cat.setLying(false);
         // Bed resting sit-lock fix:
         // If the cat was NOT originally ordered to sit by the player, and mode is not DOCILE/STAY,
         // restore standing state so the cat can resume following or normal activity.

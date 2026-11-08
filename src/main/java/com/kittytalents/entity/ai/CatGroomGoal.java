@@ -45,6 +45,7 @@ public class CatGroomGoal extends Goal {
         this.groomTicks = 60 + cat.getRandom().nextInt(40);
         cat.getNavigation().stop();
         cat.playSound(SoundEvents.CAT_PURREOW, 0.6F, 1.3F);
+        cat.playAnimation(TalentedCat.ANIM_GROOM);
     }
 
     @Override

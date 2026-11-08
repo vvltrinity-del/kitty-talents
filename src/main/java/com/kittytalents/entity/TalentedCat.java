@@ -153,6 +153,28 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     public boolean isFrenzied() { return frenzyTimer > 0; }
 
+    // ---- One-shot animations (Phase 5). Server broadcasts an entity event; clients time the pose locally. ----
+    public static final byte ANIM_POUNCE = 60, ANIM_DODGE = 61, ANIM_CAST = 62, ANIM_GROOM = 63;
+    private byte animType = 0;
+    private int animStartTick = -10_000;
+    public byte getAnimType() { return animType; }
+    public int getAnimStartTick() { return animStartTick; }
+
+    /** Server: play a one-shot animation on every client tracking this cat. */
+    public void playAnimation(byte anim) {
+        if (!this.level().isClientSide) this.level().broadcastEntityEvent(this, anim);
+    }
+
+    @Override
+    public void handleEntityEvent(byte id) {
+        if (id >= ANIM_POUNCE && id <= ANIM_GROOM) {
+            this.animType = id;
+            this.animStartTick = this.tickCount;
+            return;
+        }
+        super.handleEntityEvent(id);
+    }
+
     /** XP towards the next level (Phase 4). Synced for the UI. */
     public int getCatXp() { return this.entityData.get(DATA_XP); }
     public void setCatXp(int xp) { this.entityData.set(DATA_XP, Math.max(0, xp)); }

@@ -49,6 +49,12 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, KTCatModel> {
     @Override
     protected void setupRotations(TalentedCat cat, PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTicks) {
         super.setupRotations(cat, poseStack, ageInTicks, rotationYaw, partialTicks);
+        // Curled up asleep: roll onto the side like the vanilla cat renderer does.
+        float lie = cat.getLieDownAmount(partialTicks);
+        if (lie > 0.0F && !cat.isIncapacitated()) {
+            poseStack.translate(0.4F * lie, 0.15F * lie, 0.1F * lie);
+            poseStack.mulPose(Axis.ZP.rotationDegrees(net.minecraft.util.Mth.rotLerp(lie, 0.0F, 90.0F)));
+        }
         if (cat.isIncapacitated()) {
             poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F));
             poseStack.translate(0.1D, -0.2D, 0.0D);

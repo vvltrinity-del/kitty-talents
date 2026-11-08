@@ -89,11 +89,39 @@ public final class RenderMatrix {
             c.setMutation(CatBreedingManager.MutationType.NEKOMATA);
             c.setInSittingPose(true);
         }));
+        list.add(new Combo("70_anim_stalk", c -> c.setPose(net.minecraft.world.entity.Pose.CROUCHING)));
+        list.add(new Combo("71_anim_pounce_launch", c -> midAnim(c, TalentedCat.ANIM_POUNCE, 4)));
+        list.add(new Combo("72_anim_pounce_land", c -> midAnim(c, TalentedCat.ANIM_POUNCE, 10)));
+        list.add(new Combo("73_anim_dodge", c -> midAnim(c, TalentedCat.ANIM_DODGE, 4)));
+        list.add(new Combo("74_anim_cast", c -> midAnim(c, TalentedCat.ANIM_CAST, 6)));
+        list.add(new Combo("75_anim_groom", c -> { c.setInSittingPose(true); midAnim(c, TalentedCat.ANIM_GROOM, 20); }));
+        list.add(new Combo("76_anim_sleep", RenderMatrix::lyingDown));
         list.add(new Combo("60_wings_pack", c -> {
             c.setTalentLevel(Talents.SKY_FELINE, 1);
             c.setTalentLevel(Talents.KITTY_PACK, 1);
         }));
         return list;
+    }
+
+    /** Freeze a one-shot animation {@code ticksIn} ticks after it started. */
+    private static void midAnim(TalentedCat cat, byte anim, int ticksIn) {
+        cat.handleEntityEvent(anim);
+        cat.tickCount += ticksIn;
+    }
+
+    /** Fully curled up (vanilla lie-down amount is private and only advanced by Cat#tick). */
+    private static void lyingDown(TalentedCat cat) {
+        cat.setLying(true);
+        cat.setInSittingPose(true);
+        for (String name : new String[]{"lieDownAmount", "lieDownAmountO", "lieDownAmountTail", "lieDownAmountOTail"}) {
+            try {
+                java.lang.reflect.Field f = net.minecraft.world.entity.animal.Cat.class.getDeclaredField(name);
+                f.setAccessible(true);
+                f.setFloat(cat, 1.0F);
+            } catch (ReflectiveOperationException e) {
+                KittyTalents.LOGGER.warn("[RenderMatrix] could not set {}: {}", name, e.toString());
+            }
+        }
     }
 
     private static void armor(TalentedCat cat, Item head, Item chest, Item legs, Item feet) {

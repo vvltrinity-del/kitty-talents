@@ -21,7 +21,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public class TalentedCatWingLayer extends RenderLayer<TalentedCat, KTCatModel> {
-    private static final ResourceLocation ELYTRA_LOCATION = new ResourceLocation("textures/entity/elytra.png");
+    /** Sky Feline wings (Phase 5): celestial blue/white, derived from the angel-wing shape; was the grey vanilla elytra. */
+    private static final ResourceLocation ELYTRA_LOCATION = new ResourceLocation("kittytalents", "textures/models/accessories/sky_feline_wings.png");
     private static final ResourceLocation ANGEL_WINGS_LOCATION = new ResourceLocation("kittytalents", "textures/models/accessories/angel_wings.png");
     private final ElytraModel<TalentedCat> elytraModel;
 

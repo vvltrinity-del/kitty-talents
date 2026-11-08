@@ -81,6 +81,7 @@ public class FelineCombatEngine {
 
         cat.setDeltaMovement(mx, my, mz);
         cat.hasImpulse = true;
+        cat.playAnimation(TalentedCat.ANIM_DODGE);
 
         cat.level().playSound(null, cat.getX(), cat.getY(), cat.getZ(),
                 ModSounds.CAT_DODGE.get(), SoundSource.NEUTRAL, 0.9F, 1.2F);
@@ -133,6 +134,7 @@ public class FelineCombatEngine {
 
         cat.combat().pounceActive = true;
         cat.combat().pounceStart = cat.level().getGameTime();
+        cat.playAnimation(TalentedCat.ANIM_POUNCE);
 
         cat.playSound(ModSounds.CAT_POUNCE_LAUNCH.get(), 1.0F, 1.2F);
         if (cat.level() instanceof ServerLevel sl) {
