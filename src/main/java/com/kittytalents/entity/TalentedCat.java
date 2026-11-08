@@ -596,12 +596,57 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.set(DATA_TWINED, false);
         this.twineXxa = 0.0F;
         this.twineZza = 0.0F;
+        this.twineJump = false;
         if (!this.level().isClientSide) updateControlFlags(); // hand control back to the AI immediately
     }
 
     public void setTwineInput(float xxa, float zza) {
         this.twineXxa = xxa;
         this.twineZza = zza;
+    }
+
+    /** Jump/Space held while Twined (Sky Feline climb). Set by PacketTwineInput and by the client's own prediction. */
+    private boolean twineJump;
+    public void setTwineJump(boolean held) { this.twineJump = held; }
+
+    /** A Twined cat can range this far (horizontally) from the player's sleeping body: chunks and tracking follow the body. */
+    public static final double TWINE_LEASH = 64.0D;
+
+    @Nullable
+    private Vec3 twineBodyPos() {
+        if (this.level().isClientSide) {
+            return net.minecraftforge.fml.DistExecutor.unsafeCallWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.kittytalents.client.twine.ClientTwineState.bodyPosition());
+        }
+        Player body = twinedPlayerUUID == null ? null : this.level().getPlayerByUUID(twinedPlayerUUID);
+        return body != null ? body.position() : null;
+    }
+
+    /** Stops a Twined cat at the leash instead of letting it leave the loaded area (which ended the session). */
+    private void applyTwineLeash() {
+        Vec3 body = twineBodyPos();
+        if (body == null) return;
+        double dx = this.getX() - body.x, dz = this.getZ() - body.z;
+        double dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist <= TWINE_LEASH || dist < 1.0E-4D) return;
+        double nx = dx / dist, nz = dz / dist;
+        Vec3 m = this.getDeltaMovement();
+        double outward = m.x * nx + m.z * nz;
+        double pull = Math.min(0.2D, (dist - TWINE_LEASH) * 0.05D);
+        double cancel = Math.max(0.0D, outward) + pull;
+        this.setDeltaMovement(m.x - nx * cancel, m.y, m.z - nz * cancel);
+        Player p = !this.level().isClientSide && this.tickCount % 40 == 0 && twinedPlayerUUID != null
+                ? this.level().getPlayerByUUID(twinedPlayerUUID) : null;
+        if (p != null) {
+            p.displayClientMessage(Component.translatable("message.kittytalents.twine_leash").withStyle(ChatFormatting.YELLOW), true);
+        }
+    }
+
+    @Override
+    protected float getFlyingSpeed() {
+        // Twined Sky Feline: real air control (vanilla mobs get almost none in the air).
+        if (isTwined() && !this.onGround() && getTalentLevel(Talents.SKY_FELINE) > 0) return SkyFlight.airAcceleration(this);
+        return super.getFlyingSpeed();
     }
 
     public float getTwineXxa() {
@@ -1405,6 +1450,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void travel(Vec3 travelVector) {
         if (this.isAlive()) {
             if (isTwined()) {
+                SkyFlight.twined(this, twineJump);
+                applyTwineLeash();
                 float speed = (float) this.getAttributeValue(Attributes.MOVEMENT_SPEED);
                 if (this.isSprinting()) {
                     speed *= 1.35F;
@@ -1559,9 +1606,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         }
 
         if (!this.level().isClientSide && isTwined()) {
-            net.minecraft.server.level.ServerPlayer tp = this.getServer() != null
-                    ? this.getServer().getPlayerList().getPlayer(twinedPlayerUUID) : null;
-            if (tp == null || !tp.isAlive() || tp.level() != this.level() || isIncapacitated() || !this.isAlive()) {
+            // Looked up in this level (a player in another dimension isn't found, which also ends the session).
+            Player tp = twinedPlayerUUID != null ? this.level().getPlayerByUUID(twinedPlayerUUID) : null;
+            if (tp == null || !tp.isAlive() || isIncapacitated() || !this.isAlive()) {
                 TwineManager.endForCat(this, "Twine ended.");
             }
         }

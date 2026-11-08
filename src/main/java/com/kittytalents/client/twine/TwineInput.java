@@ -200,13 +200,9 @@ public final class TwineInput {
 
     /** Local jump / flight / wall-leap prediction (mirrors PacketTwineInput on the server). */
     private static void predictJump(TalentedCat cat, boolean jump) {
-        if (!jump) return;
-        if (cat.getTalentLevel(Talents.SKY_FELINE) > 0) {
-            Vec3 motion = cat.getDeltaMovement();
-            cat.setDeltaMovement(motion.x, Math.min(0.65D, motion.y + 0.18D), motion.z);
-            cat.hasImpulse = true;
-            cat.resetFallDistance();
-        } else if (cat.getTalentLevel(Talents.FELINE_AGILITY) >= 3 && !cat.onGround() && cat.horizontalCollision) {
+        cat.setTwineJump(jump); // Sky Feline climb/glide runs in TalentedCat#travel, same as on the server
+        if (!jump || cat.getTalentLevel(Talents.SKY_FELINE) > 0) return;
+        if (cat.getTalentLevel(Talents.FELINE_AGILITY) >= 3 && !cat.onGround() && cat.horizontalCollision) {
             Vec3 motion = cat.getDeltaMovement();
             cat.setDeltaMovement(-motion.x * 0.5D, 0.45D, -motion.z * 0.5D);
             cat.hasImpulse = true;

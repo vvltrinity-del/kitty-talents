@@ -37,6 +37,12 @@ public final class ClientTwineState {
         return activeCatId;
     }
 
+    /** Where the player's sleeping body is (the Twine leash centre). */
+    public static net.minecraft.world.phys.Vec3 bodyPosition() {
+        var p = Minecraft.getInstance().player;
+        return p != null ? p.position() : null;
+    }
+
     public static boolean isTwinedWith(int entityId) {
         return activeCatId != -1 && activeCatId == entityId;
     }

@@ -396,4 +396,50 @@ public class KittyRegressionGameTests {
             leave(h, fp);
         }
     }
+
+    /** Playtest: Sky Feline AI cats were flung around (glide multiplied horizontal speed every falling tick). */
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public static void testSkyFelineGlideNeverSpeedsUp(GameTestHelper h) {
+        TalentedCat c = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(16, 22, 16));
+        c.setTame(true);
+        c.setCatMode(CatMode.WANDER);
+        c.setNoAi(true); // physics only
+        c.setTalentLevel(Talents.SKY_FELINE, Talents.SKY_FELINE.getMaxLevel());
+        c.setDeltaMovement(0.3D, -0.5D, 0.0D);
+        c.fallDistance = 4.0F;
+        double[] maxH = {0.3D};
+        h.onEachTick(() -> maxH[0] = Math.max(maxH[0], c.getDeltaMovement().horizontalDistance()));
+        h.runAfterDelay(30, () -> {
+            h.assertTrue(maxH[0] <= 0.31D, "Glide must not add horizontal speed, peaked at " + maxH[0]);
+            h.assertTrue(c.getDeltaMovement().y >= -0.2D || c.onGround(), "Glide should slow the fall, vy=" + c.getDeltaMovement().y);
+            h.succeed();
+        });
+    }
+
+    /** Playtest: Twined Sky Feline climbed slowly while Space was held, then shot off on release and untwined. */
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void testTwinedSkyFelineClimbsAndGlides(GameTestHelper h) {
+        var fp = joinFakeOwner(h, new BlockPos(16, 2, 18));
+        TalentedCat c = ownedCat(h, fp, new BlockPos(16, 2, 16));
+        c.setOrderedToSit(false);
+        c.setTalentLevel(Talents.SKY_FELINE, Talents.SKY_FELINE.getMaxLevel());
+        h.assertTrue(com.kittytalents.entity.TwineManager.start(fp, c), "Twine should start");
+        double startY = c.getY();
+        c.setTwineInput(0.0F, 1.0F); // flying forward
+        c.setTwineJump(true);
+        double[] peakH = {0};
+        h.onEachTick(() -> peakH[0] = Math.max(peakH[0], c.getDeltaMovement().horizontalDistance()));
+        h.runAfterDelay(20, () -> {
+            h.assertTrue(c.getY() - startY > 5.0D, "Holding jump for 1 s should climb over 5 blocks, climbed " + (c.getY() - startY));
+            c.setTwineJump(false);
+        });
+        h.runAfterDelay(50, () -> {
+            h.assertTrue(c.isTwined(), "Still twined after releasing jump");
+            h.assertTrue(!c.onGround() && c.getDeltaMovement().y > -0.15D, "Released: glide down slowly, vy=" + c.getDeltaMovement().y);
+            h.assertTrue(peakH[0] < 1.2D, "Horizontal speed must stay sane, peaked at " + peakH[0]);
+            com.kittytalents.entity.TwineManager.endForCat(c, null);
+            leave(h, fp);
+            h.succeed();
+        });
+    }
 }

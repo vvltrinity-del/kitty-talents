@@ -115,14 +115,10 @@ public class PacketTwineInput extends PacketBase {
         if (cat.isSprinting()) speed *= 1.35F;
         cat.setSpeed(speed);
 
-        // Flight / Jump / Wall leap logic
-        if (jump) {
-            if (cat.getTalentLevel(Talents.SKY_FELINE) > 0) {
-                Vec3 motion = cat.getDeltaMovement();
-                cat.setDeltaMovement(motion.x, Math.min(0.65D, motion.y + 0.18D), motion.z);
-                cat.hasImpulse = true;
-                cat.resetFallDistance();
-            } else if (cat.getTalentLevel(Talents.FELINE_AGILITY) >= 3 && !cat.onGround() && cat.horizontalCollision) {
+        // Flight (Sky Feline: climb/glide is applied every tick in TalentedCat#travel via SkyFlight) / jump / wall leap
+        cat.setTwineJump(jump);
+        if (jump && cat.getTalentLevel(Talents.SKY_FELINE) <= 0) {
+            if (cat.getTalentLevel(Talents.FELINE_AGILITY) >= 3 && !cat.onGround() && cat.horizontalCollision) {
                 Vec3 motion = cat.getDeltaMovement();
                 cat.setDeltaMovement(-motion.x * 0.5D, 0.45D, -motion.z * 0.5D);
                 cat.hasImpulse = true;

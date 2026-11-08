@@ -59,17 +59,11 @@ final class MobilityAndDireTalents {
     static final class SkyFeline implements TalentEffect {
         @Override public int tickInterval() { return 1; }
         @Override public void onTick(TalentContext ctx) {
-            if (!ctx.cat.onGround() && !ctx.cat.isInWater()) {
-                Vec3 mov = ctx.cat.getDeltaMovement();
-                if (mov.y < -0.15D) {
-                    double fall = Math.max(-0.06D - ctx.rank * 0.01D, mov.y * 0.6D);
-                    double boost = 1.05D + ctx.rank * 0.04D;
-                    ctx.cat.setDeltaMovement(mov.x * boost, fall, mov.z * boost);
-                    ctx.cat.hasImpulse = true;
-                    if (ctx.cat.tickCount % 5 == 0 && ctx.cat.level() instanceof ServerLevel sl) {
-                        sl.sendParticles(ParticleTypes.CLOUD, ctx.cat.getX(), ctx.cat.getY() + 0.1, ctx.cat.getZ(), 2, 0.1, 0.05, 0.1, 0.01);
-                    }
-                }
+            // AI glide on real drops only; Twined flight lives in SkyFlight via TalentedCat#travel.
+            // (This used to multiply horizontal speed by up to 1.25 every falling tick, flinging cats around.)
+            com.kittytalents.entity.SkyFlight.aiGlide(ctx.cat);
+            if (!ctx.cat.onGround() && ctx.cat.fallDistance >= 3.0F && ctx.cat.tickCount % 5 == 0 && ctx.cat.level() instanceof ServerLevel sl) {
+                sl.sendParticles(ParticleTypes.CLOUD, ctx.cat.getX(), ctx.cat.getY() + 0.1, ctx.cat.getZ(), 2, 0.1, 0.05, 0.1, 0.01);
             }
             if (ctx.mastered() && ctx.cat.tickCount % 10 == 0) {
                 Player o = ctx.ownerWithin(16.0D);
