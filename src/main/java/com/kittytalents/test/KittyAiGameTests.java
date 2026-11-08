@@ -121,7 +121,7 @@ public class KittyAiGameTests {
         TalentedCat hunter = cat(h, new BlockPos(4, 2, 4), CatMode.HUNTING);
         Mob chicken = h.spawn(EntityType.CHICKEN, new BlockPos(8, 2, 4));
         chicken.setNoAi(true);
-        h.succeedWhen(() -> h.assertTrue(hunter.getTarget() == chicken, "HUNTING cat should go after prey"));
+        h.succeedWhen(() -> h.assertTrue(hunter.getTarget() == chicken, "HUNTING cat should go after prey, target=" + hunter.getTarget() + " mode=" + hunter.getCatMode() + " sit=" + hunter.isOrderedToSit()));
     }
 
     /** Pounce is every cat's default opener: no Pounce talent needed. */

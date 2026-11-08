@@ -201,7 +201,7 @@ public class KittyNetworkGameTests {
 
             // Cleaned, not refused: formatting codes and control characters are stripped, length is capped.
             h.assertTrue(PacketRenameCat.apply(owner, id, "  §cBob\u0000  "), "rename with codes");
-            h.assertTrue("cBob".equals(c.getCustomName().getString()), "name should be cleaned, got " + c.getCustomName().getString());
+            h.assertTrue("Bob".equals(c.getCustomName().getString()), "name should be cleaned, got " + c.getCustomName().getString());
             h.assertTrue(PacketRenameCat.apply(owner, id, "x".repeat(60)), "long rename");
             h.assertTrue(c.getCustomName().getString().length() == PacketRenameCat.MAX_NAME, "name should be capped at 32");
             h.assertTrue(PacketChangeCatMode.apply(owner, id, PacketChangeCatMode.NEXT) && c.getCatMode() == mode.next(), "NEXT still works");

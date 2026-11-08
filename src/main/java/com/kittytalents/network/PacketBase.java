@@ -83,7 +83,8 @@ public abstract class PacketBase {
         StringBuilder sb = new StringBuilder(Math.min(raw.length(), maxLen));
         for (int i = 0; i < raw.length() && sb.length() < maxLen; i++) {
             char c = raw.charAt(i);
-            if (c == '§' || Character.isISOControl(c)) continue;
+            if (c == '§') { i++; continue; } // drop the formatting code and its letter ("§cBob" -> "Bob")
+            if (Character.isISOControl(c)) continue;
             sb.append(c);
         }
         return sb.toString().trim();
