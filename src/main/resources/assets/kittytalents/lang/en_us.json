@@ -260,6 +260,8 @@
   "message.kittytalents.dire_level_req": "%s must reach Level %d before Dire Awakening can be achieved!",
   "message.kittytalents.respec_success": "Reset all talents for %s! Refunded %d skill points.",
   "message.kittytalents.need_respec_elixir": "You need a Catnip Respec Elixir in your inventory to respec talents!",
+  "message.kittytalents.perm.owner_only": "Only the cat's owner can do that.",
+  "message.kittytalents.perm.too_far": "Your cat is too far away.",
   "message.kittytalents.bed_linked": "Linked %s to this Cat Bed as their home!",
   "message.kittytalents.no_cat_near_bed": "No owned cats nearby to link to this bed. Bring your cat close!",
   "message.kittytalents.trust_added": "%s is now a trusted co-owner of %s!",

@@ -1795,6 +1795,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     @Override
     public void die(DamageSource cause) {
         if (!this.level().isClientSide) {
+            if (isTwined()) TwineManager.endForCat(this, "Your cat has fallen - untwined.");
             Containers.dropContents(this.level(), this, equipment.pack());
             Containers.dropContents(this.level(), this, equipment.ammoPouch());
             if (!getEquippedWeapon().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getEquippedWeapon());

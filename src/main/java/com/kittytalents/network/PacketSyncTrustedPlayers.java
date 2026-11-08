@@ -4,14 +4,12 @@ import com.kittytalents.client.network.ClientPacketHandlers;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 
-public class PacketSyncTrustedPlayers {
+public class PacketSyncTrustedPlayers extends PacketBase {
     private final int entityId;
     private final Map<UUID, String> players;
 
@@ -29,6 +27,7 @@ public class PacketSyncTrustedPlayers {
         }
     }
 
+    @Override
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeInt(entityId);
         buf.writeVarInt(players.size());
@@ -38,8 +37,8 @@ public class PacketSyncTrustedPlayers {
         });
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncTrustedPlayers(entityId, players)));
-        ctx.get().setPacketHandled(true);
+    @Override
+    protected void handleClient() {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncTrustedPlayers(entityId, players));
     }
 }

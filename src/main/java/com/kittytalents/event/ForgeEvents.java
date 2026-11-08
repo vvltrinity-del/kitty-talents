@@ -172,6 +172,18 @@ public class ForgeEvents {
     // ------------------------------------------------------------------
 
     @SubscribeEvent
+    public static void onPlayerLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+            com.kittytalents.entity.TwineManager.restoreOnLogin(sp); // body flags left by a crash mid-Twine
+        }
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(net.minecraftforge.event.server.ServerStoppedEvent event) {
+        com.kittytalents.entity.TwineManager.clearAll(); // static maps must not leak into the next world
+    }
+
+    @SubscribeEvent
     public static void onPlayerLogout(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
             com.kittytalents.entity.TwineManager.endForPlayer(sp, null);

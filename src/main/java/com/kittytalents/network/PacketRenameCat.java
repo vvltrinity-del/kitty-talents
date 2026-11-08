@@ -1,21 +1,22 @@
 package com.kittytalents.network;
 
+import com.kittytalents.core.perm.CatAction;
 import com.kittytalents.entity.TalentedCat;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraftforge.network.NetworkEvent;
 
-import java.util.function.Supplier;
+/** Client -> server: rename a cat (owner only). Names are cleaned: no formatting codes, at most 32 characters. */
+public class PacketRenameCat extends PacketBase {
+    /** Matches the Home tab's name field. */
+    public static final int MAX_NAME = 32;
 
-public class PacketRenameCat {
     private final int entityId;
     private final String newName;
 
     public PacketRenameCat(int entityId, String newName) {
         this.entityId = entityId;
-        this.newName = newName;
+        this.newName = newName == null ? "" : newName;
     }
 
     public PacketRenameCat(FriendlyByteBuf buf) {
@@ -23,24 +24,24 @@ public class PacketRenameCat {
         this.newName = buf.readUtf(64);
     }
 
+    @Override
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeInt(entityId);
-        buf.writeUtf(newName);
+        buf.writeUtf(newName, 64);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            ServerPlayer sender = ctx.get().getSender();
-            if (sender != null) {
-                Entity entity = sender.level().getEntity(entityId);
-                if (entity instanceof TalentedCat cat && cat.isPrimaryOwner(sender) && cat.distanceToSqr(sender) <= 64.0D * 64.0D) {
-                    if (newName != null && !newName.trim().isEmpty()) {
-                        cat.setCustomName(Component.literal(newName.trim()));
-                        cat.setCustomNameVisible(true);
-                    }
-                }
-            }
-        });
-        ctx.get().setPacketHandled(true);
+    @Override
+    protected void handleServer(ServerPlayer sender) {
+        apply(sender, entityId, newName);
+    }
+
+    public static boolean apply(ServerPlayer sender, int entityId, String rawName) {
+        String name = cleanText(rawName, MAX_NAME);
+        if (name.isEmpty()) return false;
+        TalentedCat cat = authorize(sender, entityId, CatAction.RENAME);
+        if (cat == null) return false;
+        cat.setCustomName(Component.literal(name));
+        cat.setCustomNameVisible(true);
+        return true;
     }
 }

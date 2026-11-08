@@ -4,11 +4,9 @@ import com.kittytalents.client.network.ClientPacketHandlers;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
-import java.util.function.Supplier;
-
-public class PacketSyncTwine {
+/** Server -> client: a Twine session with {@code catEntityId} started or ended ({@code -1} = whatever session is active). */
+public class PacketSyncTwine extends PacketBase {
     private final int catEntityId;
     private final boolean twined;
 
@@ -22,17 +20,14 @@ public class PacketSyncTwine {
         this.twined = buf.readBoolean();
     }
 
+    @Override
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeInt(catEntityId);
         buf.writeBoolean(twined);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-                ClientPacketHandlers.handleSyncTwine(catEntityId, twined);
-            });
-        });
-        ctx.get().setPacketHandled(true);
+    @Override
+    protected void handleClient() {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncTwine(catEntityId, twined));
     }
 }

@@ -1,45 +1,40 @@
 package com.kittytalents.network;
 
+import com.kittytalents.core.perm.CatAction;
+import com.kittytalents.core.perm.CatPermissions;
 import com.kittytalents.entity.TalentedCat;
 import com.kittytalents.entity.TwineManager;
+import com.kittytalents.entity.TwineMoves;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 
-import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 /**
- * Handles client-to-server discrete Twine actions:
- * Start/Stop session, 4-way Dodge, Team Synergy triggering, and Traversal actions.
+ * Client -> server discrete Twine actions: start / stop a session, dodge, team synergy, traversal, tool use, gun reload
+ * and aim. Starting needs {@link CatAction#TWINE_START}; everything else needs {@link CatAction#TWINE_CONTROL} (the
+ * sender must be twined with exactly this cat). A control action for a cat the server doesn't consider twined tells
+ * the client to end its session, so a desynced client can't stay stuck in the cat's view.
  */
-public class PacketTwineAction {
+public class PacketTwineAction extends PacketBase {
 
     public enum ActionType {
-        TWINE_START(0),
-        TWINE_STOP(1),
-        DODGE(2),
-        TEAM_SYNERGY(3),
-        TRAVERSAL_ACTION(4),
-        INTERACT(5),
-        RELOAD_GUN(6),
-        AIM_GUN(7);
-
-        private final int id;
-
-        ActionType(int id) {
-            this.id = id;
-        }
-
-        public int getId() {
-            return id;
-        }
+        TWINE_START,
+        TWINE_STOP,
+        DODGE,
+        TEAM_SYNERGY,
+        TRAVERSAL_ACTION,
+        INTERACT,
+        RELOAD_GUN,
+        AIM_GUN
     }
 
     private final int catEntityId;
+    /** Null when the ordinal on the wire was unknown (the packet is then ignored). */
+    @Nullable
     private final ActionType actionType;
     private final float actionData;
 
@@ -53,30 +48,21 @@ public class PacketTwineAction {
         this(catEntityId, actionType, 0.0F);
     }
 
-    /**
-     * Backward-compatible constructor for existing codebase callers.
-     */
     public PacketTwineAction(int catEntityId, boolean twine) {
         this(catEntityId, twine ? ActionType.TWINE_START : ActionType.TWINE_STOP, 0.0F);
     }
 
     public PacketTwineAction(FriendlyByteBuf buf) {
         this.catEntityId = buf.readInt();
-        if (buf.readableBytes() == 1) {
-            // Backward-compatible read for legacy 1-byte boolean
-            boolean legacyTwine = buf.readBoolean();
-            this.actionType = legacyTwine ? ActionType.TWINE_START : ActionType.TWINE_STOP;
-            this.actionData = 0.0F;
-        } else {
-            byte ord = buf.readByte();
-            this.actionType = (ord >= 0 && ord < ActionType.values().length) ? ActionType.values()[ord] : ActionType.TWINE_STOP;
-            this.actionData = buf.readableBytes() >= 4 ? buf.readFloat() : 0.0F;
-        }
+        byte ord = buf.readByte();
+        this.actionType = (ord >= 0 && ord < ActionType.values().length) ? ActionType.values()[ord] : null;
+        this.actionData = buf.readFloat();
     }
 
+    @Override
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeInt(catEntityId);
-        buf.writeByte(actionType.ordinal());
+        buf.writeByte(actionType == null ? -1 : actionType.ordinal());
         buf.writeFloat(actionData);
     }
 
@@ -84,6 +70,7 @@ public class PacketTwineAction {
         return catEntityId;
     }
 
+    @Nullable
     public ActionType getActionType() {
         return actionType;
     }
@@ -92,89 +79,78 @@ public class PacketTwineAction {
         return actionData;
     }
 
-    public boolean isTwine() {
-        return actionType == ActionType.TWINE_START;
+    @Override
+    protected void handleServer(ServerPlayer sender) {
+        if (actionType != null) apply(sender, catEntityId, actionType, actionData);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            ServerPlayer sender = ctx.get().getSender();
-            if (sender == null) return;
+    /** @return true if the action was accepted (not necessarily that e.g. a dodge had enough energy). */
+    public static boolean apply(ServerPlayer sender, int catEntityId, ActionType actionType, float actionData) {
+        if (actionType == null || !Float.isFinite(actionData)) return false;
 
-            if (actionType == ActionType.TWINE_STOP) {
-                // Untwine: safe untwine for player linked session
-                TwineManager.endForPlayer(sender, "Untwined from your cat companion.");
-                return;
+        if (actionType == ActionType.TWINE_STOP) {
+            // Always allowed: it only ever ends the sender's own session.
+            TwineManager.endForPlayer(sender, "Untwined from your cat companion.");
+            return true;
+        }
+        if (actionType == ActionType.TWINE_START) return start(sender, catEntityId);
+
+        CatPermissions.Access access = CatPermissions.check(sender, catEntityId, CatAction.TWINE_CONTROL);
+        if (!access.allowed()) {
+            if (access.denial() == CatPermissions.Denial.NOT_TWINED && !TwineManager.isPlayerTwined(sender.getUUID())) {
+                // The client thinks it's twined with this cat but the server doesn't: end the client's session.
+                PacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> sender), new PacketSyncTwine(catEntityId, false));
             }
-
-            Entity entity = sender.level().getEntity(catEntityId);
-            if (!(entity instanceof TalentedCat cat)) return;
-
-            switch (actionType) {
-                case TWINE_START -> {
-                    if (!cat.isOwnedBy(sender) && !cat.isTrusted(sender)) {
-                        sender.displayClientMessage(Component.literal("You do not have permission to Twine with this cat!").withStyle(ChatFormatting.RED), true);
-                        return;
-                    }
-                    if (cat.isIncapacitated()) {
-                        sender.displayClientMessage(Component.literal("Cannot Twine with an incapacitated cat!").withStyle(ChatFormatting.RED), true);
-                        return;
-                    }
-                    if (cat.distanceToSqr(sender) > 64.0D * 64.0D) {
-                        sender.displayClientMessage(Component.literal("Cat is too far away to Twine!").withStyle(ChatFormatting.RED), true);
-                        return;
-                    }
-                    if (cat.isTwined() && !cat.isTwinedWith(sender)) {
-                        sender.displayClientMessage(Component.literal("Another player is already controlling this cat!").withStyle(ChatFormatting.RED), true);
-                        return;
-                    }
-                    if (TwineManager.isPlayerTwined(sender.getUUID())) {
-                        TwineManager.endForPlayer(sender, null);
-                    }
-
-                    cat.setTwinedPlayer(sender);
-                    TwineManager.register(sender.getUUID(), cat.getUUID());
-                    TwineManager.recordDormantBody(sender);
-                    TwineManager.hideDormantBody(sender);
-                    cat.setMaxUpStep(1.0F);
-
-                    PacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> sender),
-                            new PacketSyncTwine(catEntityId, true));
-                    sender.playNotifySound(com.kittytalents.registry.ModSounds.TWINE_ENTER.get(), net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
-                    sender.displayClientMessage(Component.literal("✦ Twined with " + cat.getName().getString() + "! Controlling companion. ✦").withStyle(ChatFormatting.GREEN), true);
-                }
-                case DODGE -> {
-                    if (cat.isTwinedWith(sender)) {
-                        TwineManager.executeDodge(cat, sender, (int) actionData);
-                    }
-                }
-                case TEAM_SYNERGY -> {
-                    if (cat.isTwinedWith(sender)) {
-                        TwineManager.triggerTeamSynergy(cat, sender);
-                    }
-                }
-                case TRAVERSAL_ACTION -> {
-                    if (cat.isTwinedWith(sender)) {
-                        TwineManager.executeTraversalAction(cat, sender, actionData);
-                    }
-                }
-                case INTERACT -> {
-                    if (cat.isTwinedWith(sender)) {
-                        cat.tryUseEquippedTool();
-                    }
-                }
-                case RELOAD_GUN -> {
-                    if (cat.isTwinedWith(sender) && cat.hasEquippedGun()) {
-                        com.kittytalents.compat.tacz.TacZCompat.triggerReload(cat, cat.getEquippedWeapon());
-                    }
-                }
-                case AIM_GUN -> {
-                    if (cat.isTwinedWith(sender) && cat.hasEquippedGun()) {
-                        com.kittytalents.compat.tacz.TacZCompat.setAiming(cat, actionData > 0.5F);
-                    }
-                }
+            return false;
+        }
+        TalentedCat cat = access.cat();
+        int intData = (int) actionData;
+        switch (actionType) {
+            case DODGE -> {
+                if (intData < 0 || intData > 3) return false;
+                TwineMoves.executeDodge(cat, sender, intData);
             }
-        });
-        ctx.get().setPacketHandled(true);
+            case TEAM_SYNERGY -> TwineMoves.triggerTeamSynergy(cat, sender);
+            case TRAVERSAL_ACTION -> {
+                if (intData < 0 || intData > 4) return false;
+                TwineMoves.executeTraversalAction(cat, sender, intData);
+            }
+            case INTERACT -> cat.tryUseEquippedTool();
+            case RELOAD_GUN -> {
+                if (cat.hasEquippedGun()) com.kittytalents.compat.tacz.TacZCompat.triggerReload(cat, cat.getEquippedWeapon());
+            }
+            case AIM_GUN -> {
+                if (cat.hasEquippedGun()) com.kittytalents.compat.tacz.TacZCompat.setAiming(cat, actionData > 0.5F);
+            }
+            default -> { return false; }
+        }
+        return true;
+    }
+
+    private static boolean start(ServerPlayer sender, int catEntityId) {
+        CatPermissions.Access access = CatPermissions.check(sender, catEntityId, CatAction.TWINE_START);
+        TalentedCat cat = access.cat();
+        if (!access.allowed()) {
+            if (access.denial() == CatPermissions.Denial.NOT_ALLOWED) {
+                sender.displayClientMessage(Component.literal("You do not have permission to Twine with this cat!").withStyle(ChatFormatting.RED), true);
+            } else if (access.denial() == CatPermissions.Denial.TOO_FAR) {
+                sender.displayClientMessage(Component.literal("Cat is too far away to Twine!").withStyle(ChatFormatting.RED), true);
+            }
+            return false;
+        }
+        if (cat.isIncapacitated()) {
+            sender.displayClientMessage(Component.literal("Cannot Twine with an incapacitated cat!").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+        if (cat.isTwined() && !cat.isTwinedWith(sender)) {
+            sender.displayClientMessage(Component.literal("Another player is already controlling this cat!").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+        if (cat.isVehicle() || cat.isPassenger()) {
+            sender.displayClientMessage(Component.literal("Your cat can't be twined while riding or being ridden.").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+        if (!sender.isAlive() || sender.isSpectator() || sender.isSleeping()) return false;
+        return TwineManager.start(sender, cat);
     }
 }

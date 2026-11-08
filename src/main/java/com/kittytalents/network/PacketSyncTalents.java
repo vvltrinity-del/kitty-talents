@@ -4,13 +4,11 @@ import com.kittytalents.client.network.ClientPacketHandlers;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
-public class PacketSyncTalents {
+public class PacketSyncTalents extends PacketBase {
     private final int entityId;
     private final int skillPoints;
     private final Map<String, Integer> talentMap;
@@ -33,6 +31,7 @@ public class PacketSyncTalents {
         }
     }
 
+    @Override
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeInt(entityId);
         buf.writeInt(skillPoints);
@@ -43,12 +42,8 @@ public class PacketSyncTalents {
         }
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncTalents(
-                    entityId, skillPoints, talentMap
-            ));
-        });
-        ctx.get().setPacketHandled(true);
+    @Override
+    protected void handleClient() {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncTalents(entityId, skillPoints, talentMap));
     }
 }

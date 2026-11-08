@@ -1,22 +1,19 @@
 package com.kittytalents.network;
 
+import com.kittytalents.core.perm.CatAction;
 import com.kittytalents.entity.TalentedCat;
 import com.kittytalents.talent.Talents;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.Tiers;
-import net.minecraftforge.network.NetworkEvent;
 
-import java.util.function.Supplier;
-
-public class PacketEquipCatItem {
+public class PacketEquipCatItem extends PacketBase {
     private final int entityId;
     private final int slotId; // 0 = weapon, 1 = helmet, 2 = chest, 3 = legs, 4 = boots, 5 = acc, 6 = tool, 7..9 = cos, 10 = toggle
     private final boolean isShiftClick;
@@ -37,32 +34,34 @@ public class PacketEquipCatItem {
         this.isShiftClick = buf.readableBytes() > 0 && buf.readBoolean();
     }
 
+    @Override
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeInt(entityId);
         buf.writeInt(slotId);
         buf.writeBoolean(isShiftClick);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            ServerPlayer sender = ctx.get().getSender();
-            if (sender != null) {
-                Entity entity = sender.level().getEntity(entityId);
-                if (slotId < 0 || slotId > 10) return;
-                if (entity instanceof TalentedCat cat && (cat.isOwnedBy(sender) || cat.isTrusted(sender)) && cat.distanceToSqr(sender) <= 64.0D * 64.0D) {
-                    if (slotId == 10) {
-                        // Toggle Cosmetics Visibility
-                        cat.setCosmeticsVisible(!cat.isCosmeticsVisible());
-                        sender.playSound(SoundEvents.UI_BUTTON_CLICK.get(), 0.6F, 1.2F);
-                        cat.syncEquipment();
-                        return;
-                    }
+    /** Slot ids 0..9 are gear slots, 10 toggles cosmetic visibility. */
+    public static final int TOGGLE_COSMETICS = 10;
 
-                    handleSlotInteraction(sender, cat, slotId, isShiftClick);
-                }
-            }
-        });
-        ctx.get().setPacketHandled(true);
+    @Override
+    protected void handleServer(ServerPlayer sender) {
+        apply(sender, entityId, slotId, isShiftClick);
+    }
+
+    /** Validate -> authorize (EQUIP) -> apply. @return true if the click was handled. */
+    public static boolean apply(ServerPlayer sender, int entityId, int slotId, boolean isShiftClick) {
+        if (slotId < 0 || slotId > TOGGLE_COSMETICS) return false;
+        TalentedCat cat = authorize(sender, entityId, CatAction.EQUIP);
+        if (cat == null) return false;
+        if (slotId == TOGGLE_COSMETICS) {
+            cat.setCosmeticsVisible(!cat.isCosmeticsVisible());
+            sender.playSound(SoundEvents.UI_BUTTON_CLICK.get(), 0.6F, 1.2F);
+            cat.syncEquipment();
+            return true;
+        }
+        handleSlotInteraction(sender, cat, slotId, isShiftClick);
+        return true;
     }
 
     /** Server-side slot click. Public for GameTests. */

@@ -5,12 +5,10 @@ import com.kittytalents.core.component.CatLoadout;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
-import java.util.function.Supplier;
 
 /** Server -> client: the authoritative combat loadout of a cat (for the Combat tab and the Twine HUD). */
-public class PacketSyncCatLoadout {
+public class PacketSyncCatLoadout extends PacketBase {
     private final int entityId;
     private final CatLoadout loadout;
 
@@ -24,14 +22,14 @@ public class PacketSyncCatLoadout {
         this.loadout = CatLoadout.read(buf);
     }
 
+    @Override
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeInt(entityId);
         loadout.write(buf);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                () -> () -> ClientPacketHandlers.handleSyncLoadout(entityId, loadout)));
-        ctx.get().setPacketHandled(true);
+    @Override
+    protected void handleClient() {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncLoadout(entityId, loadout));
     }
 }

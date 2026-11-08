@@ -1,14 +1,22 @@
 package com.kittytalents.network;
 
 import com.kittytalents.KittyTalents;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 
+import java.util.function.Function;
+
+/**
+ * The mod's one network channel. Every packet extends {@link PacketBase}; the registration order below is the wire id,
+ * so append new packets at the end. Bump {@link #PROTOCOL_VERSION} whenever a packet's format changes.
+ */
 public class PacketHandler {
-    private static final String PROTOCOL_VERSION = "1";
+    /** 2: Phase 7 (PacketBase port; PacketTwineAction always sends type + data). */
+    private static final String PROTOCOL_VERSION = "2";
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(KittyTalents.MODID, "main"),
             () -> PROTOCOL_VERSION,
@@ -19,130 +27,42 @@ public class PacketHandler {
     private static int packetId = 0;
 
     public static void register() {
-        INSTANCE.messageBuilder(PacketTrainTalent.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketTrainTalent::new)
-                .encoder(PacketTrainTalent::toBytes)
-                .consumerMainThread(PacketTrainTalent::handle)
-                .add();
+        toServer(PacketTrainTalent.class, PacketTrainTalent::new);
+        toServer(PacketChangeCatMode.class, PacketChangeCatMode::new);
+        toServer(PacketOpenCatPack.class, PacketOpenCatPack::new);
+        toServer(PacketRenameCat.class, PacketRenameCat::new);
+        toServer(PacketChangeCatSkin.class, PacketChangeCatSkin::new);
+        toServer(PacketRespecTalents.class, PacketRespecTalents::new);
+        toServer(PacketEquipCatItem.class, PacketEquipCatItem::new);
+        toServer(PacketManageTrust.class, PacketManageTrust::new);
+        toClient(PacketSyncTrustedPlayers.class, PacketSyncTrustedPlayers::new);
+        toServer(PacketSetCatLoadout.class, PacketSetCatLoadout::new);
+        toClient(PacketSyncCatLoadout.class, PacketSyncCatLoadout::new);
+        toClient(PacketSyncCatEquipment.class, PacketSyncCatEquipment::new);
+        toServer(PacketWhistleCommand.class, PacketWhistleCommand::new);
+        toServer(PacketChangeCatGender.class, PacketChangeCatGender::new);
+        toServer(PacketChangeCollarColor.class, PacketChangeCollarColor::new);
+        toServer(PacketTwineAction.class, PacketTwineAction::new);
+        toClient(PacketSyncTwine.class, PacketSyncTwine::new);
+        toServer(PacketTwineInput.class, PacketTwineInput::new);
+        toClient(PacketSyncTalents.class, PacketSyncTalents::new);
+        toServer(PacketTeamCommand.class, PacketTeamCommand::new);
+        toServer(PacketSetCatJob.class, PacketSetCatJob::new);
+    }
 
-        INSTANCE.messageBuilder(PacketChangeCatMode.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketChangeCatMode::new)
-                .encoder(PacketChangeCatMode::toBytes)
-                .consumerMainThread(PacketChangeCatMode::handle)
-                .add();
+    private static <T extends PacketBase> void toServer(Class<T> type, Function<FriendlyByteBuf, T> decoder) {
+        add(type, decoder, NetworkDirection.PLAY_TO_SERVER);
+    }
 
-        INSTANCE.messageBuilder(PacketOpenCatPack.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketOpenCatPack::new)
-                .encoder(PacketOpenCatPack::toBytes)
-                .consumerMainThread(PacketOpenCatPack::handle)
-                .add();
+    private static <T extends PacketBase> void toClient(Class<T> type, Function<FriendlyByteBuf, T> decoder) {
+        add(type, decoder, NetworkDirection.PLAY_TO_CLIENT);
+    }
 
-        INSTANCE.messageBuilder(PacketRenameCat.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketRenameCat::new)
-                .encoder(PacketRenameCat::toBytes)
-                .consumerMainThread(PacketRenameCat::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketChangeCatSkin.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketChangeCatSkin::new)
-                .encoder(PacketChangeCatSkin::toBytes)
-                .consumerMainThread(PacketChangeCatSkin::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketRespecTalents.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketRespecTalents::new)
-                .encoder(PacketRespecTalents::toBytes)
-                .consumerMainThread(PacketRespecTalents::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketEquipCatItem.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketEquipCatItem::new)
-                .encoder(PacketEquipCatItem::toBytes)
-                .consumerMainThread(PacketEquipCatItem::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketManageTrust.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketManageTrust::new)
-                .encoder(PacketManageTrust::toBytes)
-                .consumerMainThread(PacketManageTrust::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketSyncTrustedPlayers.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(PacketSyncTrustedPlayers::new)
-                .encoder(PacketSyncTrustedPlayers::toBytes)
-                .consumerMainThread(PacketSyncTrustedPlayers::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketSetCatLoadout.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketSetCatLoadout::new)
-                .encoder(PacketSetCatLoadout::toBytes)
-                .consumerMainThread(PacketSetCatLoadout::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketSyncCatLoadout.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(PacketSyncCatLoadout::new)
-                .encoder(PacketSyncCatLoadout::toBytes)
-                .consumerMainThread(PacketSyncCatLoadout::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketSyncCatEquipment.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(PacketSyncCatEquipment::new)
-                .encoder(PacketSyncCatEquipment::toBytes)
-                .consumerMainThread(PacketSyncCatEquipment::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketWhistleCommand.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketWhistleCommand::new)
-                .encoder(PacketWhistleCommand::toBytes)
-                .consumerMainThread(PacketWhistleCommand::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketChangeCatGender.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketChangeCatGender::new)
-                .encoder(PacketChangeCatGender::toBytes)
-                .consumerMainThread(PacketChangeCatGender::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketChangeCollarColor.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketChangeCollarColor::new)
-                .encoder(PacketChangeCollarColor::toBytes)
-                .consumerMainThread(PacketChangeCollarColor::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketTwineAction.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketTwineAction::new)
-                .encoder(PacketTwineAction::toBytes)
-                .consumerMainThread(PacketTwineAction::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketSyncTwine.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(PacketSyncTwine::new)
-                .encoder(PacketSyncTwine::toBytes)
-                .consumerMainThread(PacketSyncTwine::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketTwineInput.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketTwineInput::new)
-                .encoder(PacketTwineInput::toBytes)
-                .consumerMainThread(PacketTwineInput::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketSyncTalents.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(PacketSyncTalents::new)
-                .encoder(PacketSyncTalents::toBytes)
-                .consumerMainThread(PacketSyncTalents::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketTeamCommand.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketTeamCommand::new)
-                .encoder(PacketTeamCommand::toBytes)
-                .consumerMainThread(PacketTeamCommand::handle)
-                .add();
-
-        INSTANCE.messageBuilder(PacketSetCatJob.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketSetCatJob::new)
-                .encoder(PacketSetCatJob::toBytes)
-                .consumerMainThread(PacketSetCatJob::handle)
+    private static <T extends PacketBase> void add(Class<T> type, Function<FriendlyByteBuf, T> decoder, NetworkDirection dir) {
+        INSTANCE.messageBuilder(type, packetId++, dir)
+                .decoder(decoder)
+                .encoder(PacketBase::toBytes)
+                .consumerMainThread(PacketBase::handle)
                 .add();
     }
 

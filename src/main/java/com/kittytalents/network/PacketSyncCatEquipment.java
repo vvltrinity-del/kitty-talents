@@ -5,11 +5,9 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
-import java.util.function.Supplier;
 
-public class PacketSyncCatEquipment {
+public class PacketSyncCatEquipment extends PacketBase {
     private final int entityId;
     private final ItemStack weapon;
     private final ItemStack tool;
@@ -56,6 +54,7 @@ public class PacketSyncCatEquipment {
         this.cosmeticsVisible = buf.readBoolean();
     }
 
+    @Override
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeInt(entityId);
         buf.writeItem(weapon);
@@ -71,12 +70,8 @@ public class PacketSyncCatEquipment {
         buf.writeBoolean(cosmeticsVisible);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncCatEquipment(
-                    entityId, weapon, tool, helmet, chest, legs, boots, accessory, cosmetic1, cosmetic2, cosmetic3, cosmeticsVisible
-            ));
-        });
-        ctx.get().setPacketHandled(true);
+    @Override
+    protected void handleClient() {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncCatEquipment(entityId, weapon, tool, helmet, chest, legs, boots, accessory, cosmetic1, cosmetic2, cosmetic3, cosmeticsVisible));
     }
 }
