@@ -62,6 +62,11 @@ def main():
     floor = [((x, 0, z), 0) for x in range(size[0]) for z in range(size[2])]
     write_structure("empty", size, floor, ["minecraft:stone"])
 
+    # "arena": 32x8x32 stone floor for range-dependent AI tests (guard radius, aggressive seek range, pounce).
+    size = (32, 8, 32)
+    floor = [((x, 0, z), 0) for x in range(size[0]) for z in range(size[2])]
+    write_structure("arena", size, floor, ["minecraft:stone"])
+
 
 if __name__ == "__main__":
     main()

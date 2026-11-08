@@ -63,6 +63,21 @@ public class CatPounceGoal extends Goal {
         return CatCliffSafetyHelper.isSafeToLeap(cat, t.position());
     }
 
+    /** Human-readable reason the pounce cannot start right now (null = it can). For debugging and audits. */
+    public String whyNot() {
+        if (blocked()) return "blocked(mode=" + cat.getCatMode() + ",gun=" + cat.hasEquippedGun() + ",sleep=" + cat.isSleeping()
+                + ",vehicle=" + cat.isVehicle() + ",retreat=" + cat.isRetreating() + ")";
+        if (cat.level().getGameTime() < readyAt) return "cooldown";
+        if (!cat.onGround()) return "airborne";
+        LivingEntity t = cat.getTarget();
+        if (t == null || !t.isAlive()) return "no target";
+        double dist = Math.sqrt(cat.distanceToSqr(t));
+        if (dist < 2.5D || dist > maxRange(cat)) return "range " + dist;
+        if (!cat.getSensing().hasLineOfSight(t)) return "no line of sight";
+        if (!CatCliffSafetyHelper.isSafeToLeap(cat, t.position())) return "unsafe landing";
+        return null;
+    }
+
     @Override
     public void start() {
         target = cat.getTarget();

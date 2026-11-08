@@ -26,7 +26,7 @@ public class KittyTalentsGameTests {
 
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testWorkerJobAssignmentAndClockIn(GameTestHelper helper) {
-        BlockPos pos = new BlockPos(2, 1, 2);
+        BlockPos pos = new BlockPos(2, 2, 2);
         TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), pos);
         cat.setCatLevel(25);
         cat.setTalentLevel(Talents.GREEN_PAW, 3);
@@ -41,7 +41,7 @@ public class KittyTalentsGameTests {
 
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testHabitatStoreAndReleaseCat(GameTestHelper helper) {
-        BlockPos pos = new BlockPos(2, 1, 2);
+        BlockPos pos = new BlockPos(2, 2, 2);
         helper.setBlock(pos, ModBlocks.KITTY_HABITAT.get());
         KittyHabitatBlockEntity habitat = (KittyHabitatBlockEntity) helper.getBlockEntity(pos);
         helper.assertTrue(habitat != null, "Habitat block entity should exist");
@@ -61,7 +61,7 @@ public class KittyTalentsGameTests {
 
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testWorkStationBufferAndCapabilities(GameTestHelper helper) {
-        BlockPos pos = new BlockPos(2, 1, 2);
+        BlockPos pos = new BlockPos(2, 2, 2);
         helper.setBlock(pos, ModBlocks.KITTY_WORK_STATION.get());
         KittyWorkStationBlockEntity station = (KittyWorkStationBlockEntity) helper.getBlockEntity(pos);
         helper.assertTrue(station != null, "Work Station block entity should exist");
@@ -75,7 +75,7 @@ public class KittyTalentsGameTests {
 
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testTreatOvenEnergyAndCapabilities(GameTestHelper helper) {
-        BlockPos pos = new BlockPos(2, 1, 2);
+        BlockPos pos = new BlockPos(2, 2, 2);
         helper.setBlock(pos, ModBlocks.TREAT_OVEN.get());
         TreatOvenBlockEntity oven = (TreatOvenBlockEntity) helper.getBlockEntity(pos);
         helper.assertTrue(oven != null, "Treat Oven block entity should exist");
@@ -89,7 +89,7 @@ public class KittyTalentsGameTests {
     /** Nine Lives revives once, then goes on cooldown: the next lethal hit downs the cat instead. */
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testNineLivesHasCooldown(GameTestHelper helper) {
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         cat.setTalentLevel(Talents.NINE_LIVES, 1);
         var dmg = helper.getLevel().damageSources().generic();
 
@@ -105,7 +105,7 @@ public class KittyTalentsGameTests {
     /** Downed cats ignore normal damage but must still take void/kill damage. */
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testDownedCatStillTakesVoidDamage(GameTestHelper helper) {
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         cat.setIncapacitated(true);
         float before = cat.getHealth();
 
@@ -120,7 +120,7 @@ public class KittyTalentsGameTests {
     /** A 2.0-format save (mode ordinal, ForgeData cooldowns/flags) loads into a real cat with nothing lost. */
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testLegacySaveMigratesOnLoad(GameTestHelper helper) {
-        TalentedCat source = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        TalentedCat source = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         source.setCatLevel(37);
         source.setTalentLevel(Talents.POUNCE, 3);
         net.minecraft.nbt.CompoundTag tag = source.saveWithoutId(new net.minecraft.nbt.CompoundTag());
@@ -137,7 +137,7 @@ public class KittyTalentsGameTests {
         tag.put("ForgeData", forge);
         tag.remove("UUID"); // avoid two live entities sharing one UUID
 
-        TalentedCat loaded = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(4, 1, 4));
+        TalentedCat loaded = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(4, 2, 4));
         loaded.load(tag);
 
         helper.assertTrue(loaded.getCatMode() == CatMode.GUARD, "Legacy ordinal 8 (PATROL) should load as GUARD after the mode merge, got " + loaded.getCatMode());
@@ -158,7 +158,7 @@ public class KittyTalentsGameTests {
     /** R37: a heavily progressed cat survives save + reload with every component intact. */
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testFullCatSaveReloadRoundTrip(GameTestHelper helper) {
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         long now = helper.getLevel().getGameTime();
         cat.setCatLevel(88);
         cat.setSkillPoints(7);
@@ -184,7 +184,7 @@ public class KittyTalentsGameTests {
 
         net.minecraft.nbt.CompoundTag tag = cat.saveWithoutId(new net.minecraft.nbt.CompoundTag());
         tag.remove("UUID");
-        TalentedCat copy = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(4, 1, 4));
+        TalentedCat copy = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(4, 2, 4));
         copy.load(tag);
 
         helper.assertTrue(copy.getCatLevel() == 88 && copy.getSkillPoints() == 7, "Level/points lost");
@@ -213,7 +213,7 @@ public class KittyTalentsGameTests {
     /** Respec must refund only ranks actually paid for; free standard-talent ranks used to mint points. */
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testRespecRefundsOnlyPaidRanks(GameTestHelper helper) {
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         cat.setSkillPoints(10);
         cat.trainTalent(Talents.POUNCE); // rank 1, max 8 -> costs 1
         cat.trainTalent(Talents.POUNCE); // rank 2 -> costs 1
@@ -232,7 +232,7 @@ public class KittyTalentsGameTests {
     @GameTest(template = "empty", timeoutTicks = 80)
     public static void testStatusExpiryWithMultipleStatusesDoesNotCrash(GameTestHelper helper) {
         // Not undead: undead are immune to Poison and Bleed. Statuses enforce a 20-tick minimum duration.
-        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.PIG, new BlockPos(2, 1, 2));
+        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.PIG, new BlockPos(2, 2, 2));
         zombie.setNoAi(true);
         zombie.setInvulnerable(true); // only the status bookkeeping is under test, not the damage
         com.kittytalents.combat.FelineStatusEffects.applyStatus(zombie, com.kittytalents.combat.FelineStatusType.POISON, 1, 20);
@@ -250,9 +250,9 @@ public class KittyTalentsGameTests {
     // 240 ticks: 60 twined + up to ~100 for the AI to re-scan after untwine (it scans every 30 ticks with no player nearby).
     @GameTest(template = "empty", timeoutTicks = 240)
     public static void testTwinedCatIgnoresAiWithoutInput(GameTestHelper helper) {
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         cat.setCatMode(CatMode.AGGRESSIVE);
-        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.ZOMBIE, new BlockPos(5, 1, 5));
+        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.ZOMBIE, new BlockPos(5, 2, 5));
         zombie.setNoAi(true); // keep the provocation still so any cat movement is the cat's own AI
 
         var player = helper.makeMockPlayer();
@@ -288,7 +288,7 @@ public class KittyTalentsGameTests {
     /** Gear screen: clicking an empty slot equips from the player's inventory; clicking a filled slot returns it. */
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testGearClickEquipsFromInventoryAndUnequipsToInventory(GameTestHelper helper) {
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         cat.setTalentLevel(Talents.CAT_ARMOR, 2); // iron armor needs rank 2
         net.minecraft.server.level.ServerPlayer player = net.minecraftforge.common.util.FakePlayerFactory.getMinecraft(helper.getLevel());
         player.getInventory().clearContent();
@@ -317,7 +317,7 @@ public class KittyTalentsGameTests {
     /** An idle cat with full Energy must not waste abilities. */
     @GameTest(template = "empty", timeoutTicks = 60)
     public static void testIdleCatDoesNotCastAbilities(GameTestHelper helper) {
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         cat.setCatMode(CatMode.FOLLOW);
         cat.setEnergy(100);
         helper.runAfterDelay(50, () -> {
@@ -329,11 +329,11 @@ public class KittyTalentsGameTests {
     /** A cat fighting a target should autonomously cast an equipped ability. */
     @GameTest(template = "empty", timeoutTicks = 100)
     public static void testCombatCatCastsAbility(GameTestHelper helper) {
-        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         cat.setCatMode(CatMode.FOLLOW);
         cat.setAbilitySlot1("venom_fang");
         cat.setEnergy(100);
-        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.ZOMBIE, new BlockPos(4, 1, 2));
+        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.ZOMBIE, new BlockPos(4, 2, 2));
         helper.succeedWhen(() -> {
             if (cat.getTarget() != zombie) cat.setTarget(zombie);
             helper.assertTrue(anySlotOnCooldown(cat), "Cat in combat should have cast an ability");
