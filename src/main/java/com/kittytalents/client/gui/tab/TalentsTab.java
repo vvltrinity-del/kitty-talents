@@ -23,8 +23,13 @@ import java.util.List;
 public class TalentsTab implements CatTab {
     private static final int LIST_W = 160;
     private static final int ROW_H = 22, ROW_GAP = 2;
-    private static final String[] CATEGORY_KEYS = { "all", "combat", "utility", "mobility", "support", "endgame" };
-    private static final String[] CATEGORY_NAMES = { "All", "Combat", "Utility", "Mobility", "Support", "Endgame" };
+    private static final String[] CATEGORY_KEYS = { "all", "combat", "defense", "mobility", "support", "utility", "dire" };
+    private static final String[] CATEGORY_NAMES = { "All", "Combat", "Defense", "Mobility", "Support", "Utility", "Dire" };
+    /** Chip i (after "All") shows talents of this declared category, so new and addon talents sort themselves. */
+    private static final com.kittytalents.talent.TalentCategory[] CATEGORY_FILTER = { null,
+            com.kittytalents.talent.TalentCategory.COMBAT, com.kittytalents.talent.TalentCategory.DEFENSE,
+            com.kittytalents.talent.TalentCategory.MOBILITY, com.kittytalents.talent.TalentCategory.SUPPORT,
+            com.kittytalents.talent.TalentCategory.UTILITY, com.kittytalents.talent.TalentCategory.DIRE };
 
     private final List<Talent> allTalents = new ArrayList<>();
     private final List<Talent> filtered = new ArrayList<>();
@@ -46,46 +51,12 @@ public class TalentsTab implements CatTab {
 
     private void filter() {
         filtered.clear();
+        var want = CATEGORY_FILTER[category];
         for (Talent t : allTalents) {
-            boolean keep = switch (category) {
-                case 1 -> isCombatTalent(t);
-                case 2 -> isUtilityTalent(t);
-                case 3 -> isMobilityTalent(t);
-                case 4 -> isSupportTalent(t);
-                case 5 -> t.isDireTalent();
-                default -> true;
-            };
-            if (keep) filtered.add(t);
+            if (want == null || t.getCategory() == want) filtered.add(t);
         }
         scroll = 0;
         if (!filtered.isEmpty() && !filtered.contains(selected)) selected = filtered.get(0);
-    }
-
-    private static boolean isCombatTalent(Talent t) {
-        return t == Talents.POUNCE_STRIKE || t == Talents.FELINE_REFLEXES || t == Talents.CRITICAL_CLAWS ||
-               t == Talents.FELINE_BERSERKER || t == Talents.FELINE_HISS || t == Talents.VENOM_CLAWS ||
-               t == Talents.INFERNO_CAT || t == Talents.GUARDIAN_CAT || t == Talents.CATNIP_CATASTROPHE ||
-               t == Talents.HUNTER_CAT || t == Talents.CAT_ARMORY || t == Talents.CAT_ARMOR ||
-               t == Talents.MARKSMAN || t == Talents.QUICK_RELOAD || t == Talents.AMMO_SCAVENGER;
-    }
-
-    private static boolean isMobilityTalent(Talent t) {
-        return t == Talents.FELINE_AGILITY || t == Talents.CUSHION_PAWS || t == Talents.AQUA_CAT ||
-               t == Talents.FIREPROOF_PAWS || t == Talents.SKY_FELINE || t == Talents.CAT_MOUNT;
-    }
-
-    private static boolean isUtilityTalent(Talent t) {
-        return t == Talents.KITTY_PACK || t == Talents.TORCH_KITTY || t == Talents.HOME_WHISKERS ||
-               t == Talents.WHISKER_RADAR || t == Talents.SNIFFER_WHISKERS || t == Talents.KITTY_TOOLS ||
-               t == Talents.MOLE_CAT || t == Talents.PAW_RETRIEVER || t == Talents.HERDING_KITTY ||
-               t == Talents.GATE_PURR || t == Talents.HAPPY_EATER ||
-               t == Talents.GREEN_PAW || t == Talents.TIMBER_CLAWS || t == Talents.LOGISTICS_WHISKERS || t == Talents.WORK_ETHIC;
-    }
-
-    private static boolean isSupportTalent(Talent t) {
-        return t == Talents.PURR_MEDIC || t == Talents.RESCUE_PURR || t == Talents.GALE_PURR ||
-               t == Talents.CHARM_WHISKERS || t == Talents.SHADOW_PELT || t == Talents.ALCHEMY_KITTY ||
-               t == Talents.FRENZY_FOCUS || t == Talents.LUCKY_PURR;
     }
 
     // ------------------------------------------------------------------ layout helpers

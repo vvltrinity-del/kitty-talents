@@ -69,6 +69,10 @@ At 3.0.0, 100 cats cost about 2.4 ms per server tick (~24 µs per cat). The test
 
 ## Addon API (`com.kittytalents.api`)
 
+Full guide with examples and the stability rules: `docs/EXTENDING.md`. API version 1.0.0 (`KittyTalentsAPI.API_VERSION`).
+
+- `KittyTalentsAPI.registerTalent(talent, effect)` / `registerAbility(ability)`: add talents and abilities from an addon.
+
 - `event.RegisterCatGoalsEvent`: fired once per cat when its AI is built. Use
   `event.addGoal(CatGoalBand.NEEDS, goal)` (bands, highest first: SAFETY, ORDERS, COMBAT, MELEE, COMMAND, WORK,
   NEEDS, IDLE) or `addTargetGoal(goal)`. Don't add goals from `EntityJoinLevelEvent`: it fires again on every chunk

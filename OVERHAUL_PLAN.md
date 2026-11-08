@@ -401,6 +401,36 @@ com.kittytalents
   (That folder isn't a git repo; the old source is backed up in the session scratchpad.)
 - **Version 3.0.0**, README and PROJECT.md rewritten to match the code. The `v3.0.0` tag waits for the user's playtest.
 
+### 2026-11-08: Fixes from the TACZ Pack two-player playtest log
+- **Crash crossing a portal** with following cats: they were moved with the default teleporter, which runs the portal
+  search and throws for an entity not standing in a portal. `ForgeEvents.bringFollowers` places them at the player's
+  arrival point (GameTest added).
+- **"TalentedCat cannot be cast to Sniffer"** on every groom: animation event 63 is the vanilla Sniffer dig sound
+  (handled before the entity sees it). Animations now use events 110-113, so grooming actually plays in a real game.
+- Create compat recipes skip quietly without Create. Co-owners confirmed working by the user.
+- **Fire:** Fireproof Paws and a mastered Inferno Cat (Phoenix) make the cat truly fire-immune. It took no damage
+  before, but still caught fire and burned visibly. Passive talents (20 effects: owner auras, healing, self-repair)
+  now keep working while the cat sits or sleeps; before, all talent ticks stopped.
+
+### 2026-11-08: Phase 9: 4.0 runway
+- **API 1.0.0:** `api/KittyTalentsAPI` (`registerTalent`, `registerAbility`, `API_VERSION`) next to
+  `RegisterCatGoalsEvent`, `CatGoalBand` and `CatRewardEvent`. `api/package-info` and `docs/EXTENDING.md` state the
+  semver rules and exactly which outside types count as stable. A GameTest registers a talent and an ability the way an
+  addon would, then trains, uses, saves and reloads them.
+- **`docs/EXTENDING.md`:** how to add a talent, ability, AI goal, skin, mode or job, with the files to touch and the
+  test to write. Talents, abilities and AI goals are now registry entries plus data (lang keys, icons). Skins still need
+  two code lines (server-side id check), and modes and jobs are enums.
+- **Talents tab** filters by each talent's declared category (All, Combat, Defense, Mobility, Support, Utility, Dire).
+  The old hard-coded lists had drifted (several talents showed under no filter) and couldn't include addon talents.
+- **4.0 candidates** (for the user to pick from):
+  1. Data-driven skins: a datapack skin list the server syncs to clients, so a resource/datapack adds skins without code.
+  2. Talent and ability numbers in datapack JSON (open decision 3), so server owners can rebalance.
+  3. Status effects as a capability instead of persistent data on every mob (performance, cleaner saves).
+  4. Gear tab with real inventory slots and drag-and-drop (decision 7).
+  5. Make a finished stalk always end in a pounce (the remaining rare flaky test).
+  6. Modes and jobs as registries (addon-addable) instead of enums.
+  7. Multiplayer: shared cats between co-owners in the HUD, party commands for the whistle.
+
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).

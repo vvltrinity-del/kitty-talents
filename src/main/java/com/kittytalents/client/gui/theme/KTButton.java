@@ -66,7 +66,8 @@ public class KTButton extends Button {
         if (selected || (hover && style != Style.STONE)) KTTheme.outline(g, x - 1, y - 1, w + 2, h + 2, KTTheme.GOLD_EDGE);
         else if (hover) KTTheme.outline(g, x - 1, y - 1, w + 2, h + 2, 0xFFD8D4CC);
 
-        int textLeft = x + 4;
+        int pad = style == Style.CHIP ? 2 : 4; // chips are narrow filter tabs: tighter padding fits "Defense"
+        int textLeft = x + pad;
         if (!icon.isEmpty() || iconTexture != null) {
             int size = h >= 18 ? 16 : 12;
             int iy = textTop >= 0 ? y + 3 : y + (h - size) / 2;
@@ -87,12 +88,12 @@ public class KTButton extends Button {
         Font font = Minecraft.getInstance().font;
         int color = textColor != -1 ? textColor : (style == Style.GOLD ? KTTheme.TEXT_DARK : (selected ? KTTheme.TEXT_GOLD : KTTheme.TEXT));
         if (!active) color = KTTheme.dim(color);
-        int avail = x + w - 3 - textLeft;
+        int avail = x + w - (pad - 1) - textLeft;
         Component msg = getMessage();
         String text = msg.getString();
         if (font.width(text) > avail) text = font.plainSubstrByWidth(text, Math.max(0, avail - font.width("…"))) + "…";
-        int tx = leftAligned || textLeft != x + 4 ? textLeft : x + (w - font.width(text)) / 2;
-        if (!leftAligned && textLeft != x + 4) tx = textLeft + Math.max(0, (avail - font.width(text)) / 2);
+        int tx = leftAligned || textLeft != x + pad ? textLeft : x + (w - font.width(text)) / 2;
+        if (!leftAligned && textLeft != x + pad) tx = textLeft + Math.max(0, (avail - font.width(text)) / 2);
         boolean shadow = style != Style.GOLD;
         g.drawString(font, Component.literal(text).withStyle(msg.getStyle()), tx, textTop >= 0 ? y + textTop : y + (h - 8) / 2, color, shadow);
     }

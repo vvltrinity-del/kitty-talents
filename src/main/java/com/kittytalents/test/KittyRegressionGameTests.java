@@ -332,4 +332,68 @@ public class KittyRegressionGameTests {
             leave(h, fp);
         }
     }
+
+    // ---- Addon API (Phase 9): what an addon does with KittyTalentsAPI, end to end. ----
+    private static com.kittytalents.talent.Talent apiTalent;
+    private static final boolean[] apiCast = {false};
+
+    private static synchronized com.kittytalents.talent.Talent apiTalent() {
+        if (apiTalent == null) {
+            apiTalent = com.kittytalents.api.KittyTalentsAPI.registerTalent(
+                    new com.kittytalents.talent.Talent("kttest_iron_whiskers", 3, () -> new ItemStack(Items.IRON_INGOT), false, false,
+                            com.kittytalents.talent.TalentCategory.DEFENSE),
+                    new com.kittytalents.talent.effect.TalentEffect() {
+                        @Override public float modifyIncomingDamage(com.kittytalents.talent.effect.TalentContext ctx,
+                                net.minecraft.world.damagesource.DamageSource src, float amount) {
+                            return amount / 2.0F; // halves all damage, any rank
+                        }
+                    });
+            com.kittytalents.api.KittyTalentsAPI.registerAbility(new com.kittytalents.ability.CatAbility("kttest_purr_test", 0, 20) {
+                @Override protected boolean execute(TalentedCat cat, net.minecraft.world.entity.player.Player player) {
+                    apiCast[0] = true;
+                    return true;
+                }
+            });
+        }
+        return apiTalent;
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testAddonTalentAndAbilityThroughApi(GameTestHelper h) {
+        var t = apiTalent();
+        var fp = joinFakeOwner(h, new BlockPos(3, 2, 2));
+        try {
+            TalentedCat c = ownedCat(h, fp, new BlockPos(2, 2, 2));
+            h.assertTrue(com.kittytalents.talent.Talents.get(t.getId()) == t, "Addon talent should be in the registry");
+            boolean threw = false;
+            try {
+                com.kittytalents.api.KittyTalentsAPI.registerTalent(new com.kittytalents.talent.Talent(t.getId(), 1,
+                        () -> ItemStack.EMPTY), null);
+            } catch (IllegalArgumentException e) { threw = true; }
+            h.assertTrue(threw, "Registering a duplicate id must fail loudly");
+
+            c.setSkillPoints(10);
+            h.assertTrue(com.kittytalents.network.PacketTrainTalent.apply(fp, c.getId(), t.getId()), "Owner should train the addon talent");
+            h.assertTrue(c.getTalentLevel(t) == 1, "Rank 1 after training, have " + c.getTalentLevel(t));
+            float hp = c.getHealth();
+            c.hurt(h.getLevel().damageSources().generic(), 4.0F);
+            h.assertTrue(Math.abs((hp - c.getHealth()) - 2.0F) < 0.01F, "Addon effect should halve 4 damage to 2, took " + (hp - c.getHealth()));
+
+            net.minecraft.nbt.CompoundTag tag = c.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+            tag.remove("UUID");
+            TalentedCat copy = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(4, 2, 4));
+            copy.load(tag);
+            h.assertTrue(copy.getTalentLevel(t) == 1, "Addon talent rank should survive save/load");
+
+            var ability = com.kittytalents.ability.CatAbilities.get("kttest_purr_test");
+            h.assertTrue(ability != null && com.kittytalents.ability.CatAbilities.getSkills().contains(ability),
+                    "Addon ability should be a selectable skill");
+            apiCast[0] = false;
+            ability.tryCast(c, fp);
+            h.assertTrue(apiCast[0], "Addon ability should run when cast");
+            h.succeed();
+        } finally {
+            leave(h, fp);
+        }
+    }
 }
