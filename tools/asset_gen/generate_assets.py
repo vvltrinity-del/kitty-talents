@@ -2,7 +2,7 @@ import os
 import json
 from PIL import Image, ImageDraw
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 ASSETS_DIR = os.path.join(BASE_DIR, "src", "main", "resources", "assets", "kittytalents")
 ITEM_TEX_DIR = os.path.join(ASSETS_DIR, "textures", "item")
 ITEM_MODEL_DIR = os.path.join(ASSETS_DIR, "models", "item")

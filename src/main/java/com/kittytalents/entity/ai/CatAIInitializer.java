@@ -22,6 +22,9 @@ public class CatAIInitializer {
         // Priority 3: Backpack Auto-Feeding
         cat.goalSelector.addGoal(3, new CatBackpackFeedGoal(cat));
 
+        // Priority 3: Autonomous combat ability use (LOOK flag only, so it never blocks movement goals)
+        cat.goalSelector.addGoal(3, new com.kittytalents.ai.UseAbilityGoal(cat));
+
         // Priority 4: Feline Stalking Behavior
         cat.goalSelector.addGoal(4, new CatStalkGoal(cat));
 

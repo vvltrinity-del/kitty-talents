@@ -210,6 +210,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void incrementOutOfCombatTicks() { this.outOfCombatTicks++; }
     public void resetOutOfCombatTicks() { this.outOfCombatTicks = 0; }
 
+    /** Game time at which the Nine Lives instant revive is available again. */
+    private long nineLivesReadyAt = 0L;
+    public long getNineLivesReadyAt() { return nineLivesReadyAt; }
+
     private final Map<String, Long> abilityCooldowns = new HashMap<>();
     public long getAbilityCooldown(String id) {
         if (id == null) return 0L;
@@ -1200,6 +1204,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void setClockedIn(boolean clockedIn) {
         this.jobData.setClockedIn(clockedIn);
         this.entityData.set(DATA_CLOCKED_IN, clockedIn);
+        // Invariant: a clocked-in cat with a job is always in WORK mode, whichever caller clocked it in.
+        if (clockedIn && getCatJob() != com.kittytalents.work.CatJob.NONE && getCatMode() != CatMode.WORK) {
+            setOrderedToSit(false);
+            setCatMode(CatMode.WORK);
+        }
     }
 
     public String getWorkStatus() {
@@ -1397,6 +1406,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        // Void / kill damage must always apply, otherwise a downed cat below the world falls forever.
+        if (source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            return super.hurt(source, amount);
+        }
         if (isIncapacitated()) {
             return false;
         }
@@ -1405,7 +1418,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             return false;
         }
 
-        if (source.getEntity() == this.getOwner() && !KittyTalentsConfig.COMMON.friendlyFire.get()) {
+        // Owner friendly fire. Guard against null: untamed cats have no owner, and environmental damage has no entity.
+        if (this.getOwner() != null && source.getEntity() == this.getOwner() && !KittyTalentsConfig.COMMON.friendlyFire.get()) {
             return false;
         }
 
@@ -1453,7 +1467,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (amount >= this.getHealth()) {
             // Nine Lives instant totem revival
             int nineLives = getTalentLevel(Talents.NINE_LIVES);
-            if (nineLives > 0 && !isIncapacitated()) {
+            long now = this.level().getGameTime();
+            if (nineLives > 0 && !isIncapacitated() && now >= nineLivesReadyAt) {
+                // Instant revive recharges after (10 min - 1 min per rank); otherwise the cat goes down instead.
+                this.nineLivesReadyAt = now + Math.max(1200L, 12000L - 1200L * nineLives);
                 this.setHealth(Math.max(4.0F, this.getMaxHealth() * (0.18F * nineLives)));
                 this.level().broadcastEntityEvent(this, (byte) 35);
                 this.playSound(SoundEvents.TOTEM_USE, 1.0F, 1.0F);
@@ -2275,6 +2292,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         tag.putFloat("Satiety", satiety);
         tag.putInt("CatMode", getCatMode().ordinal());
         tag.putBoolean("Incapacitated", isIncapacitated());
+        tag.putLong("NineLivesReadyAt", nineLivesReadyAt);
         tag.putInt("SkinId", getSkinId());
         tag.putBoolean("DireAwakened", isDireAwakened());
         tag.putBoolean("Female", isFemale());
@@ -2376,6 +2394,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.satiety = tag.getFloat("Satiety");
         if (tag.contains("CatMode")) setCatMode(CatMode.byId(tag.getInt("CatMode")));
         if (tag.contains("Incapacitated")) setIncapacitated(tag.getBoolean("Incapacitated"));
+        this.nineLivesReadyAt = tag.getLong("NineLivesReadyAt");
         if (tag.contains("SkinId")) setSkinId(tag.getInt("SkinId"));
         if (tag.contains("DireAwakened")) setDireAwakened(tag.getBoolean("DireAwakened"));
         if (tag.contains("Female")) setFemale(tag.getBoolean("Female"));

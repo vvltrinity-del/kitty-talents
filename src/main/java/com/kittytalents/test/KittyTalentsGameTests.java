@@ -83,4 +83,70 @@ public class KittyTalentsGameTests {
         helper.assertTrue(oven.getCapability(ForgeCapabilities.ITEM_HANDLER).isPresent(), "Treat Oven should expose ITEM_HANDLER capability");
         helper.succeed();
     }
+
+    // ---- Phase 1 hotfix regression tests ----
+
+    /** Nine Lives revives once, then goes on cooldown: the next lethal hit downs the cat instead. */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testNineLivesHasCooldown(GameTestHelper helper) {
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        cat.setTalentLevel(Talents.NINE_LIVES, 1);
+        var dmg = helper.getLevel().damageSources().generic();
+
+        cat.hurt(dmg, 1000.0F);
+        helper.assertTrue(cat.isAlive() && !cat.isIncapacitated(), "First lethal hit should trigger the Nine Lives revive");
+        helper.assertTrue(cat.getNineLivesReadyAt() > helper.getLevel().getGameTime(), "Nine Lives should now be recharging");
+
+        cat.hurt(dmg, 1000.0F);
+        helper.assertTrue(cat.isIncapacitated(), "Second lethal hit during recharge should down the cat, not revive it");
+        helper.succeed();
+    }
+
+    /** Downed cats ignore normal damage but must still take void/kill damage. */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testDownedCatStillTakesVoidDamage(GameTestHelper helper) {
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        cat.setIncapacitated(true);
+        float before = cat.getHealth();
+
+        cat.hurt(helper.getLevel().damageSources().generic(), 5.0F);
+        helper.assertTrue(cat.getHealth() == before, "Downed cat should ignore normal damage");
+
+        cat.hurt(helper.getLevel().damageSources().fellOutOfWorld(), 5.0F);
+        helper.assertTrue(cat.getHealth() < before, "Downed cat must still take void damage");
+        helper.succeed();
+    }
+
+    private static boolean anySlotOnCooldown(TalentedCat cat) {
+        for (String id : new String[]{cat.getAbilitySlot1(), cat.getAbilitySlot2(), cat.getAbilitySlot3(), cat.getAbilityUltimate()}) {
+            if (id != null && !id.isEmpty() && cat.getAbilityCooldown(id) > 0) return true;
+        }
+        return false;
+    }
+
+    /** An idle cat with full Energy must not waste abilities. */
+    @GameTest(template = "empty", timeoutTicks = 60)
+    public static void testIdleCatDoesNotCastAbilities(GameTestHelper helper) {
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        cat.setCatMode(CatMode.FOLLOW);
+        cat.setEnergy(100);
+        helper.runAfterDelay(50, () -> {
+            helper.assertFalse(anySlotOnCooldown(cat), "Idle cat should not cast any ability");
+            helper.succeed();
+        });
+    }
+
+    /** A cat fighting a target should autonomously cast an equipped ability. */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void testCombatCatCastsAbility(GameTestHelper helper) {
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        cat.setCatMode(CatMode.FOLLOW);
+        cat.setAbilitySlot1("venom_fang");
+        cat.setEnergy(100);
+        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.ZOMBIE, new BlockPos(4, 1, 2));
+        helper.succeedWhen(() -> {
+            if (cat.getTarget() != zombie) cat.setTarget(zombie);
+            helper.assertTrue(anySlotOnCooldown(cat), "Cat in combat should have cast an ability");
+        });
+    }
 }

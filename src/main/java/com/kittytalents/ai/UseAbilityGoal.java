@@ -26,15 +26,27 @@ public class UseAbilityGoal extends Goal {
         return evaluateAbilities();
     }
 
+    /** Minimum AI priority before an ability is worth spending Energy on. */
+    private static final float MIN_PRIORITY = 1.0f;
+
+    private boolean isInCombat() {
+        net.minecraft.world.entity.LivingEntity target = cat.getTarget();
+        if (target != null && target.isAlive()) return true;
+        return cat.getLastHurtByMob() != null && cat.tickCount - cat.getLastHurtByMobTimestamp() < 100;
+    }
+
     private boolean evaluateAbilities() {
+        // Only spend Energy in real combat and in modes that are allowed to fight.
+        if (!cat.getCatMode().canAttack() || !isInCombat()) return false;
+
         CatAbility best = null;
-        float highestPriority = 0;
+        float highestPriority = MIN_PRIORITY;
 
         String[] slots = {cat.getAbilitySlot1(), cat.getAbilitySlot2(), cat.getAbilitySlot3(), cat.getAbilityUltimate()};
         for (String id : slots) {
             if (id != null && !id.isEmpty()) {
                 CatAbility abil = CatAbilities.get(id);
-                if (abil != null && cat.getEnergy() >= abil.getEnergyCost() && (cat.getAbilityCooldown(id) + abil.getCooldownTicks()) <= cat.level().getGameTime()) {
+                if (abil != null && abil.getCategory() != CatAbility.Category.UTILITY && cat.getEnergy() >= abil.getEnergyCost() && (cat.getAbilityCooldown(id) + abil.getCooldownTicks()) <= cat.level().getGameTime()) {
                     float priority = abil.getAiPriority(cat);
                     if (priority > highestPriority) {
                         highestPriority = priority;

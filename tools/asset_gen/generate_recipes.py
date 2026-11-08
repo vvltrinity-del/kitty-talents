@@ -1,7 +1,7 @@
 import os
 import json
 
-RECIPES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src", "main", "resources", "data", "kittytalents", "recipes")
+RECIPES_DIR = os.path.join(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")), "src", "main", "resources", "data", "kittytalents", "recipes")
 os.makedirs(RECIPES_DIR, exist_ok=True)
 
 recipes = {
