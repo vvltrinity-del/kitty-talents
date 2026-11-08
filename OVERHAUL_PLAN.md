@@ -350,6 +350,35 @@ com.kittytalents
   The vanilla texture left the throat bare, so the collar looked cut off from the front.
 - The `runScreenShots` harness also writes `hud.png` (both HUDs with sample statuses).
 
+### 2026-11-08: Phase 7: network, permissions, Twine hardening. Commits `197617a` → `48c22fc`
+- **One permission matrix:** `core/perm/CatPermissions` decides owner / co-owner / stranger for each `CatAction`.
+  Owners can do everything; co-owners can open the pack, give commands, change style, gear, loadout and job, and Twine;
+  only the owner can train talents, respec, rename and manage co-owners (a co-owner may remove themselves). Strangers can do nothing.
+- **Every packet goes through it:** all 21 packets extend `network/PacketBase`. The server checks that the entity exists,
+  is a living Talented Cat in the sender's world, is in range (32 blocks for screen actions, 64 for commands, 16 to start
+  Twine), and that the sender is allowed. Twine controls only work for the cat the sender is twined with right now.
+- **Values are checked, not clamped:** unknown mode, skin, collar, job, slot, talent, whistle, team-command and Twine ids
+  are refused. Names lose formatting codes and are capped at 32 characters. When a request is refused, the screen gets the
+  real loadout / talents / co-owner list back. Network protocol is now version 2 (old clients can't join a new server).
+- **Small fixes found on the way:** a gender change no longer uses up a ribbon when the gender is already right; team orders
+  while twined only go to the twined cat; "attack my target" ignores your own pets; removing a co-owner who is twined ends their session.
+- **Twine split:** server side is `TwineManager` (sessions, start/end, the dormant body) and `TwineMoves` (dodge, synergy,
+  traversal). Client side is `client/twine`: `ClientTwineState`, `TwineCamera`, `TwineInput`. The self-attack kick fix is kept.
+- **Twine edge cases:** the body is restored when the cat is removed (killed, unloaded, changes dimension, enters a
+  habitat), when the cat dies (now right away, not after the death animation), and when the player dies, logs out or changes
+  dimension. Ending an old cat's session no longer ends the player's newer session with another cat. The body flags are
+  also saved in the player's data and put back on the next login, so a crash mid-Twine can't leave a player invisible and
+  invulnerable. Sessions are cleared when the server stops. On the client, a lost "untwined" packet can no longer leave the
+  camera stuck in the cat: it gives up after 2 seconds if the cat says it isn't twined.
+- **Tests:** 57 GameTests (11 new in `KittyNetworkGameTests`: stranger, co-owner limits, out-of-range values, far cat,
+  non-cat ids, Twine without a session, and each Twine edge case above). Build (JUnit) passes; dedicated server boots.
+- **Choices made without the user (conservative, easy to change in `CatAction`):**
+  1. Training talents is now **owner-only**. Before, co-owners could spend the owner's skill points, which can't be undone
+     without a Respec Elixir. Co-owners who click TRAIN see "Only the cat's owner can do that."
+  2. A cat can't be twined while it's riding you (Sky Feline FLY) or being ridden.
+  3. Screen actions need the cat within 32 blocks (was 64, or unlimited for mode and job).
+- **Not done:** a real two-player LAN / dedicated-server playtest (needs two clients). The Talents tab still shows TRAIN to co-owners.
+
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).
