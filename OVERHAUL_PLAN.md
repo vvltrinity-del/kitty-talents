@@ -267,6 +267,27 @@ com.kittytalents
 - **Deferred:** talent numbers in datapack JSON (talents are now one small class each, so this is a mechanical follow-up,
   best done together with the 4.0 `api/` registries), and moving status effects from Forge persistent data to a capability.
 
+### 2026-11-08: Phase 5 (visuals) part 1: render matrix, own rig, anchors, skin JSON. Commits `5cfc9cb` to `b57e234`
+- **Render matrix:** `./gradlew runRenderMatrix` (wrapped by `tools/run_render_matrix.sh`) opens a client in `run-render/`,
+  quick-plays a copy of the server test world, renders 21 cat combinations from 4 angles offscreen and quits (about a
+  minute; a game window appears). Output: `run-render/matrix/*.png`; `tools/matrix_sheets.py` makes contact sheets.
+  Only active with `-Dkittytalents.renderMatrix`. Baseline, results and a side-by-side are in `docs/render-matrix/`.
+- **Own rig:** `client/model/KTCatModel` (vanilla proportions and UVs, own LayerDefinitions) with anchor bones
+  `head_top`, `mouth`, `back`, `neck`, `tail_root`. The tail is a real chain, and the Nekomata second tail is a mirrored
+  sibling chain on `tail_root`. `client/anim/CatAnimator` reproduces the vanilla poses and adds an idle tail sway and the twin-tail splay.
+- **Armor** is a fitted shell on the same skeleton (helmet, chest, hind legs, front legs). The armor textures were
+  already drawn for the vanilla cat UV layout; the old model sampled them with the wrong UVs, which caused the
+  "deformed netherite" look. **Layers** use anchors: mouth items have the grip between the teeth, cape/pack/wings sit on
+  `back`, scarf/bowtie on `neck` (the scarf tassel no longer reaches the floor), hats on `head_top`.
+- **Skins:** `assets/kittytalents/skins/*.json` and a cached `client/skin/SkinRegistry` reload listener; the renderer's
+  if/else chain is gone. `SkinFilesTest` guards the files.
+- Verified: build (JUnit), 38/38 GameTests, dedicated server boot, render matrix with 0 texture warnings.
+- **Still open in Phase 5:** CatAnimator only covers the vanilla poses and the tails; the R32 pounce/dodge/sleep/groom/cast
+  animations aren't written yet. Snow Leopard still looks like a grey tabby (it needs a texture pass with rosettes).
+  The chest armor textures are mostly transparent on top, so fur shows through the back plates (a texture-art issue, not
+  geometry). Sky Feline wings use the grey vanilla elytra texture. Nothing has been checked in the live game yet: the
+  matrix uses the inventory renderer, so walking, sprinting and lying down need an in-world check at the phase gate.
+
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).
