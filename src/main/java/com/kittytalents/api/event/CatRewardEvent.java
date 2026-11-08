@@ -6,8 +6,8 @@ import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
 
 /**
- * Fired when a Talented Cat produces or finds a reward item.
- * If canceled, the item will not be dropped/given to the cat.
+ * Fired when a Talented Cat brings its owner an item (Mouser morning gifts). Change the reward, or cancel the event
+ * when you delivered it yourself (e.g. straight into a backpack) so it is not dropped.
  */
 @Cancelable
 public class CatRewardEvent extends Event {

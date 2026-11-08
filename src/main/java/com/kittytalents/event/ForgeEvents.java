@@ -141,8 +141,15 @@ public class ForgeEvents {
                     gift = new ItemStack(Items.COOKED_COD, 1);
                 }
 
-                ItemEntity itemEntity = new ItemEntity(level, player.getX(), player.getY() + 0.5D, player.getZ(), gift);
-                level.addFreshEntity(itemEntity);
+                // Addons may redirect the gift (e.g. into a backpack); cancelled means it was delivered elsewhere.
+                var reward = new com.kittytalents.api.event.CatRewardEvent(cat, gift);
+                boolean taken = net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(reward);
+                gift = reward.getReward();
+                if (!taken && !gift.isEmpty()) {
+                    ItemEntity itemEntity = new ItemEntity(level, player.getX(), player.getY() + 0.5D, player.getZ(), gift);
+                    level.addFreshEntity(itemEntity);
+                }
+                if (gift.isEmpty()) continue;
                 player.sendSystemMessage(Component.translatable("message.kittytalents.morning_gift", cat.getName(), gift.getHoverName()));
             }
         }

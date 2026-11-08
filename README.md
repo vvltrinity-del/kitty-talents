@@ -1,119 +1,88 @@
-# 🐱 Kitty Talents (Minecraft 1.20.1 Forge)
+# Kitty Talents 3.0 (Minecraft 1.20.1, Forge 47)
 
-A complete, production-ready companion overhaul mod for Minecraft 1.20.1 Forge, expanding vanilla cats into deep, trainable RPG companions with leveling, skill trees, physical fox-style pounces, mounts, controlled flight, autonomous mining, full equipment armor/weapon systems, Dire Treat endgame progression, live 3D GUI, and feline superpowers!
+Kitty Talents turns cats into trainable companions. They level up, learn talents, wear gear, fight with their own
+moves, work jobs, breed into stronger production tiers, and you can take direct control of one with **Twine**.
 
----
+## Getting started
 
-## 🌟 Overhauled Systems & Features
+1. **Tame** a wild Talented Cat with a **Catnip Treat** (always works), Catnip (1 in 2) or raw fish (1 in 3).
+   A newly tamed cat starts with enough skill points to max out any one regular talent.
+2. Right-click your cat with a **Stick** or the **Laser Pointer** to open its screen.
+3. Right-click with an empty hand to make it sit or stand. Sneak + empty hand to pet it.
 
-### 1. 🎓 True RPG Progression & Skill Points Rebalance
-- **Balanced Points Economy**: Cats level from 1 to 100, earning skill points to invest in 16 specialized talents.
-- **Rank Scaling Cost**: Higher ranks cost proportionally more points (Rank 1 costs 1 point, Rank 2 costs 2 points, Rank 3 costs 3 points, etc.). Maxing a 5-rank talent costs 15 points.
-- **Meaningful Builds**: With 16 talents requiring over 200 total points to max, a level 100 cat can only fully master ~6–7 talents, creating distinct companion builds:
-  - *Battle Panther*: Fox Pounce, Cat Armory, Feline Armor, Nine Lives, Agility
-  - *Sky Feline Mount*: Cat Mount, Sky Feline Flight, Lucky Purr, Pillow Cat
-  - *Cave Delver*: Mole Cat Mining, Kitty Pack, Whisker Radar, Night Prowler
-  - *Frenzied Hunter*: Frenzy Focus, Mouser, Fisher Cat, Pounce
-- **Catnip Respec Elixir**: Craftable item (`kittytalents:catnip_respec_elixir`) or clicking **Respec** in the GUI refunds 100% of spent skill points so players can freely experiment with builds.
+## The cat screen
 
-### 2. ⚔️ Fully Functional AI Modes with Real Combat Priorities
-Each mode directly drives navigation, attack priorities, and target selection:
-1. **Docile (Sitting)**: Cat sits peacefully, cancels all movement and targeting, and never attacks unless hurt.
-2. **Follow**: Follows the owner closely and aggressively defends the owner when attacked or when the owner strikes an enemy.
-3. **Wander**: Freely explores and strolls within a comfortable area without following the player; only fights back if attacked.
-4. **Hunting**: Autonomously searches for and hunts valid prey: pests (silverfish, endermites, bats, cave spiders, rabbits) and small hostiles.
-5. **Guard**: Defends a 16-block post/perimeter, automatically charging and attacking any monster that enters the zone.
-6. **Aggressive**: Relentlessly scours the area up to 24 blocks away, hunting down and destroying all hostile monsters!
+Seven tabs, in a wood-and-leather style. Switch tabs with the mouse, **Ctrl+Tab** or the keys **1-7**.
 
-### 3. 🦊 Fox-Like Physical Pounce Attack (`CatFoxPounceGoal`)
-- Real physical trajectory, not just an attack animation:
-  1. **Crouch & Lock-On**: Cat crouches low, wiggles rear, stalks the target for 12 ticks, and hisses.
-  2. **High Aerial Launch**: Launches high into the air with real physical arc trajectory (Y impulse + directed XZ velocity).
-  3. **Dive Slam**: Rotates downward and slams onto the target's head.
-  4. **Impact Damage**: Deals heavy critical impact slam damage, creates sweep particles, inflicts slowness, and triggers an impact shockwave.
-  5. **Melee Follow-up**: Transitions seamlessly into clawing and sword slashes.
+| Tab | What it does |
+|---|---|
+| **Home** | Portrait with level, HP, XP and Energy. Behaviour mode and job, Sit, Kitty Pack, Whistle, TWINE. Rename and co-owners. |
+| **Talents** | Every talent with rank pips, its description, its mastery perk and the TRAIN button. Respec. |
+| **Gear** | Weapon, accessory, tool, four armor pieces, three cosmetics. Click a slot with the item in hand; shift-click to take it off. |
+| **Style** | Collar colour, skin, and the breeding codex. |
+| **Stats** | Lifetime records: kills, damage, distance, food, blocks mined and more. Sneak + right-click with Coal to wipe them. |
+| **Combat** | Role, element, the four Twine ability slots and loadout presets. |
+| **Twine** | Start Twining, plus the controls and what the cat's body can do. |
 
-### 4. 🐎 Cat Mount (Feline Steed)
-- Progressive scaling with talent rank:
-  - Rank 0: 1.00x (Normal cat)
-  - Rank 1: 1.25x
-  - Rank 2: 1.50x
-  - Rank 3: 1.80x
-  - Rank 4: 2.20x
-  - Rank 5: 2.60x (Giant battle feline / tiger size!)
-- Right-click with empty hand or saddle to mount and steer with WASD controls, boosted speed, and scaled jump height.
-- Proper dynamic hitbox scaling prevents clipping and suffocation.
+Co-owners see the same screen without the owner-only controls (training, respec, renaming, managing co-owners).
 
-### 5. ⚔️ Cat Armory (Weapons)
-- Dedicated weapon slot supporting tiered progression:
-  - Rank 1: Wooden & Stone swords
-  - Rank 2: Iron & Golden swords
-  - Rank 3: Diamond swords
-  - Rank 4: Netherite swords
-  - Rank 5: Master Blade (bonus attack speed + fire slash)
-- Sword is visibly held in the cat's mouth in 3D!
-- Weapon damage directly adds to melee attacks, and durability is properly consumed and preserved.
+## Progression
 
-### 6. 🛡️ Feline Armor (Equipment System)
-- Equips Helmet, Chestplate, Leggings, and Boots through the dedicated Equipment GUI tab!
-- Provides actual Armor points and Armor Toughness, greatly increasing survivability.
-- Rank-gated equipment prevents equipping diamond/netherite armor before achieving the required talent rank.
+- **XP and levels:** cats earn XP from kills and level up to the configured cap (default 100), gaining skill points.
+  Treats also level a cat directly.
+- **51 talents** in combat, utility, mobility and support. A rank costs more points the higher it goes.
+  Four talents (Nine Lives, Mouser, Fisher Cat, Pillow Cat) start at rank 1 for free.
+- **Mastery:** maxing a talent unlocks a mastery perk. For example, maxed Feline Armor repairs the cat's armor like
+  Mending, and maxed Alchemy Kitty moves your debuffs onto the enemy your cat hits.
+- **Dire talents** (Sky Feline flight, Mole Cat mining, Frenzy Focus, Alchemy Kitty, Catnip Catastrophe) need one
+  **Dire Treat** (Master Catnip Treat + Ghast Tear + Diamond) at the required level.
+- **Respec** with a Catnip Respec Elixir refunds every paid rank.
 
-### 7. 👑 End-Game Tier: Dire Treat Awakening
-- **Dire Treat Gating**: Every end-game talent (**Sky Feline**, **Mole Cat**, **Frenzy Focus**) is strictly locked until the cat reaches Level 60+ and consumes a **Dire Treat** to achieve **DIRE AWAKENING**!
-- Displayed with a clear `[LOCKED - REQUIRES: DIRE TREAT]` banner in the GUI.
-- Server-validated against any command, packet, or NBT bypass exploits.
+## Behaviour modes
 
-### 8. 🪽 End-Game: Sky Feline (Flight)
-- Cat sprouts glowing celestial Elytra wings!
-- When mounted: Pitch view up while moving forward or press Jump to ascend and soar through the air; looking level or down smoothly glides.
-- Cat is completely immune to fall damage and suffocation while flying.
-- When dismounted: Flies alongside the player over ravines and oceans, and takes flight to attack aerial mobs (Phantoms, Blazes, Ghasts).
+Docile, Stay, Follow, Wander, Guard, Hunting, Aggressive, Tactical, Support, Fetch, Work and Return Home.
+Each mode decides whether the cat follows you, holds a spot, and what it is allowed to attack. Every cat **stalks and
+pounces** as its opening move, dodges arrows and creeper blasts, and retreats when badly hurt (except in Aggressive).
+The **Kitty Whistle** commands all your cats nearby at once.
 
-### 9. ⛏️ End-Game: Mole Cat (Mining)
-- When underground or in caves, cat paws at the ground and detects ore deposits!
-- Breaks stone and ores with block particles and mining sounds.
-- Ranks unlock: Coal/Copper -> Iron/Lapis -> Gold/Redstone -> Diamond/Emerald -> Ancient Debris!
-- Automatically deposits mined ores straight into the **Kitty Pack** inventory (or at feet if full).
+## Jobs and production
 
-### 10. 🥛 Enchanted Frenzy Milk Bucket & Cow System
-- Craft a **Catnip-Infused Bucket** (`kittytalents:catnip_bucket`) and right-click any Cow to milk **Bucket of Frenzy Cat Milk** (`kittytalents:catnip_milk_bucket`).
-- Feed it to your cat to trigger **SUPER FELINE FRENZY**:
-  - +20 Absorption Hearts
-  - +15 Attack Damage
-  - Speed III (hyper zoomies!)
-  - Regeneration II, Resistance II, Jump Boost III
-  - Glowing soul flame particle aura
-- Tracked by an active duration timer and cooldown to prevent infinite spam.
+- **Jobs** (Work mode): Farmer, Lumberjack, Miner, Rancher, Courier, Sorter, Fisher, Collector and Gunsmith (TaCZ).
+  A job only runs while the cat is clocked in.
+- **Production tiers:** Standard, Coal, Copper, Iron, Gold, Lapis, Redstone, Emerald, Diamond and Netherite. Breeding two
+  cats of the same tier gives the next tier. Higher tiers are tougher and hit harder.
+- **Kitty Habitat:** house a cat and it produces its tier's resource over time.
+- **Nekomata:** feed Spirit Catnip to a parent before breeding for a guaranteed two-tailed Nekomata kitten.
 
-### 11. 🎨 Colorable Collars
-- Right-click cat with **any of the 16 Minecraft dyes** to change its collar color instantly.
-- Preserves all stats, equipment, and talents; displayed in the live 3D GUI.
+## Care
 
-### 12. 🏷️ Naming Without Name Tags
-- Naming text box built directly into the Kitty Talents GUI with validation (1–32 characters).
-- Enter any name and click **Rename**; persists across reloads, dimension travel, and deaths.
+Cats get hungry. Feed them fish by hand, or fill a **Cat Food Bowl** and they eat by themselves. They sleep on
+**Cat Beds** at night and use scratchers. A cat that drops to 0 HP is **downed**, not dead. Revive it with a Golden Apple,
+Milk or Warm Milk. Nine Lives can bring it back on its own, with a cooldown.
 
-### 13. 🐱 16 Custom Skins with 3D Preview
-- Cycle between 11 vanilla coats and 5 custom high-tier coats using `◀` and `▶`:
-  1. Tiger (Orange/black with vivid emerald eyes)
-  2. Snow Leopard / Cheetah
-  3. Void Ender Cat (Cosmic purple with glowing eyes)
-  4. Golden Maneki-Neko (Lucky golden feline)
-  5. Ghost Phantom Cat (Ethereal spectral cyan)
-- Cosmetic-only; never resets attributes or progress.
+## Twine
 
-### 14. 🖥️ Polished RPG Companion Interface
-- **Live 3D Cat Model Preview**: Renders the cat in 3D right in the interface, tracking the player's cursor!
-- **Talents Tab**: Shows rank progress bars (`[███░░] 3/5`), point costs, effects, and Dire Treat status.
-- **Equipment Tab**: Equips Weapon, Helmet, Chestplate, Leggings, Boots, and quick-opens the Kitty Pack.
-- **Respec Button**: One-click talent reset when holding a Catnip Respec Elixir.
+Press **TWINE** to control your cat directly while your body sleeps safely where you left it. You move, jump, claw,
+pounce and dodge as the cat, and use its four ability slots (V, G, B and R for the ultimate). Press **U** to return.
+A HUD shows HP, Energy, the ultimate meter, cooldowns and status effects. Your body is always restored if the cat dies,
+you die, log out, change dimension or the game crashes.
 
----
+## HUD
 
-## 📦 File Location & Installation
-Built and ready to play:
-```
-C:\Users\VivianV\.gemini\antigravity\scratch\KittyTalents\build\libs\kittytalents-1.0.0.jar
-```
-Drop this `.jar` into your `.minecraft/mods` folder with Forge 1.20.1 installed.
+When you're not Twining, small cards show your nearby cats that are following you, hurt or downed. Turn them off or
+change how many show in `config/kittytalents-client.toml`.
+
+## Co-owners
+
+Add another online player as a co-owner from the Home tab. Co-owners can command, equip, style and Twine the cat. Only the
+owner can train, respec, rename or manage co-owners. A co-owner can leave on their own.
+
+## Mod compatibility
+
+Built-in: **TaCZ** (cats use guns, ammo pouch, Gunsmith job), **Apotheosis**, **Curios**, **Jade** and **JEI**. The separate
+**KittyTalentsCompat** addon adds Lootr, PlayerRevive and Sophisticated Backpacks support.
+
+## Installing
+
+Build with `./gradlew build` (JDK 17) and put `build/libs/kittytalents-3.0.0.jar` in your `mods` folder with
+Forge 1.20.1 (47.x). Server and clients must run the same version.

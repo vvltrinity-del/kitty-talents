@@ -231,4 +231,35 @@ public class KittyRegressionGameTests {
             leave(h, fp);
         }
     }
+
+    /** API marker goal added by {@link #addMarker}; never runs. */
+    static final class ApiMarkerGoal extends net.minecraft.world.entity.ai.goal.Goal {
+        @Override public boolean canUse() { return false; }
+    }
+
+    /** Test-only RegisterCatGoalsEvent listener (the way an addon would use the API). */
+    @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = KittyTalents.MODID)
+    public static final class ApiListener {
+        @net.minecraftforge.eventbus.api.SubscribeEvent
+        public static void addMarker(com.kittytalents.api.event.RegisterCatGoalsEvent event) {
+            // GameTest runs only: this class ships in the jar, real games must not get the marker goal.
+            if (System.getProperty("forge.enabledGameTestNamespaces") == null) return;
+            event.addGoal(com.kittytalents.api.CatGoalBand.NEEDS, new ApiMarkerGoal());
+        }
+    }
+
+    /** Addon goals arrive once per cat, in the requested band, and are not duplicated when the cat is reloaded. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testAddonGoalsRegisterOncePerCat(GameTestHelper h) {
+        TalentedCat c = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
+        java.util.function.Supplier<java.util.List<Integer>> markers = () -> c.goalSelector.getAvailableGoals().stream()
+                .filter(w -> w.getGoal() instanceof ApiMarkerGoal).map(w -> w.getPriority()).toList();
+        h.assertTrue(markers.get().equals(java.util.List.of(com.kittytalents.api.CatGoalBand.NEEDS.priority())),
+                "Expected one marker goal in NEEDS, got " + markers.get());
+        // Reload the same entity into the level (what a chunk reload does): no extra goals.
+        net.minecraft.nbt.CompoundTag tag = c.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+        c.load(tag);
+        h.assertTrue(markers.get().size() == 1, "Reloading must not add the goal again: " + markers.get());
+        h.succeed();
+    }
 }

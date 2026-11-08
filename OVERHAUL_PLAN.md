@@ -379,6 +379,28 @@ com.kittytalents
   3. Screen actions need the cat within 32 blocks (was 64, or unlimited for mode and job).
 - **Not done:** a real two-player LAN / dedicated-server playtest (needs two clients). The Talents tab still shows TRAIN to co-owners.
 
+### 2026-11-08: Phase 8: regression, performance, 3.0.0. Commits `d6971b7` and later
+- **Co-owner UI:** TRAIN, Respec, Rename, the co-owner field and Random Name are hidden for co-owners (all owner-only
+  since Phase 7). Co-owners get a "Leave co-owners" button.
+- **R36 regression:** new `KittyRegressionGameTests` cover taming, naming / collar / skin (screen and dye), feeding,
+  the food bowl, golden-apple revival, Cat Mount riding, sword equip, the whistle (own cats only), kill statistics,
+  breeding and the addon goal API. Talents, XP, beds, Nekomata, habitat, Twine, trust, gear and saves already had tests.
+  Not testable here: TaCZ and Apotheosis (not in the dev runtime). They need an in-game check with the mods installed.
+- **Bugs found:** renaming with a colour code left its letter behind ("§cBob" became "cBob"). A Phase 7 test had locked
+  that in. `CatRewardEvent` was never fired, so the addon's backpack routing never ran; it now fires for Mouser morning gifts.
+- **Test reliability:** each GameTest run starts from a fresh world with mob spawning off and fixed daytime. A witch
+  saved from earlier runs kept walking into AI tests. `testStalksUnawareTargetThenPounces` still failed once in about
+  12 runs (cat airborne, no pounce); its failure message now prints the cat's recent state so the next failure explains itself.
+- **Performance:** one stress test grows tamed cats 0 → 10 → 50 → 100 around their owner and times only their ticks
+  (`util/TickCost`). 10 cats ≈ 0.5 ms, 50 ≈ 1.2-1.9 ms, 100 ≈ 2.3-2.5 ms per server tick (~24 µs per cat, about 5% of
+  the 50 ms budget). The Phase 3 numbers (6.1 → 4.9 ms) measured the whole test server, so they aren't comparable.
+  The companion HUD now scans for cats once per game tick instead of every frame.
+- **Addon API:** `api/CatGoalBand` and `api/event/RegisterCatGoalsEvent` (goals added once per cat, into a named band).
+  `KittyTalentsCompat` now uses it (PlayerRevive at ORDERS, Lootr at NEEDS) instead of `EntityJoinLevelEvent`, which
+  added a duplicate goal on every chunk reload. It builds against `kittytalents-3.0.0.jar` and requires `[3.0.0,)`.
+  (That folder isn't a git repo; the old source is backed up in the session scratchpad.)
+- **Version 3.0.0**, README and PROJECT.md rewritten to match the code. The `v3.0.0` tag waits for the user's playtest.
+
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).

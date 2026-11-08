@@ -90,5 +90,8 @@ public final class CatBrain {
         });
 
         cat.targetSelector.addGoal(1, new CatTargetGoal(cat));
+
+        // Addons (e.g. KittyTalentsCompat) add their goals into the same bands.
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.kittytalents.api.event.RegisterCatGoalsEvent(cat));
     }
 }

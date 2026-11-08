@@ -353,15 +353,23 @@ public class KittyAiGameTests {
         Zombie z = dummy(h, new BlockPos(18, 2, 16)); // 16 blocks: beyond pounce range
         c.setTarget(z);
         boolean[] stalkedFar = {false};
+        java.util.ArrayDeque<String> trail = new java.util.ArrayDeque<>(); // recent state, printed on failure
+        int[] tick = {0};
         h.onEachTick(() -> {
             if (c.getTarget() != z && z.isAlive()) c.setTarget(z);
             if (c.isCrouching() && c.distanceTo(z) > com.kittytalents.ai.goal.CatPounceGoal.maxRange(c) + 1) stalkedFar[0] = true;
+            if (tick[0]++ % 20 == 0) {
+                if (trail.size() >= 8) trail.removeFirst();
+                trail.addLast("t" + tick[0] + " d=" + String.format("%.1f", c.distanceTo(z)) + " ground=" + c.onGround()
+                        + " y=" + String.format("%.2f", c.getY() - h.absolutePos(BlockPos.ZERO).getY())
+                        + " goals=" + c.goalSelector.getRunningGoals().map(w -> w.getGoal().getClass().getSimpleName()).toList());
+            }
         });
         h.succeedWhen(() -> {
             h.assertTrue(stalkedFar[0], "Cat should creep up crouched while out of pounce range");
             // Usually a pounce; occasionally melee wins the race once in range (see OVERHAUL_PLAN follow-ups).
             h.assertTrue(c.getPouncesPerformed() > 0 || c.distanceTo(z) < 2.5F,
-                    "Cat should close in (pounce or melee) after the stalk: " + pounceBlocker(c));
+                    "Cat should close in (pounce or melee) after the stalk: " + pounceBlocker(c) + " | " + trail);
         });
     }
 
