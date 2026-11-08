@@ -217,6 +217,29 @@ public class KittyTalentGameTests {
         }
     }
 
+    /** Playtest request: each production tier is stronger than the last, Netherite strongest. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testHigherProductionTierIsStronger(GameTestHelper h) {
+        var tiers = com.kittytalents.entity.ProductionTier.values();
+        h.assertTrue(tiers[0] == com.kittytalents.entity.ProductionTier.STANDARD
+                && tiers[1] == com.kittytalents.entity.ProductionTier.COAL
+                && tiers[3] == com.kittytalents.entity.ProductionTier.IRON
+                && tiers[tiers.length - 1] == com.kittytalents.entity.ProductionTier.NETHERITE, "Tiers must be in progression order");
+        TalentedCat c = cat(h, new BlockPos(2, 2, 2));
+        c.setCatLevel(100);
+        double prevHp = -1, prevArmor = -1, prevDmg = -1;
+        for (var tier : tiers) {
+            c.setProductionTier(tier);
+            double hp = c.getAttributeBaseValue(Attributes.MAX_HEALTH);
+            double armor = c.getAttributeBaseValue(Attributes.ARMOR);
+            double dmg = c.getAttributeBaseValue(Attributes.ATTACK_DAMAGE);
+            h.assertTrue(hp > prevHp && armor > prevArmor && dmg > prevDmg,
+                    tier + " must beat the tier below it (hp " + hp + ", armor " + armor + ", dmg " + dmg + ")");
+            prevHp = hp; prevArmor = armor; prevDmg = dmg;
+        }
+        h.succeed();
+    }
+
     // ---------------------------------------------------------------- Abilities
 
     /** Frost Nova used to freeze everything around the cat, villagers included. */

@@ -410,6 +410,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     public void setProductionTier(ProductionTier tier) {
         this.entityData.set(DATA_RESOURCE_TIER, tier != null ? tier.getId() : ProductionTier.STANDARD.getId());
+        if (!this.level().isClientSide) updateAttributes(); // tier scales combat stats
     }
 
     public CatBreedingManager.MutationType getMutation() {
@@ -1175,6 +1176,12 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 t.armorToughness += armorItem.getToughness();
             }
         }
+        // Production tier: each step up (Standard -> Netherite) adds health, armor, toughness and damage.
+        ProductionTier tier = getProductionTier();
+        t.maxHealth += tier.bonusHealth();
+        t.armor += tier.bonusArmor();
+        t.armorToughness += tier.bonusToughness();
+        t.attackDamage += tier.bonusDamage();
         com.kittytalents.talent.effect.TalentEngine.applyAttributes(this, t);
         setBase(Attributes.MAX_HEALTH, t.maxHealth);
         setBase(Attributes.MOVEMENT_SPEED, t.movementSpeed);

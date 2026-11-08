@@ -7,11 +7,16 @@ import net.minecraft.world.item.Items;
 import java.util.Locale;
 import java.util.function.Supplier;
 
+/**
+ * Production tiers IN PROGRESSION ORDER (Standard -> Coal -> Copper -> Iron -> ... -> Netherite). Ordinal comparisons
+ * and statStep() rely on this order. Saves use the id string, never the ordinal, so reordering is safe.
+ * (Before 2026-11-08 IRON was listed second, which made Coal "outrank" Iron in every ordinal comparison.)
+ */
 public enum ProductionTier {
     STANDARD("standard", "Standard", 0xFFFFFF, ChatFormatting.WHITE, () -> new ItemStack(Items.STRING), 160),
-    IRON("iron", "Iron", 0xE6DAC8, ChatFormatting.GRAY, () -> new ItemStack(Items.RAW_IRON), 240),
     COAL("coal", "Coal", 0x374151, ChatFormatting.DARK_GRAY, () -> new ItemStack(Items.COAL), 180),
     COPPER("copper", "Copper", 0xD97706, ChatFormatting.GOLD, () -> new ItemStack(Items.RAW_COPPER), 200),
+    IRON("iron", "Iron", 0xE6DAC8, ChatFormatting.GRAY, () -> new ItemStack(Items.RAW_IRON), 240),
     GOLD("gold", "Gold", 0xFACC15, ChatFormatting.YELLOW, () -> new ItemStack(Items.RAW_GOLD), 280),
     LAPIS("lapis", "Lapis", 0x1E40AF, ChatFormatting.BLUE, () -> new ItemStack(Items.LAPIS_LAZULI, 2), 260),
     REDSTONE("redstone", "Redstone", 0xDC2626, ChatFormatting.RED, () -> new ItemStack(Items.REDSTONE, 2), 260),
@@ -36,6 +41,17 @@ public enum ProductionTier {
     }
 
     public String getId() { return id; }
+
+    /**
+     * Combat stat bonus per tier step (Standard 0 ... Netherite 9), so a higher-tier cat out-fights a lower one with the
+     * same level and talents, and a level-100 cat still has tiers to climb. Netherite: +36 health, +9 armor,
+     * +4.5 toughness, +6.75 attack damage.
+     */
+    public int statStep() { return ordinal(); }
+    public double bonusHealth() { return statStep() * 4.0D; }
+    public double bonusArmor() { return statStep() * 1.0D; }
+    public double bonusToughness() { return statStep() * 0.5D; }
+    public double bonusDamage() { return statStep() * 0.75D; }
     public String getDisplayName() { return displayName; }
     public int getColorValue() { return colorValue; }
     public ChatFormatting getFormatting() { return formatting; }
