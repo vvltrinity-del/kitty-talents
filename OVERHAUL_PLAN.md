@@ -197,7 +197,38 @@ com.kittytalents
     (`source.getEntity() == getOwner()` was `null == null`).
   - `UseAbilityGoal` is now registered: AI cats cast abilities, but only in combat, skip UTILITY abilities, and need priority ≥ 1.0.
 
+### 2026-11-07: Phase 2 (core foundation) done. Commits `51d15e4` → `b6bc3d2`
+- **Tests are real now.** Added JUnit 5. The three old "tests" were `main()` classes that never ran (one tested the dead
+  breeding package). Now: **24 JUnit + 11 GameTests passing**; the GameTest suite was run 3× to confirm it's stable.
+- **Test infrastructure:** `tools/run_gametests.sh` fails unless it sees "All N required tests passed"
+  (`runGameTestServer` exits 0 even when the server can't start). GameTests run in `run-gametest/` and the dedicated
+  server in `run-server/` (port 25599), so neither collides with a dev client running in `run/`.
+- **Dead code removed:** `breeding/` package, `compat/TacZCompat` forwarder.
+- **Versioned saves:** `core/persist/CatSchema` (schema 1). CatMode is saved **by name**, and legacy ordinals are decoded
+  from a frozen table. Cooldowns, the Spirit Catnip flag and combat scratch state moved out of Forge persistent data.
+  Covered by a JUnit test and a GameTest that loads a hand-built 2.0 save.
+- **Components:** `core/component/` holds CatTalentLevels, CatEquipment, CatStatistics, CatTrust and CatCombatState,
+  with the same NBT keys as before. `TalentedCat` keeps thin delegates, so none of the ~100 call sites changed.
+  Interactions moved to `entity/interact/CatInteractions`.
+- **TalentedCat: 2,634 → 2,194 lines.** The "<600" target was too early for Phase 2. The remaining bulk is
+  `registerGoals` (moves into `CatBrain` in P3) and the talent effects in `tick()`/`hurt()`/`doHurtTarget()` (become
+  hooks in P4). The `api/` registries also move to P4, where they're first used.
+- **Bugs fixed during Phase 2 (each with a test):**
+  - **Skill-point exploit:** respec refunded the free rank-5 baseline of the 4 standard talents, so every respec
+    minted about 32 free points.
+  - AI cats could almost never cast abilities mid-fight (`LOOK` flag clash with melee at equal priority).
+  - Venom Fang's AI range (5 blocks) didn't match its bite range (4 blocks).
+  - Dodged hits counted as damage taken.
+
 ### Findings to carry into later phases
+- **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
+  check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).
+- **Twine HUD status badges can never appear.** `ClientTwineHandler.renderActiveStatusBadges` reads the cat's Forge persistent
+  data on the client, and that data is never synced. Phase 6 needs synced status state.
+- Check **every** ability's `getAiPriority` range against its `execute` range (Venom Fang was wrong; others weren't audited yet). Phase 4.
+- Status effects on *any* entity (zombies, etc.) live in Forge persistent data (`FelineStatusEffects`). Phase 4 should
+  move them to a capability so they aren't written to disk on every mob.
+- Most player-facing strings in `CatInteractions` and the GUI are hard-coded English. Phase 6 should move them to lang keys.
 - **CatMode is saved by ordinal** (`tag.putInt("CatMode", ordinal)`). The planned 21→12 mode merge **must** switch to saving
   by name and translate old ordinals in the Phase 2 migrator. Otherwise saved cats get scrambled modes.
 - Ability "enemy count" checks (Hiss, Frost Nova, Apex Predator) count *any* `LivingEntity`, including cows and villagers.
