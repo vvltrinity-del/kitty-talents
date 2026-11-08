@@ -245,6 +245,33 @@ public class KittyAiGameTests {
         h.succeed();
     }
 
+    /**
+     * Stress: 100 cats in mixed modes plus 10 hostiles. Measures the mean server tick time over 200 ticks and fails
+     * if it exceeds 25 ms (half the 50 ms budget). Result is logged so regressions are visible.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "stress")
+    public static void testHundredCatsTickBudget(GameTestHelper h) {
+        CatMode[] modes = {CatMode.FOLLOW, CatMode.GUARD, CatMode.WANDER, CatMode.AGGRESSIVE, CatMode.STAY,
+                CatMode.HUNTING, CatMode.SUPPORT, CatMode.DOCILE, CatMode.WORK, CatMode.TACTICAL};
+        for (int i = 0; i < 100; i++) {
+            cat(h, new BlockPos(1 + (i % 10) * 3, 2, 1 + (i / 10) * 3), modes[i % modes.length]);
+        }
+        for (int i = 0; i < 10; i++) dummy(h, new BlockPos(2 + i * 3, 2, 30));
+        var server = h.getLevel().getServer();
+        long[] start = new long[2];
+        h.runAfterDelay(40, () -> { start[0] = System.nanoTime(); start[1] = server.getTickCount(); }); // warm-up
+        h.runAfterDelay(240, () -> {
+            double ticks = server.getTickCount() - start[1];
+            double msPerTick = (System.nanoTime() - start[0]) / 1.0e6 / Math.max(1, ticks);
+            double avgTickMs = server.getAverageTickTime();
+            org.slf4j.LoggerFactory.getLogger("KittyTalents/Stress").info(
+                    "100 cats: wall {} ms/tick over {} ticks, server avg tick {} ms", String.format("%.2f", msPerTick),
+                    (long) ticks, String.format("%.2f", avgTickMs));
+            h.assertTrue(avgTickMs < 25.0, "100 cats cost " + avgTickMs + " ms per tick (budget 25 ms)");
+            h.succeed();
+        });
+    }
+
     @SuppressWarnings("unused")
     private static boolean alive(LivingEntity e) { return e != null && e.isAlive(); }
 }
