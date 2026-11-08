@@ -101,6 +101,13 @@ public final class CatInteractions {
     public static InteractionResult handle(TalentedCat cat, Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
 
+        // Spirit Catnip must reach its own item logic (primes the guaranteed Nekomata). It also counts as breeding
+        // food, so without this the vanilla Cat#mobInteract fallback consumed it as plain breeding catnip first.
+        if (held.getItem() instanceof com.kittytalents.item.SpiritCatnipItem spirit) {
+            InteractionResult r = spirit.interactLivingEntity(held, player, cat, hand);
+            if (r.consumesAction()) return r;
+        }
+
         // Taming untamed Talented Cat
         if (!cat.isTame() || cat.getOwnerUUID() == null) {
             if (held.is(ModItems.CATNIP_TREAT.get())) {

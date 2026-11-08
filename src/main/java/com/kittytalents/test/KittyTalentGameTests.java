@@ -191,6 +191,32 @@ public class KittyTalentGameTests {
         }
     }
 
+    /** Playtest regression: feeding Spirit Catnip by right-click must guarantee a Nekomata kitten. */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testSpiritCatnipBreedsNekomata(GameTestHelper h) {
+        var owner = joinFakeOwner(h, new BlockPos(3, 2, 3));
+        try {
+            TalentedCat mom = cat(h, new BlockPos(2, 2, 2));
+            TalentedCat dad = cat(h, new BlockPos(4, 2, 2));
+            mom.tame(owner);
+            dad.tame(owner);
+            owner.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+                    new ItemStack(com.kittytalents.registry.ModItems.SPIRIT_CATNIP.get()));
+            mom.mobInteract(owner, net.minecraft.world.InteractionHand.MAIN_HAND);
+            h.assertTrue(mom.isSpiritCatnipPrimed(), "Right-clicking with Spirit Catnip must prime the cat");
+            h.assertTrue(mom.isInLove(), "Spirit Catnip should also put the cat in love");
+
+            var kitten = mom.getBreedOffspring(h.getLevel(), dad);
+            h.assertTrue(kitten instanceof TalentedCat k
+                            && k.getMutation() == com.kittytalents.entity.CatBreedingManager.MutationType.NEKOMATA,
+                    "Spirit Catnip offspring must be a Nekomata");
+            h.assertFalse(mom.isSpiritCatnipPrimed(), "The prime is used up by breeding");
+            h.succeed();
+        } finally {
+            leave(h, owner);
+        }
+    }
+
     // ---------------------------------------------------------------- Abilities
 
     /** Frost Nova used to freeze everything around the cat, villagers included. */
