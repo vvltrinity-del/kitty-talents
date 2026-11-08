@@ -1,0 +1,7 @@
+{
+  "skin_id": 16,
+  "texture": "kittytalents:textures/entity/cat/panther.png",
+  "breed_default_for": [
+    "panther"
+  ]
+}

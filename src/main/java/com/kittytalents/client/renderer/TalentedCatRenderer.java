@@ -21,52 +21,9 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, KTCatModel> {
         this.addLayer(new TalentedCatAccessoryLayer(this));
     }
 
-    private static final ResourceLocation[] VANILLA_SKINS = new ResourceLocation[] {
-        new ResourceLocation("textures/entity/cat/tabby.png"),
-        new ResourceLocation("textures/entity/cat/black.png"),
-        new ResourceLocation("textures/entity/cat/red.png"),
-        new ResourceLocation("textures/entity/cat/siamese.png"),
-        new ResourceLocation("textures/entity/cat/british_shorthair.png"),
-        new ResourceLocation("textures/entity/cat/calico.png"),
-        new ResourceLocation("textures/entity/cat/persian.png"),
-        new ResourceLocation("textures/entity/cat/ragdoll.png"),
-        new ResourceLocation("textures/entity/cat/white.png"),
-        new ResourceLocation("textures/entity/cat/jellie.png"),
-        new ResourceLocation("textures/entity/cat/all_black.png")
-    };
-
     @Override
     public ResourceLocation getTextureLocation(TalentedCat cat) {
-        int skinId = cat.getSkinId();
-        if (skinId >= 11 && skinId <= 16) {
-            if (skinId == 16) {
-                return new ResourceLocation(KittyTalents.MODID, "textures/entity/cat/panther.png");
-            }
-            return new ResourceLocation(KittyTalents.MODID, "textures/entity/cat/skin_" + skinId + ".png");
-        }
-
-        // If default cosmetic skin (skinId == 0), check for custom breed identity
-        if (skinId == 0) {
-            com.kittytalents.entity.CatVariant variant = cat.getCatVariant();
-            if (variant == com.kittytalents.entity.CatVariant.PANTHER) {
-                return new ResourceLocation(KittyTalents.MODID, "textures/entity/cat/panther.png");
-            } else if (variant == com.kittytalents.entity.CatVariant.SNOW_LEOPARD) {
-                return new ResourceLocation(KittyTalents.MODID, "textures/entity/cat/skin_12.png");
-            } else if (variant == com.kittytalents.entity.CatVariant.TIGER) {
-                return new ResourceLocation(KittyTalents.MODID, "textures/entity/cat/skin_11.png");
-            } else if (variant == com.kittytalents.entity.CatVariant.VOID_ENDER) {
-                return new ResourceLocation(KittyTalents.MODID, "textures/entity/cat/skin_13.png");
-            } else if (variant == com.kittytalents.entity.CatVariant.GOLDEN_MANEKI) {
-                return new ResourceLocation(KittyTalents.MODID, "textures/entity/cat/skin_14.png");
-            } else if (variant == com.kittytalents.entity.CatVariant.GHOST_PHANTOM) {
-                return new ResourceLocation(KittyTalents.MODID, "textures/entity/cat/skin_15.png");
-            }
-        }
-
-        if (skinId >= 0 && skinId < VANILLA_SKINS.length) {
-            return VANILLA_SKINS[skinId];
-        }
-        return cat.getResourceLocation();
+        return com.kittytalents.client.skin.SkinRegistry.INSTANCE.resolve(cat);
     }
 
     @Override

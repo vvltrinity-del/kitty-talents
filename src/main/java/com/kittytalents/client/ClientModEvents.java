@@ -43,6 +43,11 @@ public class ClientModEvents {
         event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.ARMOR_INNER, () -> com.kittytalents.client.model.KTCatModel.createArmorLayer(0.2F));
     }
 
+    @SubscribeEvent
+    public static void registerReloadListeners(net.minecraftforge.client.event.RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener(com.kittytalents.client.skin.SkinRegistry.INSTANCE);
+    }
+
     public static void openWhistleScreen() {
         net.minecraft.client.Minecraft.getInstance().setScreen(new com.kittytalents.client.gui.KittyWhistleScreen());
     }

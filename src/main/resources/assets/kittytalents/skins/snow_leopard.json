@@ -1,0 +1,7 @@
+{
+  "skin_id": 12,
+  "texture": "kittytalents:textures/entity/cat/skin_12.png",
+  "breed_default_for": [
+    "snow_leopard"
+  ]
+}

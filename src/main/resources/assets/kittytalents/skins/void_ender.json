@@ -1,0 +1,7 @@
+{
+  "skin_id": 13,
+  "texture": "kittytalents:textures/entity/cat/skin_13.png",
+  "breed_default_for": [
+    "void_ender"
+  ]
+}

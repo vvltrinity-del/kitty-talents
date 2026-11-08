@@ -1,0 +1,7 @@
+{
+  "skin_id": 15,
+  "texture": "kittytalents:textures/entity/cat/skin_15.png",
+  "breed_default_for": [
+    "ghost_phantom"
+  ]
+}
