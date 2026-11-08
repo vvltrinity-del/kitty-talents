@@ -41,34 +41,8 @@ public class PacketTrainTalent {
                 if (entity instanceof TalentedCat cat && cat.isOwnedBy(sender) && cat.distanceToSqr(sender) <= 64.0D * 64.0D) {
                     Talent talent = Talents.get(talentId);
                     if (talent != null && cat.canTrainTalent(talent)) {
-                        if (talent.requiresDireTreat()) {
-                            // Check for Dire Treat
-                            boolean hasDireTreat = sender.getAbilities().instabuild;
-                            int slotWithTreat = -1;
-                            if (!hasDireTreat) {
-                                for (int i = 0; i < sender.getInventory().getContainerSize(); i++) {
-                                    ItemStack s = sender.getInventory().getItem(i);
-                                    if (s.is(ModItems.DIRE_TREAT.get())) {
-                                        hasDireTreat = true;
-                                        slotWithTreat = i;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (!hasDireTreat) {
-                                sender.sendSystemMessage(Component.translatable("message.kittytalents.need_dire_treat"));
-                                sender.playSound(SoundEvents.VILLAGER_NO, 1.0F, 1.0F);
-                                return;
-                            }
-
-                            // Consume Dire Treat
-                            if (!sender.getAbilities().instabuild && slotWithTreat >= 0) {
-                                sender.getInventory().removeItem(slotWithTreat, 1);
-                            }
-                            sender.playSound(SoundEvents.TOTEM_USE, 0.5F, 1.6F);
-                        }
-
+                        // Dire talents need a Dire-awakened cat (one Dire Treat, checked in canTrainTalent); ranks cost
+                        // only skill points. Previously every Dire rank also consumed a Dire Treat (26 Nether Stars to max).
                         cat.trainTalent(talent);
                         cat.syncTalents(sender);
                     }

@@ -5,7 +5,10 @@
       "item": "kittytalents:master_catnip_treat"
     },
     {
-      "item": "minecraft:nether_star"
+      "item": "minecraft:ghast_tear"
+    },
+    {
+      "item": "minecraft:diamond"
     }
   ],
   "result": {
