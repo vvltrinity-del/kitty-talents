@@ -33,6 +33,10 @@ public class KittyTalents {
                 net.minecraftforge.fml.config.ModConfig.Type.COMMON,
                 com.kittytalents.config.KittyTalentsConfig.COMMON_SPEC
         );
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.CLIENT,
+                com.kittytalents.config.KittyTalentsClientConfig.SPEC
+        );
 
         modEventBus.addListener(this::commonSetup);
 

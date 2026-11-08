@@ -112,6 +112,33 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
     public void refreshCombatUi() { if (currentTab == COMBAT) rebuild(); }
     public void refreshTalentUi() { if (currentTab == TALENTS) rebuild(); }
 
+    // ------------------------------------------------------------------ synced-state watch
+
+    private int lastState;
+    private boolean statePending;
+
+    /** Everything the tabs draw as widgets that the server syncs through entity data. */
+    private int syncedState() {
+        return java.util.Objects.hash(cat.getCatMode(), cat.getCatJob(), cat.isClockedIn(), cat.isOrderedToSit(),
+                cat.getSkinId(), cat.getCollarColor(), cat.isCosmeticsVisible(), cat.getName().getString(),
+                cat.getSkillPoints(), cat.getCatLevel(), cat.isDireAwakened(), cat.getProductionTier(),
+                cat.getTrustedPlayers().keySet());
+    }
+
+    /**
+     * Tabs only send requests; when the synced state changes (accepted or not) the widgets are rebuilt from it.
+     * While a text field is focused the rebuild waits, so typing is never interrupted.
+     */
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        if (cat == null) return;
+        int state = syncedState();
+        if (state != lastState) { lastState = state; statePending = true; }
+        boolean typing = (nameEditBox != null && nameEditBox.isFocused()) || (trustEditBox != null && trustEditBox.isFocused());
+        if (statePending && !typing) { statePending = false; rebuild(); }
+    }
+
     // ------------------------------------------------------------------ lifecycle
 
     @Override
@@ -125,6 +152,7 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         ph = Math.min(244, height - 36);
         px = (width - pw) / 2;
         py = Math.max(TAB_H + 4, (height - ph) / 2 + TAB_H / 2);
+        if (cat != null) lastState = syncedState();
         rebuild();
     }
 

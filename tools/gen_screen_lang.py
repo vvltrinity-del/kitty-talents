@@ -1,4 +1,4 @@
-"""Regenerate the companion screen's en_us.json block ("gui.kittytalents.screen.*") from the Java call sites.
+"""Regenerate the companion screen's and HUDs' en_us.json block ("gui.kittytalents.screen.*") from the Java call sites.
 
 Usage: python tools/gen_screen_lang.py
 Collects every KTText.t/s("key", "fallback") literal plus the table-driven keys (tabs, categories, slots, skins,
@@ -27,7 +27,9 @@ def string_array(src, name):
 
 
 entries = {}
-sources = {p.name: p.read_text(encoding="utf-8") for p in list(GUI.glob("CatTalentScreen.java")) + list((GUI / "tab").glob("*.java"))}
+HUD = ROOT / "src/main/java/com/kittytalents/client/hud"
+sources = {p.name: p.read_text(encoding="utf-8")
+           for p in list(GUI.glob("CatTalentScreen.java")) + list((GUI / "tab").glob("*.java")) + list(HUD.glob("*.java"))}
 
 for src in sources.values():
     for key, fallback in re.findall(r"KTText\.[ts]\(\s*" + STR + r"\s*,\s*" + STR, src):
@@ -53,10 +55,10 @@ for i, n in enumerate(string_array(style, "SKIN_NAMES")):
 for k, n in re.findall(r"new Stat\(" + STR + ", " + STR, sources["StatsTab.java"]):
     entries["stats." + unescape(k)] = unescape(n)
 
-for k, n in re.findall(r"\{\s*" + STR + ",\s*" + STR + r",\s*\"[a-z_]+\",", sources["CombatTab.java"]):
+for k, n in re.findall(r"\{\s*" + STR + r",\s*" + STR + r",\s*\"[a-z_]+\",", sources["CombatTab.java"]):
     entries["combat.preset." + unescape(k)] = unescape(n)
 
-for k, _key, desc in re.findall(r"\{\s*" + STR + ",\s*" + STR + ",\s*" + STR + r"\s*\}", sources["TwineTab.java"]):
+for k, _key, desc in re.findall(r"\{\s*" + STR + r",\s*" + STR + r",\s*" + STR + r"\s*\}", sources["TwineTab.java"]):
     entries["twine.control." + unescape(k)] = unescape(desc)
 
 text = LANG.read_text(encoding="utf-8")

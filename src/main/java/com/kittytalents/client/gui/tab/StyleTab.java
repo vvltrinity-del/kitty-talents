@@ -68,9 +68,7 @@ public class StyleTab implements CatTab {
         }
         s.add(new KTButton(x, s.cy() + s.ch() - 26, w, 18, KTText.t("style.random_name", "Random Name"), b -> {
             String rand = RANDOM_CAT_NAMES[(int) (Math.random() * RANDOM_CAT_NAMES.length)];
-            cat.setCustomName(Component.literal(rand));
             PacketHandler.sendToServer(new PacketRenameCat(cat.getId(), rand));
-            s.rebuild();
         }).icon(new ItemStack(Items.NAME_TAG)));
 
         int px = rx(s) + 6, py = pageY(s) + 18, pw = rw(s) - 12;
@@ -89,10 +87,7 @@ public class StyleTab implements CatTab {
                     g.fill(wx, wy, wx + ww, wy + 1, 0x55FFFFFF);
                     g.fill(wx, wy + wh - 1, wx + ww, wy + wh, 0x55000000);
                     if (hover) KTTheme.outline(g, wx - 1, wy - 1, ww + 2, wh + 2, 0xFFFFFFFF);
-                }, () -> {
-                    cat.setCollarColor(dye);
-                    PacketHandler.sendToServer(new PacketChangeCollarColor(cat.getId(), dye.getId()));
-                }).hoverTip(() -> List.<FormattedCharSequence>of(Component.translatable("color.minecraft." + dye.getName()).getVisualOrderText())));
+                }, () -> PacketHandler.sendToServer(new PacketChangeCollarColor(cat.getId(), dye.getId()))).hoverTip(() -> List.<FormattedCharSequence>of(Component.translatable("color.minecraft." + dye.getName()).getVisualOrderText())));
             }
         } else if (sub == 1) {
             int cols = 3, bw = (pw - (cols - 1) * 3) / cols;
@@ -100,9 +95,7 @@ public class StyleTab implements CatTab {
                 final int id = i;
                 s.add(new KTButton(px + (i % cols) * (bw + 3), pageY(s) + 6 + (i / cols) * 18, bw, 16,
                         KTText.t("style.skin." + i, SKIN_NAMES[i]), b -> {
-                    cat.setSkinId(id);
                     PacketHandler.sendToServer(new PacketChangeCatSkin(cat.getId(), id));
-                    s.rebuild();
                 }).style(KTButton.Style.CHIP).selected(cat.getSkinId() == i));
             }
         } else {

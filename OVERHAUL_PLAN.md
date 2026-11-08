@@ -330,13 +330,30 @@ com.kittytalents
 - **Lang:** every screen label is a `gui.kittytalents.screen.*` key with an English fallback. `tools/gen_screen_lang.py`
   regenerates the en_us block (169 keys), and `LangCompletenessTest` now fails if a `KTText` key is missing.
 - **Screenshot harness:** `./gradlew runScreenShots` opens every tab at GUI scales 2 and 3 and writes `run-render/screens/*.png`.
-- **Still to do for Phase 6:** `CompanionHud` / `TwineHud` restyle as registered overlays, synced status state for the
-  Twine badges, and making the screen read synced job and clock state instead of previewing them on the client.
+
+### 2026-11-08: Phase 6 part 2: HUDs, synced statuses, collar. Phase 6 done
+- **Twine HUD** (`client/hud/TwineHud`) is a registered overlay in the same wood-and-leather style. It shows name/level/role,
+  HP, Energy and Ultimate bars, the four ability slots (icon, key, cooldown sweep with seconds, a red tint when Energy is
+  short, a gold blinking frame when the ultimate is ready), status badges with time left, and a controls or ammo line.
+  The old drawing code in `ClientTwineHandler` is gone.
+- **Companion HUD** (`client/hud/CompanionHud`, new): a card for each of your cats nearby that is following you, hurt
+  below half or downed. Each card has name, level, HP bar and status badges. Settings are in `kittytalents-client.toml`
+  (on/off, max cards, range).
+- **Synced statuses:** `FelineStatusEffects` mirrors a cat's statuses into synced entity data as {End, Power}. The values
+  only change on apply, refresh or removal, not every tick. Covered by a GameTest. This fixes the "badges can never appear" finding.
+- **Screen reads synced state:** tabs only send requests now. The shell rebuilds when the cat's synced state changes
+  (it waits while a text field is focused), so a rejected change no longer shows as applied.
+- **Twine kick fix:** while twined, the crosshair could land on the player's own invisible body, and a vanilla attack on
+  yourself disconnects you ("attempted to attack an invalid entity"). Vanilla entity attacks are now cancelled while
+  twined (the cat attacks through `PacketTwineInput`), and so are clicks on your body or the twined cat.
+- **Collar:** our own collar texture (`tools/asset_gen/collar_texture.py`) is a full ring with a tag under the chin.
+  The vanilla texture left the throat bare, so the collar looked cut off from the front.
+- The `runScreenShots` harness also writes `hud.png` (both HUDs with sample statuses).
 
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).
-- **Twine HUD status badges can never appear.** `ClientTwineHandler.renderActiveStatusBadges` reads the cat's Forge persistent
+- ~~**Twine HUD status badges can never appear.**~~ Fixed in Phase 6 part 2. `ClientTwineHandler.renderActiveStatusBadges` reads the cat's Forge persistent
   data on the client, and that data is never synced. Phase 6 needs synced status state.
 - Check **every** ability's `getAiPriority` range against its `execute` range (Venom Fang was wrong; others weren't audited yet). Phase 4.
 - Status effects on *any* entity (zombies, etc.) live in Forge persistent data (`FelineStatusEffects`). Phase 4 should
@@ -346,7 +363,7 @@ com.kittytalents
   by name and translate old ordinals in the Phase 2 migrator. Otherwise saved cats get scrambled modes.
 - Ability "enemy count" checks (Hiss, Frost Nova, Apex Predator) count *any* `LivingEntity`, including cows and villagers.
   Phase 4 should switch them to `CatTargeting` hostility.
-- `CatTalentScreen` sets job and clock-in on the client as an instant preview before sending the packet. Fine for now; Phase 6/7 should make the screen read synced state only.
+- ~~`CatTalentScreen` sets job and clock-in on the client as an instant preview.~~ Fixed in Phase 6 part 2.
 - The Create compat recipes log "serializer returned null" when Create is absent. They need a `forge:mod_loaded` condition.
 
 ## 3. Phased plan

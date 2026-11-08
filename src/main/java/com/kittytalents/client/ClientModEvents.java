@@ -56,6 +56,14 @@ public class ClientModEvents {
     }
 
     @SubscribeEvent
+    public static void registerOverlays(net.minecraftforge.client.event.RegisterGuiOverlaysEvent event) {
+        event.registerAbove(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.HOTBAR.id(), "companion_hud",
+                com.kittytalents.client.hud.CompanionHud.INSTANCE);
+        event.registerAbove(net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.HOTBAR.id(), "twine_hud",
+                com.kittytalents.client.hud.TwineHud.INSTANCE);
+    }
+
+    @SubscribeEvent
     public static void registerKeyMappings(net.minecraftforge.client.event.RegisterKeyMappingsEvent event) {
         ClientTwineHandler.registerKeys(event);
     }

@@ -26,9 +26,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.MovementInputUpdateEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.event.ViewportEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -455,253 +453,23 @@ public class ClientTwineHandler {
         }
     }
 
+    /**
+     * While twined, the camera is the cat, so the crosshair can land on the player's own (invisible, dormant) body.
+     * A vanilla attack on yourself gets you kicked ("attempted to attack an invalid entity"), and a vanilla attack on
+     * anything else would be the far-away player body swinging its held item. The cat's own attack goes through
+     * PacketTwineInput, so vanilla entity attacks are dropped entirely, and clicks on the body or the cat are ignored.
+     */
     @SubscribeEvent
-    public static void onRenderOverlay(RenderGuiOverlayEvent.Post event) {
+    public static void onInteractionKey(net.minecraftforge.client.event.InputEvent.InteractionKeyMappingTriggered event) {
         if (!isTwined()) return;
-        // Render only once per frame on the hotbar/all post pass to avoid duplicate drawing
-        if (event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) return;
-
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) return;
-
-        Entity entity = mc.level.getEntity(activeTwinedCatId);
-        if (!(entity instanceof TalentedCat cat)) return;
-
-        GuiGraphics graphics = event.getGuiGraphics();
-        Font font = mc.font;
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-        long gameTime = cat.level().getGameTime();
-
-        // Render tactical crosshair when a TacZ firearm is equipped in first-person
-        if (cat.hasEquippedGun() && mc.options.getCameraType().isFirstPerson()) {
-            renderTacticalGunCrosshair(graphics, screenWidth / 2, screenHeight / 2, cat);
+        if (!(mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit)) return;
+        Entity target = hit.getEntity();
+        boolean self = target == mc.player || target.getId() == activeTwinedCatId;
+        if (self || event.isAttack()) {
+            event.setCanceled(true);
+            event.setSwingHand(false);
         }
-
-        // Position HUD at top-left (x = 8, y = 8) so it never collides with Jade (top-center) or Xaero's Minimap (top-right)
-        int hudW = 350;
-        int hudH = 58;
-        int hudX = 8;
-        int hudY = 8;
-
-        // Translucent glassmorphic backplate
-        graphics.fill(hudX - 1, hudY - 1, hudX + hudW + 1, hudY + hudH + 1, 0x55000000);
-        graphics.fill(hudX, hudY, hudX + hudW, hudY + hudH, 0x990F172A);
-        // Accent indigo top line
-        graphics.fill(hudX, hudY, hudX + hudW, hudY + 2, 0xFF6366F1);
-
-        // 1. Header Row (Name, Level, Role Tag, Primary Element, Status Badges)
-        int headerY = hudY + 5;
-        String catName = cat.getName().getString();
-        int tierColor = cat.getProductionTier().getColorValue() | 0xFF000000;
-        graphics.drawString(font, catName, hudX + 6, headerY, tierColor, false);
-        int nameW = font.width(catName);
-
-        String levelText = "Lv." + cat.getCatLevel();
-        graphics.drawString(font, levelText, hudX + 10 + nameW, headerY, 0xFF94A3B8, false);
-        int lvlW = font.width(levelText);
-
-        // Role Tag
-        com.kittytalents.combat.CatRole role = cat.getCatRole();
-        String roleStr = "[" + role.getDisplayName().toUpperCase() + "]";
-        int roleColor = getRoleBadgeColor(role);
-        graphics.drawString(font, roleStr, hudX + 16 + nameW + lvlW, headerY, roleColor, false);
-        int roleW = font.width(roleStr);
-
-        // Primary Element Badge
-        String elemStr = "<" + cat.getPrimaryElement().name() + ">";
-        graphics.drawString(font, elemStr, hudX + 20 + nameW + lvlW + roleW, headerY, 0xFF38BDF8, false);
-
-        // Active Status Effect Badges (Right side of header)
-        renderActiveStatusBadges(graphics, font, cat, hudX + hudW - 6, headerY);
-
-        // 2. Gauges Row: HP Bar (left), Energy Bar (mid), Ultimate Meter (right)
-        int gaugeY = hudY + 18;
-
-        // Health Bar (95px)
-        graphics.drawString(font, "HP", hudX + 6, gaugeY, 0xFFEF4444, false);
-        int hpBarX = hudX + 22;
-        int hpBarW = 95;
-        float hpFrac = Math.max(0.0F, Math.min(1.0F, cat.getHealth() / cat.getMaxHealth()));
-        int hpColor = hpFrac > 0.5F ? 0xFF22C55E : (hpFrac > 0.25F ? 0xFFF59E0B : 0xFFEF4444);
-        graphics.fill(hpBarX, gaugeY + 1, hpBarX + hpBarW, gaugeY + 9, 0xFF1E293B);
-        graphics.fill(hpBarX, gaugeY + 1, hpBarX + (int)(hpBarW * hpFrac), gaugeY + 9, hpColor);
-        String hpText = String.format("%.0f/%.0f", cat.getHealth(), cat.getMaxHealth());
-        graphics.drawCenteredString(font, hpText, hpBarX + hpBarW / 2, gaugeY, 0xFFFFFFFF);
-
-        // Energy Bar (95px)
-        graphics.drawString(font, "ENG", hudX + 124, gaugeY, 0xFFFBBF24, false);
-        int engBarX = hudX + 146;
-        int engBarW = 95;
-        int maxEnergy = Math.max(100, cat.getMaxEnergy());
-        float engFrac = Math.max(0.0F, Math.min(1.0F, (float) cat.getEnergy() / maxEnergy));
-        graphics.fill(engBarX, gaugeY + 1, engBarX + engBarW, gaugeY + 9, 0xFF1E293B);
-        graphics.fill(engBarX, gaugeY + 1, engBarX + (int)(engBarW * engFrac), gaugeY + 9, 0xFF0284C7);
-        String engText = cat.getEnergy() + "/" + maxEnergy;
-        graphics.drawCenteredString(font, engText, engBarX + engBarW / 2, gaugeY, 0xFFFFFFFF);
-
-        // Ultimate Meter (72px)
-        graphics.drawString(font, "ULT", hudX + 248, gaugeY, 0xFFA855F7, false);
-        int ultBarX = hudX + 270;
-        int ultBarW = 72;
-        String ultName = cat.getAbilityUltimate();
-        long ultLast = cat.getAbilityCooldown(ultName);
-        long ultCd = getAbilityCooldownTicks(ultName, 450);
-        float ultFrac = (ultLast <= 0 || gameTime >= ultLast + ultCd) ? 1.0F : Math.max(0.0F, (float)(gameTime - ultLast) / ultCd);
-        graphics.fill(ultBarX, gaugeY + 1, ultBarX + ultBarW, gaugeY + 9, 0xFF1E293B);
-        graphics.fill(ultBarX, gaugeY + 1, ultBarX + (int)(ultBarW * ultFrac), gaugeY + 9, 0xFF9333EA);
-        String ultText = ultFrac >= 1.0F ? "READY!" : (int)(ultFrac * 100) + "%";
-        graphics.drawCenteredString(font, ultText, ultBarX + ultBarW / 2, gaugeY, ultFrac >= 1.0F ? 0xFFFDE047 : 0xFFFFFFFF);
-
-        // 3. Ability Hotbar Cards (Slots 1-3 + Ultimate)
-        int cardY = hudY + 31;
-        int cardW = 81;
-        int cardH = 20;
-
-        drawAbilityCard(graphics, font, hudX + 5, cardY, cardW, cardH, "V", cat.getAbilitySlot1(), cat, gameTime);
-        drawAbilityCard(graphics, font, hudX + 5 + 86, cardY, cardW, cardH, "G", cat.getAbilitySlot2(), cat, gameTime);
-        drawAbilityCard(graphics, font, hudX + 5 + 172, cardY, cardW, cardH, "B", cat.getAbilitySlot3(), cat, gameTime);
-
-        String ultKeyHint = cat.hasEquippedGun() ? "Sh+R" : "R";
-        drawAbilityCard(graphics, font, hudX + 5 + 258, cardY, cardW, cardH, ultKeyHint, ultName, cat, gameTime);
-
-        // 4. Compact Controls Footer & Gun Ammo HUD Pill
-        if (cat.hasEquippedGun()) {
-            net.minecraft.world.item.ItemStack gun = cat.getEquippedWeapon();
-            int curAmmo = TacZCompat.getAmmoCount(gun);
-            int maxAmmo = TacZCompat.getMaxAmmoCount(gun);
-            boolean reloading = TacZCompat.isReloading(cat);
-            String gunStatus = reloading
-                    ? "🔫 " + gun.getHoverName().getString() + " [RELOADING...]"
-                    : "🔫 " + gun.getHoverName().getString() + " [" + curAmmo + "/" + maxAmmo + "] • [LMB] Fire • [RMB] Aim • [R] Reload • [Shift+R] Ult";
-            graphics.drawString(font, gunStatus, hudX + 4, hudY + hudH + 3, reloading ? 0xFFF59E0B : 0xFF38BDF8, true);
-        } else {
-            String footer = "[LMB] Attack  •  [RMB] Pounce  •  [Alt] Dodge  •  [X] Synergy  •  [U] Untwine";
-            graphics.drawString(font, footer, hudX + 4, hudY + hudH + 3, 0xCC94A3B8, true);
-        }
-    }
-
-    private static void renderTacticalGunCrosshair(GuiGraphics graphics, int cx, int cy, TalentedCat cat) {
-        boolean aiming = Minecraft.getInstance().options.keyUse.isDown();
-        boolean reloading = TacZCompat.isReloading(cat);
-        int gap = aiming ? 3 : 6;
-        int len = aiming ? 4 : 5;
-        int color = reloading ? 0xCCF59E0B : (aiming ? 0xEE22C55E : 0xDD38BDF8);
-
-        // 4-way tactical reticle brackets
-        graphics.fill(cx - gap - len, cy, cx - gap, cy + 1, color);
-        graphics.fill(cx + gap + 1, cy, cx + gap + 1 + len, cy + 1, color);
-        graphics.fill(cx, cy - gap - len, cx + 1, cy - gap, color);
-        graphics.fill(cx, cy + gap + 1, cx + 1, cy + gap + 1 + len, color);
-    }
-
-    private static void drawAbilityCard(GuiGraphics graphics, Font font, int x, int y, int w, int h, String keyHint, String abilityId, TalentedCat cat, long gameTime) {
-        graphics.fill(x, y, x + w, y + h, 0xCC1E293B);
-        graphics.fill(x, y, x + w, y + 1, 0xFF475569);
-
-        CatAbility abil = CatAbilities.get(abilityId);
-        String name = (abil != null) ? abil.getDisplayName() : abilityId.replace('_', ' ');
-        int keyW = font.width("[" + keyHint + "]");
-        int maxNameChars = keyHint.length() > 1 ? 6 : 9;
-        if (name.length() > maxNameChars) name = name.substring(0, maxNameChars - 1) + ".";
-
-        long lastCast = cat.getAbilityCooldown(abilityId);
-        long cd = (abil != null) ? abil.getCooldownTicks() : 40;
-        long diff = (lastCast <= 0) ? 0 : (lastCast + cd) - gameTime;
-
-        graphics.drawString(font, "[" + keyHint + "]", x + 3, y + 2, 0xFFFCD34D, false);
-        graphics.drawString(font, name, x + 5 + keyW, y + 2, 0xFFFFFFFF, false);
-
-        if (diff > 0) {
-            String cdStr = String.format("%.1fs", diff / 20.0F);
-            graphics.drawString(font, cdStr, x + 4, y + 11, 0xFFEF4444, false);
-        } else {
-            graphics.drawString(font, "READY", x + 4, y + 11, 0xFF22C55E, false);
-        }
-
-        int cost = (abil != null) ? abil.getEnergyCost() : 0;
-        if (cost > 0) {
-            String costStr = cost + "⚡";
-            graphics.drawString(font, costStr, x + w - font.width(costStr) - 3, y + 11, 0xFF38BDF8, false);
-        }
-    }
-
-    private static void renderActiveStatusBadges(GuiGraphics graphics, Font font, TalentedCat cat, int rightX, int y) {
-        net.minecraft.nbt.CompoundTag pData = cat.getPersistentData();
-        if (!pData.contains("FelineStatuses")) {
-            graphics.drawString(font, "[U to Untwine]", rightX - font.width("[U to Untwine]"), y, 0xFF64748B, false);
-            return;
-        }
-
-        net.minecraft.nbt.CompoundTag statuses = pData.getCompound("FelineStatuses");
-        int curX = rightX;
-        for (String key : statuses.getAllKeys()) {
-            net.minecraft.nbt.CompoundTag eff = statuses.getCompound(key);
-            int ticks = eff.getInt("Ticks");
-            if (ticks <= 0) continue;
-
-            int sec = (ticks + 19) / 20;
-            String badge = getStatusEmoji(key) + " " + sec + "s";
-            int badgeW = font.width(badge) + 6;
-            curX -= badgeW + 3;
-
-            int badgeColor = getStatusColor(key);
-            graphics.fill(curX, y - 1, curX + badgeW, y + 9, badgeColor | 0xAA000000);
-            graphics.drawString(font, badge, curX + 3, y, 0xFFFFFFFF, false);
-        }
-
-        if (curX == rightX) {
-            graphics.drawString(font, "[U to Untwine]", rightX - font.width("[U to Untwine]"), y, 0xFF64748B, false);
-        }
-    }
-
-    private static String getStatusEmoji(String key) {
-        return switch (key.toUpperCase()) {
-            case "BURN" -> "🔥";
-            case "FREEZE" -> "❄";
-            case "SHOCK" -> "⚡";
-            case "POISON" -> "☠";
-            case "BLEED" -> "🩸";
-            case "MARKED" -> "🎯";
-            case "HASTE" -> "👟";
-            case "FORTIFIED" -> "🛡";
-            case "REGENERATION" -> "💖";
-            default -> "✦";
-        };
-    }
-
-    private static int getStatusColor(String key) {
-        return switch (key.toUpperCase()) {
-            case "BURN" -> 0xDC2626;
-            case "FREEZE" -> 0x0284C7;
-            case "SHOCK" -> 0xD97706;
-            case "POISON" -> 0x16A34A;
-            case "BLEED" -> 0x991B1B;
-            case "MARKED" -> 0x7C3AED;
-            case "HASTE" -> 0x0D9488;
-            case "FORTIFIED" -> 0x2563EB;
-            case "REGENERATION" -> 0xDB2777;
-            default -> 0x475569;
-        };
-    }
-
-    private static int getRoleBadgeColor(com.kittytalents.combat.CatRole role) {
-        if (role == null) return 0xFF94A3B8;
-        return switch (role) {
-            case DPS, ASSASSIN -> 0xFFEF4444;
-            case TANK, BRUISER -> 0xFF3B82F6;
-            case HEALER, SUPPORT -> 0xFF10B981;
-            case MAGE -> 0xFFA855F7;
-            case SCOUT, MOBILITY -> 0xFFF59E0B;
-            case CONTROLLER, BREAKER -> 0xFFEC4899;
-            case HYBRID -> 0xFF6366F1;
-            default -> 0xFF94A3B8;
-        };
-    }
-
-    private static long getAbilityCooldownTicks(String abilityId, long defaultTicks) {
-        CatAbility abil = CatAbilities.get(abilityId);
-        return (abil != null) ? abil.getCooldownTicks() : defaultTicks;
     }
 
     /**

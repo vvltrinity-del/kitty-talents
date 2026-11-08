@@ -57,6 +57,26 @@ public class KittyTalentGameTests {
         h.succeed();
     }
 
+    /** Statuses reach the client through synced entity data (the Twine and companion HUDs read it). */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testStatusesSyncToClientView(GameTestHelper h) {
+        TalentedCat c = cat(h, new BlockPos(2, 2, 2));
+        com.kittytalents.combat.FelineStatusEffects.applyStatus(c, com.kittytalents.combat.FelineStatusType.POISON, 2, 100);
+        net.minecraft.nbt.CompoundTag view = c.getSyncedStatuses();
+        long now = c.level().getGameTime();
+        h.assertTrue(view.contains("POISON") && view.getCompound("POISON").getLong("End") > now
+                && view.getCompound("POISON").getInt("Power") == 2, "POISON should be in the synced view: " + view);
+        long end = view.getCompound("POISON").getLong("End");
+        h.runAfterDelay(10, () -> {
+            // Counting down must not change the synced value (no per-tick resync).
+            h.assertTrue(c.getSyncedStatuses().getCompound("POISON").getLong("End") == end,
+                    "End should stay constant while ticking: " + c.getSyncedStatuses());
+            com.kittytalents.combat.FelineStatusEffects.removeStatus(c, com.kittytalents.combat.FelineStatusType.POISON);
+            h.assertTrue(c.getSyncedStatuses().isEmpty(), "View should be empty after removal: " + c.getSyncedStatuses());
+            h.succeed();
+        });
+    }
+
     @GameTest(template = "empty", timeoutTicks = 20)
     public static void testNoXpOrPointsBeyondLevelCap(GameTestHelper h) {
         TalentedCat c = cat(h, new BlockPos(2, 2, 2));

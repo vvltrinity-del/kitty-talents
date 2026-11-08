@@ -68,11 +68,7 @@ public class GearTab implements CatTab {
         boolean visible = cat.isCosmeticsVisible();
         s.add(new KTButton(startX + 3 * 26 + 4, cy + 1, 110, 16,
                 visible ? KTText.t("gear.cosmetics.shown", "Cosmetics: Shown") : KTText.t("gear.cosmetics.hidden", "Cosmetics: Hidden"),
-                b -> {
-                    PacketHandler.sendToServer(new PacketEquipCatItem(cat.getId(), 10));
-                    cat.setCosmeticsVisible(!cat.isCosmeticsVisible());
-                    s.rebuild();
-                }).icon(new ItemStack(visible ? Items.ENDER_EYE : Items.ENDER_PEARL)).style(KTButton.Style.CHIP).selected(visible));
+                b -> PacketHandler.sendToServer(new PacketEquipCatItem(cat.getId(), 10))).icon(new ItemStack(visible ? Items.ENDER_EYE : Items.ENDER_PEARL)).style(KTButton.Style.CHIP).selected(visible));
     }
 
     private static void addSlot(CatTalentScreen s, TalentedCat cat, SlotDef def, int x, int y) {

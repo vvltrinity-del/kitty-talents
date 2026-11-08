@@ -55,6 +55,30 @@ public class FelineStatusEffects {
         statuses.put(key, effectData);
         data.put(NBT_STATUSES, statuses);
         TRACKED_ENTITIES.add(target.getUUID());
+        syncToClient(target, statuses);
+    }
+
+    /**
+     * Talented cats mirror their statuses into synced entity data so the HUDs can show them (persistent data never
+     * reaches the client). Each entry is {@code End}: game time it runs out, Power}; that stays constant while a status
+     * counts down, so the data only resyncs when a status is applied, refreshed or removed.
+     */
+    private static void syncToClient(LivingEntity entity, CompoundTag statuses) {
+        if (!(entity instanceof com.kittytalents.entity.TalentedCat cat)) return;
+        long now = entity.level().getGameTime();
+        CompoundTag view = new CompoundTag();
+        if (statuses != null) {
+            for (String key : statuses.getAllKeys()) {
+                CompoundTag e = statuses.getCompound(key);
+                int ticks = e.getInt("Ticks");
+                if (ticks <= 0) continue;
+                CompoundTag v = new CompoundTag();
+                v.putLong("End", now + ticks);
+                v.putInt("Power", e.getInt("Power"));
+                view.put(key, v);
+            }
+        }
+        cat.setSyncedStatuses(view);
     }
 
     /**
@@ -103,6 +127,7 @@ public class FelineStatusEffects {
             } else {
                 data.put(NBT_STATUSES, statuses);
             }
+            syncToClient(entity, statuses);
         }
     }
 
@@ -110,6 +135,7 @@ public class FelineStatusEffects {
         if (entity == null) return;
         entity.getPersistentData().remove(NBT_STATUSES);
         TRACKED_ENTITIES.remove(entity.getUUID());
+        syncToClient(entity, null);
     }
 
     @SubscribeEvent
@@ -165,6 +191,7 @@ public class FelineStatusEffects {
         } else if (changed) {
             data.put(NBT_STATUSES, statuses);
         }
+        syncToClient(entity, statuses);
     }
 
     private static void executeStatusTick(LivingEntity entity, FelineStatusType status, int power, int ticksRemaining) {

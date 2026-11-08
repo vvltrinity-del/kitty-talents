@@ -11,9 +11,9 @@ import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.resources.ResourceLocation;
 
-/** Vanilla collar texture on a slightly inflated copy of the cat rig, posed by copying bones (no second animation pass). */
+/** Full-ring collar texture (tools/asset_gen/collar_texture.py; the vanilla one leaves the throat bare) on a slightly inflated copy of the cat rig, posed by copying bones (no second animation pass). */
 public class TalentedCatCollarLayer extends RenderLayer<TalentedCat, KTCatModel> {
-    private static final ResourceLocation CAT_COLLAR_LOCATION = new ResourceLocation("textures/entity/cat/cat_collar.png");
+    private static final ResourceLocation CAT_COLLAR_LOCATION = new ResourceLocation("kittytalents", "textures/entity/cat/collar.png");
     private final KTCatModel collarModel;
 
     public TalentedCatCollarLayer(RenderLayerParent<TalentedCat, KTCatModel> parent, EntityModelSet modelSet) {

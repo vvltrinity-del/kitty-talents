@@ -221,6 +221,16 @@ public final class KTTheme {
         if (lx < x + w) g.fill(lx, y + 4, x + w, y + 5, 0x66E0B04A);
     }
 
+    /** HUD panel: thin dark-oak border around stitched leather, lighter than the screen frame. */
+    public static void hudPanel(GuiGraphics g, int x, int y, int w, int h) {
+        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, OUTLINE);
+        tile(g, DARK_OAK, x, y, w, h);
+        bevel(g, x, y, w, h, 0x55FFFFFF, 0x88000000);
+        g.fill(x + 2, y + 2, x + w - 2, y + h - 2, 0xFF1A120C);
+        tile(g, LEATHER, LEATHER_SIZE, x + 3, y + 3, w - 6, h - 6);
+        g.fill(x + 3, y + 3, x + w - 3, y + h - 3, 0x99140C08);
+    }
+
     public static int dim(int color) {
         int r = ((color >> 16) & 0xFF) * 3 / 5, gr = ((color >> 8) & 0xFF) * 3 / 5, b = (color & 0xFF) * 3 / 5;
         return 0xFF000000 | (r << 16) | (gr << 8) | b;

@@ -32,6 +32,8 @@ public final class ScreenShots {
     private static final int WARMUP_TICKS = 60, FRAMES_PER_SHOT = 6;
     private static final int[] GUI_SCALES = { 2, 3 };
     private static final int TABS = 7;
+    /** After the tab shots: one frame with the Twine HUD and companion cards drawn over the world. */
+    private static final int HUD_STEP = GUI_SCALES.length * TABS;
 
     private static int ticksInWorld;
     private static int step = -1, frames;
@@ -58,16 +60,21 @@ public final class ScreenShots {
         if (OUTPUT == null || done || step < 0 || event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
         if (++frames < FRAMES_PER_SHOT) return;
-        int scale = GUI_SCALES[step / TABS], tab = step % TABS;
         File dir = new File(OUTPUT);
         dir.mkdirs();
+        String file;
+        if (step == HUD_STEP) {
+            file = "hud.png";
+        } else {
+            file = "gui" + GUI_SCALES[step / TABS] + "_tab" + (step % TABS) + ".png";
+        }
         try (NativeImage image = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
-            image.writeToFile(new File(dir, "gui" + scale + "_tab" + tab + ".png"));
+            image.writeToFile(new File(dir, file));
         } catch (Exception e) {
             KittyTalents.LOGGER.error("[ScreenShots] failed", e);
         }
         step++;
-        if (step >= GUI_SCALES.length * TABS) {
+        if (step > HUD_STEP) {
             done = true;
             KittyTalents.LOGGER.info("[ScreenShots] wrote {} images to {}", step, dir.getAbsolutePath());
             mc.setScreen(null);
@@ -77,8 +84,35 @@ public final class ScreenShots {
         open(mc);
     }
 
+    /** During the HUD step, draw both HUDs for the fake cat as part of the normal GUI pass. */
+    @SubscribeEvent
+    public static void onRenderGui(net.minecraftforge.client.event.RenderGuiEvent.Post event) {
+        if (OUTPUT == null || done || step != HUD_STEP || cat == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        int w = mc.getWindow().getGuiScaledWidth(), h = mc.getWindow().getGuiScaledHeight();
+        com.kittytalents.client.hud.TwineHud.draw(event.getGuiGraphics(), mc, cat, w, h);
+        com.kittytalents.client.hud.CompanionHud.card(event.getGuiGraphics(), mc.font, w - 130, 6, cat);
+    }
+
     private static void open(Minecraft mc) {
         frames = 0;
+        if (step == HUD_STEP) {
+            mc.setScreen(null);
+            mc.options.guiScale().set(3);
+            mc.resizeDisplay();
+            // Two statuses with time left, for the badges.
+            net.minecraft.nbt.CompoundTag view = new net.minecraft.nbt.CompoundTag();
+            long now = mc.level.getGameTime();
+            for (String[] s : new String[][] { { "BURN", "200" }, { "HASTE", "50" } }) {
+                net.minecraft.nbt.CompoundTag e = new net.minecraft.nbt.CompoundTag();
+                e.putLong("End", now + Integer.parseInt(s[1]));
+                e.putInt("Power", 1);
+                view.put(s[0], e);
+            }
+            cat.setSyncedStatuses(view);
+            cat.setHealth(cat.getMaxHealth() * 0.6F);
+            return;
+        }
         int scale = GUI_SCALES[step / TABS];
         if (mc.options.guiScale().get() != scale) {
             mc.options.guiScale().set(scale);

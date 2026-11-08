@@ -62,12 +62,7 @@ public class HomeTab implements CatTab {
         boolean clockedIn = cat.isClockedIn();
         s.add(new KTButton(x + w - clockW, y, clockW, 16,
                 clockedIn ? KTText.t("home.clocked_in", "Clocked In") : KTText.t("home.clocked_out", "Clocked Out"),
-                b -> {
-                    boolean next = !cat.isClockedIn();
-                    cat.setClockedIn(next);
-                    PacketHandler.sendToServer(new PacketSetCatJob(cat.getId(), cat.getCatJob(), next));
-                    s.rebuild();
-                }).style(KTButton.Style.CHIP).selected(clockedIn).color(clockedIn ? 0xFF6EE7A0 : 0xFFF87171));
+                b -> PacketHandler.sendToServer(new PacketSetCatJob(cat.getId(), cat.getCatJob(), !cat.isClockedIn()))).style(KTButton.Style.CHIP).selected(clockedIn).color(clockedIn ? 0xFF6EE7A0 : 0xFFF87171));
 
         // Actions: Sit/Stand, Pack, Whistle, TWINE
         y += 22;
@@ -75,9 +70,7 @@ public class HomeTab implements CatTab {
         boolean sitting = cat.isOrderedToSit();
         s.add(new KTButton(x, y, bw, 18, sitting ? KTText.t("home.stand", "Stand") : KTText.t("home.sit", "Sit"), b -> {
             CatMode m = cat.isOrderedToSit() ? CatMode.FOLLOW : CatMode.DOCILE;
-            cat.setCatMode(m);
             PacketHandler.sendToServer(new PacketChangeCatMode(cat.getId(), m.ordinal()));
-            s.rebuild();
         }).icon(new ItemStack(Items.RED_BED)));
         s.add(new KTButton(x + bw + 2, y, bw, 18, KTText.t("home.pack", "Pack"),
                 b -> PacketHandler.sendToServer(new PacketOpenCatPack(cat.getId())))
@@ -128,24 +121,18 @@ public class HomeTab implements CatTab {
         }
     }
 
+    // Requests only: the screen rebuilds when the server's synced state arrives (CatTalentScreen#containerTick),
+    // so a rejected change never shows as applied.
     private static void setMode(CatTalentScreen s, CatMode mode) {
-        TalentedCat cat = s.cat();
-        cat.setCatMode(mode);
-        PacketHandler.sendToServer(new PacketChangeCatMode(cat.getId(), mode.ordinal()));
-        s.rebuild();
+        PacketHandler.sendToServer(new PacketChangeCatMode(s.cat().getId(), mode.ordinal()));
     }
 
     private static void cycleJob(CatTalentScreen s) {
         TalentedCat cat = s.cat();
         CatJob[] jobs = CatJob.values();
         CatJob next = jobs[(cat.getCatJob().ordinal() + 1) % jobs.length];
-        cat.setCatJob(next);
-        if (next != CatJob.NONE) {
-            cat.setCatMode(CatMode.WORK);
-            cat.setClockedIn(true);
-        }
-        PacketHandler.sendToServer(new PacketSetCatJob(cat.getId(), next, cat.isClockedIn()));
-        s.rebuild();
+        // Picking a job clocks the cat in (and so puts it in WORK mode, server side).
+        PacketHandler.sendToServer(new PacketSetCatJob(cat.getId(), next, next != CatJob.NONE || cat.isClockedIn()));
     }
 
     @Override

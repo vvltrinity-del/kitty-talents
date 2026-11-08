@@ -122,6 +122,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Integer> DATA_LAST_SHOT_TICK =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
+    /** Active statuses for the HUDs: {TYPE: {End, Power}} (see FelineStatusEffects#syncToClient). */
+    private static final EntityDataAccessor<net.minecraft.nbt.CompoundTag> DATA_STATUSES =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.COMPOUND_TAG);
     private static final EntityDataAccessor<Integer> DATA_XP =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_ENERGY =
@@ -176,6 +179,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     /** XP towards the next level (Phase 4). Synced for the UI. */
+    public net.minecraft.nbt.CompoundTag getSyncedStatuses() { return this.entityData.get(DATA_STATUSES); }
+    public void setSyncedStatuses(net.minecraft.nbt.CompoundTag view) { this.entityData.set(DATA_STATUSES, view); }
+
     public int getCatXp() { return this.entityData.get(DATA_XP); }
     public void setCatXp(int xp) { this.entityData.set(DATA_XP, Math.max(0, xp)); }
 
@@ -289,6 +295,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.define(DATA_LAST_SHOT_TICK, -100);
         this.entityData.define(DATA_ENERGY, 100);
         this.entityData.define(DATA_XP, 0);
+        this.entityData.define(DATA_STATUSES, new net.minecraft.nbt.CompoundTag());
     }
 
     @Override
