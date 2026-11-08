@@ -220,6 +220,35 @@ com.kittytalents
   - Venom Fang's AI range (5 blocks) didn't match its bite range (4 blocks).
   - Dodged hits counted as damage taken.
 
+### 2026-11-07: Phase 3 (AI rewrite) done. Commits `ffd7004` → `738ca71` + stress test
+- **12 modes** (DOCILE, STAY, FOLLOW, WANDER, GUARD, HUNTING, AGGRESSIVE, TACTICAL, SUPPORT, FETCH, WORK, RETURN_HOME).
+  Each one declares its follow / anchor / target-policy / retreat behavior as data. Legacy names map on load
+  (ESCORT, PROTECT, DEFENSIVE, RETREAT → FOLLOW; PATROL → GUARD; BERSERKER → AGGRESSIVE; MINE, FARM, FISH → WORK + job).
+- **`ai/CatBrain`** is the only place goals are registered, in documented priority bands. **`ai/CatTargeting`**
+  is the single friend/foe and scoring rule; `CatTargetGoal` replaces 10 competing target goals.
+- **Pounce** is every cat's default combat opener (stalk, then leap via the same engine as Twine). The talent ("Pounce
+  Training") only scales it, and it's no longer an equippable ability (schema v2 clears old slots).
+- STAY/GUARD anchor where ordered (saved). There's now one follow goal. Low-health retreat is automatic (never in AGGRESSIVE).
+- **Bugs fixed:**
+  - Owner/trusted threat checks compared another entity's timestamps with the cat's clock.
+  - Pounce landings hit villagers, pets and bystanders.
+  - Fox pounce hit targets it missed.
+  - Vanilla follow fought the GUARD anchor.
+  - BERSERKER + Clocked In at the same time.
+  - **The whole Combat tab was client-only.** Role, element and ability slots never reached the server; now there's
+    a validated `PacketSetCatLoadout` plus a sync back to clients.
+- **Test infrastructure bugs found and fixed:**
+  - Every GameTest had spawned entities *inside* the floor (the structure sits 1 block above the helper origin).
+  - Orphaned dedicated-server processes from the boot script were the real cause of the earlier "run/ locked" and
+    "port 25565 taken" failures.
+- **Tests:** 27 GameTests (12 new AI tests covering every mode policy, the pounce, bystander safety, retreat and anchors)
+  plus JUnit `CatModeTest`.
+- **Performance:** 100 cats in mixed modes plus 10 hostiles average **6.1 ms per server tick** (the budget is 50 ms).
+  The stress test fails above 25 ms.
+- **Not covered by automated tests (needs an in-game check):** anything that depends on a real owner, i.e. FOLLOW,
+  TACTICAL and SUPPORT tethering and teleport-to-owner, and defending the owner. GameTest fake players aren't
+  resolvable as owners.
+
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).
