@@ -137,9 +137,8 @@ public class PacketTwineInput {
                     com.kittytalents.compat.tacz.TacZCompat.setAiming(cat, pounce);
                 } else if (pounce) {
                     long now = cat.level().getGameTime();
-                    long lastRmbPounce = cat.getPersistentData().getLong("KT_LastRmbPounce");
-                    if (cat.onGround() && now >= lastRmbPounce + 20) {
-                        cat.getPersistentData().putLong("KT_LastRmbPounce", now);
+                    if (cat.onGround() && now >= cat.getLastTwinePounceTick() + 20) {
+                        cat.setLastTwinePounceTick(now);
                         Vec3 look = cat.getLookAngle();
                         double pounceSpeed = 1.25D + cat.getTalentLevel(Talents.POUNCE) * 0.10D;
                         cat.setDeltaMovement(look.x * pounceSpeed, 0.48D, look.z * pounceSpeed);

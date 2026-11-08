@@ -117,6 +117,44 @@ public class KittyTalentsGameTests {
         helper.succeed();
     }
 
+    /** A 2.0-format save (mode ordinal, ForgeData cooldowns/flags) loads into a real cat with nothing lost. */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testLegacySaveMigratesOnLoad(GameTestHelper helper) {
+        TalentedCat source = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        source.setCatLevel(37);
+        source.setTalentLevel(Talents.POUNCE, 3);
+        net.minecraft.nbt.CompoundTag tag = source.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+
+        // Rewrite the tag into the legacy (schema 0) shape.
+        tag.remove(com.kittytalents.core.persist.CatSchema.KEY_SCHEMA);
+        tag.remove(com.kittytalents.core.persist.CatSchema.KEY_MODE_NAME);
+        tag.remove(com.kittytalents.core.persist.CatSchema.KEY_ABILITY_COOLDOWNS);
+        tag.putInt("CatMode", 8); // PATROL in the historic enum order
+        net.minecraft.nbt.CompoundTag forge = tag.getCompound("ForgeData");
+        forge.putLong("cooldown_pounce", 4321L);
+        forge.putBoolean("SpiritCatnipUsed", true);
+        forge.putInt("KT_ComboStep", 3);
+        tag.put("ForgeData", forge);
+        tag.remove("UUID"); // avoid two live entities sharing one UUID
+
+        TalentedCat loaded = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(4, 1, 4));
+        loaded.load(tag);
+
+        helper.assertTrue(loaded.getCatMode() == CatMode.PATROL, "Legacy mode ordinal 8 should load as PATROL, got " + loaded.getCatMode());
+        helper.assertTrue(loaded.getCatLevel() == 37, "Level must survive migration");
+        helper.assertTrue(loaded.getTalentLevel(Talents.POUNCE) == 3, "Talents must survive migration");
+        helper.assertTrue(loaded.getAbilityCooldown("pounce") == 4321L, "Ability cooldown should move out of ForgeData");
+        helper.assertTrue(loaded.isSpiritCatnipPrimed(), "Spirit Catnip flag should move out of ForgeData");
+        helper.assertFalse(loaded.getPersistentData().contains("cooldown_pounce"), "Legacy cooldown key should be gone");
+        helper.assertFalse(loaded.getPersistentData().contains("KT_ComboStep"), "Transient combat key should be gone");
+
+        net.minecraft.nbt.CompoundTag resaved = loaded.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+        helper.assertTrue(resaved.getInt(com.kittytalents.core.persist.CatSchema.KEY_SCHEMA) == com.kittytalents.core.persist.CatSchema.CURRENT,
+                "Re-save should stamp the current schema version");
+        helper.assertTrue("PATROL".equals(resaved.getString(com.kittytalents.core.persist.CatSchema.KEY_MODE_NAME)), "Re-save should store mode by name");
+        helper.succeed();
+    }
+
     private static boolean anySlotOnCooldown(TalentedCat cat) {
         for (String id : new String[]{cat.getAbilitySlot1(), cat.getAbilitySlot2(), cat.getAbilitySlot3(), cat.getAbilityUltimate()}) {
             if (id != null && !id.isEmpty() && cat.getAbilityCooldown(id) > 0) return true;

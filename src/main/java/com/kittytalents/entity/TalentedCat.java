@@ -1,5 +1,7 @@
 package com.kittytalents.entity;
 
+import com.kittytalents.core.persist.CatSchema;
+
 import com.kittytalents.config.KittyTalentsConfig;
 import com.kittytalents.entity.ai.*;
 import com.kittytalents.inventory.CatPackMenu;
@@ -214,21 +216,25 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     private long nineLivesReadyAt = 0L;
     public long getNineLivesReadyAt() { return nineLivesReadyAt; }
 
+    /** Ability id (lower-case) -> game time of last cast. Saved under {@link CatSchema#KEY_ABILITY_COOLDOWNS}. */
     private final Map<String, Long> abilityCooldowns = new HashMap<>();
     public long getAbilityCooldown(String id) {
         if (id == null) return 0L;
-        Long cd = abilityCooldowns.get(id.toLowerCase());
-        if (cd != null) return cd;
-        long pCd = getPersistentData().getLong("cooldown_" + id.toLowerCase());
-        abilityCooldowns.put(id.toLowerCase(), pCd);
-        return pCd;
+        return abilityCooldowns.getOrDefault(id.toLowerCase(java.util.Locale.ROOT), 0L);
     }
     public void setAbilityCooldown(String id, long gameTime) {
-        if (id != null) {
-            abilityCooldowns.put(id.toLowerCase(), gameTime);
-            getPersistentData().putLong("cooldown_" + id.toLowerCase(), gameTime);
-        }
+        if (id != null) abilityCooldowns.put(id.toLowerCase(java.util.Locale.ROOT), gameTime);
     }
+
+    /** Fed Spirit Catnip and not yet bred: the next offspring is guaranteed Nekomata. */
+    private boolean spiritCatnipPrimed = false;
+    public boolean isSpiritCatnipPrimed() { return spiritCatnipPrimed; }
+    public void setSpiritCatnipPrimed(boolean primed) { this.spiritCatnipPrimed = primed; }
+
+    /** Transient (not saved): last Twine right-click pounce, for its 1-second cooldown. */
+    private long lastTwinePounceTick = 0L;
+    public long getLastTwinePounceTick() { return lastTwinePounceTick; }
+    public void setLastTwinePounceTick(long tick) { this.lastTwinePounceTick = tick; }
 
     private ItemStack carriedToy = ItemStack.EMPTY;
     public ItemStack getCarriedToy() { return carriedToy; }
@@ -519,7 +525,6 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void setMutation(CatBreedingManager.MutationType mutation) {
         String name = mutation != null ? mutation.name() : CatBreedingManager.MutationType.NONE.name();
         this.entityData.set(DATA_MUTATION, name);
-        this.getPersistentData().putString("MutationType", name);
     }
 
     public void setNekomata(boolean nekomata) {
@@ -2290,7 +2295,14 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         tag.putInt("SkillPoints", getSkillPoints());
         tag.putInt("Hunger", getHunger());
         tag.putFloat("Satiety", satiety);
-        tag.putInt("CatMode", getCatMode().ordinal());
+        tag.putInt(CatSchema.KEY_SCHEMA, CatSchema.CURRENT);
+        tag.putString(CatSchema.KEY_MODE_NAME, getCatMode().name());
+        if (!abilityCooldowns.isEmpty()) {
+            CompoundTag cds = new CompoundTag();
+            abilityCooldowns.forEach(cds::putLong);
+            tag.put(CatSchema.KEY_ABILITY_COOLDOWNS, cds);
+        }
+        if (spiritCatnipPrimed) tag.putBoolean(CatSchema.KEY_SPIRIT_PRIMED, true);
         tag.putBoolean("Incapacitated", isIncapacitated());
         tag.putLong("NineLivesReadyAt", nineLivesReadyAt);
         tag.putInt("SkinId", getSkinId());
@@ -2388,11 +2400,17 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
+        // Upgrade old saves in place before reading any field (ForgeData is already loaded into getPersistentData()).
+        CatSchema.migrate(tag, getPersistentData());
         if (tag.contains("CatLevel")) setCatLevel(tag.getInt("CatLevel"));
         if (tag.contains("SkillPoints")) setSkillPoints(tag.getInt("SkillPoints"));
         if (tag.contains("Hunger")) setHunger(tag.getInt("Hunger"));
         this.satiety = tag.getFloat("Satiety");
-        if (tag.contains("CatMode")) setCatMode(CatMode.byId(tag.getInt("CatMode")));
+        if (tag.contains(CatSchema.KEY_MODE_NAME)) setCatMode(CatMode.byName(tag.getString(CatSchema.KEY_MODE_NAME)));
+        abilityCooldowns.clear();
+        CompoundTag cds = tag.getCompound(CatSchema.KEY_ABILITY_COOLDOWNS);
+        for (String id : cds.getAllKeys()) abilityCooldowns.put(id, cds.getLong(id));
+        this.spiritCatnipPrimed = tag.getBoolean(CatSchema.KEY_SPIRIT_PRIMED);
         if (tag.contains("Incapacitated")) setIncapacitated(tag.getBoolean("Incapacitated"));
         this.nineLivesReadyAt = tag.getLong("NineLivesReadyAt");
         if (tag.contains("SkinId")) setSkinId(tag.getInt("SkinId"));
@@ -2582,11 +2600,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 child.setOwnerUUID(owner);
                 child.setTame(true);
             }
-            boolean spiritUsed = this.getPersistentData().getBoolean("SpiritCatnipUsed") ||
-                    (otherParent instanceof TalentedCat o && o.getPersistentData().getBoolean("SpiritCatnipUsed"));
-            this.getPersistentData().remove("SpiritCatnipUsed");
+            boolean spiritUsed = this.isSpiritCatnipPrimed() ||
+                    (otherParent instanceof TalentedCat o && o.isSpiritCatnipPrimed());
+            this.setSpiritCatnipPrimed(false);
             if (otherParent instanceof TalentedCat o) {
-                o.getPersistentData().remove("SpiritCatnipUsed");
+                o.setSpiritCatnipPrimed(false);
             }
 
             if (otherParent instanceof TalentedCat otherCat) {

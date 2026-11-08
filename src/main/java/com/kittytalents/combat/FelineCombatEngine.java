@@ -414,9 +414,8 @@ public class FelineCombatEngine {
             if (isNekoNight(cat.level()) && victim instanceof net.minecraft.world.entity.monster.Monster) {
                 // Hostile mobs have 25% extra resistance
                 damage *= 0.80F;
-                // Cats earn +50% enhanced energy flow and bonus XP
+                // Cats earn bonus Energy (XP gain is not implemented yet; see OVERHAUL_PLAN progression item)
                 FelineEnergyEngine.restoreEnergy(cat, 10);
-                cat.getPersistentData().putInt("KT_CombatXP", cat.getPersistentData().getInt("KT_CombatXP") + 2);
                 if (cat.level() instanceof ServerLevel sl) {
                     sl.sendParticles(ParticleTypes.SOUL, cat.getX(), cat.getY() + 0.6, cat.getZ(), 4, 0.2, 0.2, 0.2, 0.05);
                 }

@@ -35,7 +35,7 @@ public class SpiritCatnipItem extends Item {
             if (!cat.isInLove() && cat.getAge() == 0) {
                 if (!player.level().isClientSide) {
                     cat.setInLove(player);
-                    cat.getPersistentData().putBoolean("SpiritCatnipUsed", true);
+                    cat.setSpiritCatnipPrimed(true);
                     if (!player.getAbilities().instabuild) stack.shrink(1);
                     cat.playSound(SoundEvents.TOTEM_USE, 0.7F, 1.6F);
                     cat.playSound(SoundEvents.CAT_PURREOW, 1.0F, 1.2F);
