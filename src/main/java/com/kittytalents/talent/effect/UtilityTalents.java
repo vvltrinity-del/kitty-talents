@@ -44,6 +44,7 @@ final class UtilityTalents {
 
     /** Repels creepers and phantoms (CatCreeperWardenGoal). Mastery "Cat's Eyes": the owner nearby gets Night Vision. */
     static final class NightProwler implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 100; }
         @Override public void onTick(TalentContext ctx) {
             Player o = ctx.mastered() ? ctx.ownerWithin(16.0D) : null;
@@ -68,6 +69,7 @@ final class UtilityTalents {
 
     /** Fishing yields (Fisher job, bath, habitat). Mastery "Catch of the Day": a cooked fish appears in the pack every 5 minutes. */
     static final class FisherCat implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 6000; }
         @Override public void onTick(TalentContext ctx) {
             if (ctx.mastered()) ctx.cat.getCatPack().addItem(new ItemStack(Items.COOKED_COD));
@@ -76,6 +78,7 @@ final class UtilityTalents {
 
     /** Comfort/rest bonuses (CatComfortGoal). Mastery "Dream Weaver": a sleeping owner nearby regenerates. */
     static final class PillowCat implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 40; }
         @Override public void onTick(TalentContext ctx) {
             Player o = ctx.mastered() ? ctx.ownerWithin(8.0D) : null;
@@ -85,6 +88,7 @@ final class UtilityTalents {
 
     /** Warns of nearby monsters. Mastery "Sixth Sense": hostiles in range glow so the owner can see them through walls. */
     static final class WhiskerRadar implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 160; }
         @Override public void onTick(TalentContext ctx) {
             double r = 8.0D + ctx.rank * 4.0D;
@@ -174,6 +178,7 @@ final class UtilityTalents {
 
     /** Tool use (UtilityInteractAbility). Mastery "Master Craftscat": the equipped tool repairs itself. */
     static final class KittyTools implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 40; }
         @Override public void onTick(TalentContext ctx) {
             if (ctx.mastered()) TalentHelpers.repair(ctx.cat.getEquippedTool(), 1);
@@ -185,6 +190,7 @@ final class UtilityTalents {
      * (Fixed: the swim boost used to be applied twice per tick by two separate code paths, compounding.)
      */
     static final class AquaKitty implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 1; }
         @Override public void onTick(TalentContext ctx) {
             if (!ctx.cat.isInWater()) return;

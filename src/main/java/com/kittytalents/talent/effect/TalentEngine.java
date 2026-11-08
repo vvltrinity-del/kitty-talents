@@ -54,10 +54,15 @@ public final class TalentEngine {
     // ---------------------------------------------------------------------------------------------------------
 
     public static void tick(TalentedCat cat) {
+        tick(cat, false);
+    }
+
+    /** @param resting the cat is sitting or asleep: only {@link TalentEffect#worksWhileResting} effects run. */
+    public static void tick(TalentedCat cat, boolean resting) {
         long time = cat.level().getGameTime();
         for (Map.Entry<Talent, TalentEffect> e : EFFECTS.entrySet()) {
             int interval = e.getValue().tickInterval();
-            if (interval <= 0) continue;
+            if (interval <= 0 || (resting && !e.getValue().worksWhileResting())) continue;
             // Stagger by entity id so 100 cats don't all scan on the same tick.
             if ((time + cat.getId()) % interval != 0) continue;
             int rank = cat.getTalentLevel(e.getKey());

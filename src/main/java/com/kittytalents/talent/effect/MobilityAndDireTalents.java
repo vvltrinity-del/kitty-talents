@@ -91,6 +91,7 @@ final class MobilityAndDireTalents {
 
     /** Mining (Miner job, habitat yields). Mastery "Prospector": underground, the owner nearby gets Haste II. */
     static final class MoleCat implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 100; }
         @Override public void onTick(TalentContext ctx) {
             if (!ctx.mastered()) return;
@@ -123,6 +124,7 @@ final class MobilityAndDireTalents {
      * (Fixed: procs used to fire on any damage the cat caused, including its own AoE, now melee hits only.)
      */
     static final class AlchemyKitty implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 1600; }
         @Override public void onTick(TalentContext ctx) {
             Player o = ctx.ownerWithin(8.0D);

@@ -16,6 +16,12 @@ public interface TalentEffect {
     /** Ticks between {@link #onTick} calls; 0 = this talent has no periodic behavior. */
     default int tickInterval() { return 0; }
 
+    /**
+     * Whether {@link #onTick} also runs while the cat sits or sleeps. True for passive effects (owner auras, healing,
+     * self-repair, growth); false (default) for actions (attacks, knockback, teleporting, pulling, picking things up).
+     */
+    default boolean worksWhileResting() { return false; }
+
     /** Periodic behavior while the cat is awake and active. */
     default void onTick(TalentContext ctx) {}
 

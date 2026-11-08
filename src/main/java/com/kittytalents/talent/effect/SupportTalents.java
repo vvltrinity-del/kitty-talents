@@ -36,6 +36,7 @@ final class SupportTalents {
 
     /** Regenerates a hurt owner every 5 s (Absorption from rank 3). Mastery "Field Medic": also heals trusted players and the owner's pets. */
     static final class PurrMedic implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 100; }
         @Override public void onTick(TalentContext ctx) {
             boolean purred = false;
@@ -62,6 +63,7 @@ final class SupportTalents {
 
     /** Luck to nearby players (Regeneration from rank 3). Mastery "Fortune's Favorite": Luck +1 level and Regeneration II. */
     static final class LuckyPurr implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 100; }
         @Override public void onTick(TalentContext ctx) {
             for (Player p : ctx.cat.level().getEntitiesOfClass(Player.class, ctx.cat.getBoundingBox().inflate(6.0D + ctx.rank * 2.0D))) {
@@ -90,6 +92,7 @@ final class SupportTalents {
 
     /** Slower hunger drain (in TalentedCat / food helper). Mastery "Bottomless Belly": hunger never falls below half. */
     static final class HappyEater implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 100; }
         @Override public void onTick(TalentContext ctx) {
             if (ctx.mastered() && ctx.cat.getHunger() < 60) ctx.cat.setHunger(60);
@@ -98,6 +101,7 @@ final class SupportTalents {
 
     /** Hits may Weaken and Slow; near villagers the owner gets Hero of the Village. Mastery "Village Darling": villagers nearby restock trades. */
     static final class CharmWhiskers implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public void onHitDealt(TalentContext ctx, LivingEntity t, float dmg) {
             if (ctx.cat.getRandom().nextFloat() < 0.15F * ctx.rank) {
                 t.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, Math.max(0, ctx.rank - 1)));
@@ -136,6 +140,7 @@ final class SupportTalents {
 
     /** Unlocks the Farmer job (see FarmerJobGoal). Mastery "Harvest Moon": crops near the cat grow faster. */
     static final class GreenPaw implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 40; }
         @Override public void onTick(TalentContext ctx) {
             if (ctx.mastered()) TalentHelpers.growPlants(ctx.cat, 4, 6, s -> s.getBlock() instanceof CropBlock);
@@ -144,6 +149,7 @@ final class SupportTalents {
 
     /** Unlocks the Lumberjack job. Mastery "Forest Friend": saplings near the cat grow faster. */
     static final class TimberClaws implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 40; }
         @Override public void onTick(TalentContext ctx) {
             if (ctx.mastered()) TalentHelpers.growPlants(ctx.cat, 5, 6, s -> s.getBlock() instanceof SaplingBlock);

@@ -24,6 +24,7 @@ final class DefenseTalents {
 
     /** Immune to fire, lava and hot floors. Mastery "Flameward": the owner nearby gets Fire Resistance. */
     static final class FireproofPaws implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public float modifyIncomingDamage(TalentContext ctx, DamageSource src, float amt) {
             if (src.is(DamageTypeTags.IS_FIRE) || src.is(DamageTypes.HOT_FLOOR) || src.is(DamageTypes.LAVA)) {
                 ctx.cat.clearFire();
@@ -54,6 +55,7 @@ final class DefenseTalents {
 
     /** +3 armor, +1.5 toughness, +15% knockback resistance per rank. Mastery "Living Armor": worn armor repairs itself (free Mending). */
     static final class CatArmor implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public void applyAttributes(TalentContext ctx, AttributeTotals t) {
             t.armor += ctx.rank * 3.0D;
             t.armorToughness += ctx.rank * 1.5D;
@@ -68,6 +70,7 @@ final class DefenseTalents {
 
     /** Puts out a burning owner and gives water breathing. Mastery "Tideborn": owner gets Conduit Power in water near the cat. */
     static final class WaterPelt implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 10; }
         @Override public void onTick(TalentContext ctx) {
             Player o = ctx.ownerWithin(8.0D);
@@ -85,6 +88,7 @@ final class DefenseTalents {
 
     /** Invisible in darkness or while crouching. Mastery "Umbral Cloak": the owner nearby is also hidden in darkness. */
     static final class ShadowPelt implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 20; }
         @Override public void onTick(TalentContext ctx) {
             int light = ctx.cat.level().getBrightness(LightLayer.BLOCK, ctx.cat.blockPosition());

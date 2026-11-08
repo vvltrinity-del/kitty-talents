@@ -1311,6 +1311,17 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         return hurt;
     }
 
+    /**
+     * Truly fire-immune (no burning, no flames, lava doesn't set it alight) with Fireproof Paws or a mastered
+     * Inferno Cat ("Phoenix"). Damage was already cancelled by the talents, but the cat still caught fire.
+     */
+    @Override
+    public boolean fireImmune() {
+        if (talents == null) return super.fireImmune(); // may be asked during construction
+        return super.fireImmune() || getTalentLevel(Talents.FIREPROOF_PAWS) > 0
+                || com.kittytalents.talent.effect.TalentEngine.isMastered(this, Talents.INFERNO_CAT);
+    }
+
     @Override
     public boolean hurt(DamageSource source, float amount) {
         // Void / kill damage must always apply, otherwise a downed cat below the world falls forever.
@@ -1583,6 +1594,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                         setHunger(getHunger() - 1);
                     }
                 }
+                // Passive talents (owner auras, healing, self-repair) keep working while the cat rests.
+                com.kittytalents.talent.effect.TalentEngine.tick(this, true);
             }
             return;
         }

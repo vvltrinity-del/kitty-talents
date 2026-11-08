@@ -43,6 +43,7 @@ final class CombatTalents {
 
     /** x(1.5 + 0.4/rank) damage to pests. Mastery "Exterminator": pests can't hurt the cat much (half damage, no poison). */
     static final class PestHunter implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public float modifyOutgoingDamage(TalentContext ctx, LivingEntity t, float dmg) {
             boolean pest = CatTargeting.isPest(t) || t instanceof net.minecraft.world.entity.ambient.Bat
                     || t instanceof net.minecraft.world.entity.monster.Phantom;
@@ -117,6 +118,7 @@ final class CombatTalents {
 
     /** +2.5 attack damage/rank; rank 3+ ignites targets. Mastery "Blademaster": the equipped weapon repairs itself. */
     static final class CatArmory implements TalentEffect {
+        @Override public boolean worksWhileResting() { return true; }
         @Override public void applyAttributes(TalentContext ctx, AttributeTotals t) {
             t.attackDamage += ctx.rank * 2.5D;
         }

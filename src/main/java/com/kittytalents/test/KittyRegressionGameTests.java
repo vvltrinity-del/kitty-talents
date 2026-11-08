@@ -262,4 +262,48 @@ public class KittyRegressionGameTests {
         h.assertTrue(markers.get().size() == 1, "Reloading must not add the goal again: " + markers.get());
         h.succeed();
     }
+
+    /** Inferno Cat mastery "Phoenix": a rank-5 cat takes no fire damage of any kind (playtest report). */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testInfernoMasteryMakesCatFireImmune(GameTestHelper h) {
+        TalentedCat c = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
+        c.setTame(true);
+        c.setCatMode(CatMode.STAY);
+        var ds = h.getLevel().damageSources();
+        c.setTalentLevel(Talents.INFERNO_CAT, Talents.INFERNO_CAT.getMaxLevel() - 1);
+        float hp = c.getHealth();
+        c.hurt(ds.onFire(), 2.0F);
+        h.assertTrue(c.getHealth() < hp, "Below max rank fire still hurts");
+        c.setTalentLevel(Talents.INFERNO_CAT, Talents.INFERNO_CAT.getMaxLevel());
+        StringBuilder hurtBy = new StringBuilder();
+        for (var src : java.util.List.of(ds.onFire(), ds.inFire(), ds.lava(), ds.hotFloor())) {
+            c.invulnerableTime = 0;
+            float before = c.getHealth();
+            c.hurt(src, 3.0F);
+            if (c.getHealth() < before) hurtBy.append(src.getMsgId()).append(' ');
+        }
+        h.assertTrue(hurtBy.length() == 0, "Phoenix cat was hurt by: " + hurtBy);
+        // Truly fire-immune: it doesn't catch fire either.
+        h.assertTrue(c.fireImmune(), "Phoenix cat should be fire immune");
+        c.setSecondsOnFire(5);
+        h.runAfterDelay(5, () -> {
+            h.assertTrue(!c.isOnFire(), "Phoenix cat should not stay on fire");
+            h.succeed();
+        });
+    }
+
+    /** Passive talents keep working while the cat sits (playtest: Flameward did nothing for a sitting cat). */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void testPassiveTalentsWorkWhileSitting(GameTestHelper h) {
+        var fp = joinFakeOwner(h, new BlockPos(3, 2, 2));
+        TalentedCat c = ownedCat(h, fp, new BlockPos(2, 2, 2));
+        c.setTalentLevel(Talents.FIREPROOF_PAWS, Talents.FIREPROOF_PAWS.getMaxLevel());
+        c.setOrderedToSit(true);
+        h.succeedWhen(() -> {
+            h.assertTrue(c.isOrderedToSit(), "cat must stay sitting");
+            h.assertTrue(fp.hasEffect(net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE),
+                    "Flameward should give the owner Fire Resistance while the cat sits");
+            leave(h, fp);
+        });
+    }
 }
