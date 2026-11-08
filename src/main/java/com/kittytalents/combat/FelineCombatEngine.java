@@ -47,13 +47,6 @@ public class FelineCombatEngine {
         public float getYawOffset() { return yawOffset; }
     }
 
-    private static final String KEY_DODGE_END = "KT_DodgeEnd";
-    private static final String KEY_PERFECT_DODGE_END = "KT_PerfectDodgeEnd";
-    private static final String KEY_COMBO_STEP = "KT_ComboStep";
-    private static final String KEY_COMBO_EXPIRY = "KT_ComboExpiry";
-    private static final String KEY_LAST_ATTACK_TIME = "KT_LastAttackTime";
-    private static final String KEY_POUNCE_ACTIVE = "KT_PounceActive";
-    private static final String KEY_POUNCE_START = "KT_PounceStart";
 
     /**
      * Executes a directional 4-way dodge consuming energy and granting brief invulnerability.
@@ -72,12 +65,11 @@ public class FelineCombatEngine {
         }
 
         long gameTime = cat.level().getGameTime();
-        CompoundTag data = cat.getPersistentData();
 
         // 12 ticks of dodge invulnerability (0.6s)
-        data.putLong(KEY_DODGE_END, gameTime + 12);
+        cat.combat().dodgeEnd = gameTime + 12;
         // First 6 ticks are the Perfect Dodge window (0.3s)
-        data.putLong(KEY_PERFECT_DODGE_END, gameTime + 6);
+        cat.combat().perfectDodgeEnd = gameTime + 6;
 
         // Directional impulse vector
         float targetYaw = cat.getYRot() + direction.getYawOffset();
@@ -136,9 +128,8 @@ public class FelineCombatEngine {
         cat.setDeltaMovement(horizNorm.x * horizSpeed, vertSpeed, horizNorm.z * horizSpeed);
         cat.hasImpulse = true;
 
-        CompoundTag data = cat.getPersistentData();
-        data.putBoolean(KEY_POUNCE_ACTIVE, true);
-        data.putLong(KEY_POUNCE_START, cat.level().getGameTime());
+        cat.combat().pounceActive = true;
+        cat.combat().pounceStart = cat.level().getGameTime();
 
         cat.playSound(ModSounds.CAT_POUNCE_LAUNCH.get(), 1.0F, 1.2F);
         if (cat.level() instanceof ServerLevel sl) {
@@ -152,12 +143,11 @@ public class FelineCombatEngine {
      * Resolves landing impact of Pounce 2.0 physics arc.
      */
     private static void checkPounceLanding(TalentedCat cat) {
-        CompoundTag data = cat.getPersistentData();
-        if (!data.getBoolean(KEY_POUNCE_ACTIVE)) return;
+        if (!cat.combat().pounceActive) return;
 
-        long elapsed = cat.level().getGameTime() - data.getLong(KEY_POUNCE_START);
+        long elapsed = cat.level().getGameTime() - cat.combat().pounceStart;
         if (elapsed > 4 && (cat.onGround() || cat.verticalCollision || elapsed > 40)) {
-            data.putBoolean(KEY_POUNCE_ACTIVE, false);
+            cat.combat().pounceActive = false;
 
             int pounceTalent = Math.max(1, cat.getTalentLevel(Talents.POUNCE));
             double radius = 2.5 + (pounceTalent * 0.35);
@@ -195,14 +185,13 @@ public class FelineCombatEngine {
     public static void onLivingAttack(LivingAttackEvent event) {
         if (event.getEntity() instanceof TalentedCat cat) {
             long gameTime = cat.level().getGameTime();
-            CompoundTag data = cat.getPersistentData();
 
-            long dodgeEnd = data.getLong(KEY_DODGE_END);
+            long dodgeEnd = cat.combat().dodgeEnd;
             if (gameTime <= dodgeEnd) {
                 // Dodged!
                 event.setCanceled(true);
 
-                long perfectDodgeEnd = data.getLong(KEY_PERFECT_DODGE_END);
+                long perfectDodgeEnd = cat.combat().perfectDodgeEnd;
                 if (gameTime <= perfectDodgeEnd) {
                     // PERFECT DODGE!
                     handlePerfectDodge(cat, event.getSource().getEntity());
@@ -301,12 +290,11 @@ public class FelineCombatEngine {
         if (attackerEntity instanceof TalentedCat cat && !cat.level().isClientSide) {
             float damage = event.getAmount();
             long gameTime = cat.level().getGameTime();
-            CompoundTag data = cat.getPersistentData();
 
             // A) Combo System (R6)
-            long lastAttack = data.getLong(KEY_LAST_ATTACK_TIME);
-            long comboExpiry = data.getLong(KEY_COMBO_EXPIRY);
-            int step = data.getInt(KEY_COMBO_STEP);
+            long lastAttack = cat.combat().lastAttackTime;
+            long comboExpiry = cat.combat().comboExpiry;
+            int step = cat.combat().comboStep;
 
             boolean inComboWindow = (gameTime <= comboExpiry && gameTime >= lastAttack + 4);
             if (inComboWindow) {
@@ -315,9 +303,9 @@ public class FelineCombatEngine {
                 step = 1;
             }
 
-            data.putInt(KEY_COMBO_STEP, step);
-            data.putLong(KEY_LAST_ATTACK_TIME, gameTime);
-            data.putLong(KEY_COMBO_EXPIRY, gameTime + 35); // 1.75s combo window
+            cat.combat().comboStep = step;
+            cat.combat().lastAttackTime = gameTime;
+            cat.combat().comboExpiry = gameTime + 35; // 1.75s combo window
 
             // Check for Perfect Attack Timing Window (between 8 and 18 ticks)
             boolean perfectTiming = inComboWindow && (gameTime - lastAttack >= 8 && gameTime - lastAttack <= 18);

@@ -1,5 +1,10 @@
 package com.kittytalents.entity;
 
+import com.kittytalents.core.component.CatCombatState;
+import com.kittytalents.core.component.CatEquipment;
+import com.kittytalents.core.component.CatStatistics;
+import com.kittytalents.core.component.CatTalentLevels;
+import com.kittytalents.core.component.CatTrust;
 import com.kittytalents.core.persist.CatSchema;
 
 import com.kittytalents.config.KittyTalentsConfig;
@@ -127,21 +132,23 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     private float twineXxa = 0.0F;
     private float twineZza = 0.0F;
 
-    private final Map<String, Integer> talentLevels = new HashMap<>();
-    private final SimpleContainer catPack = new SimpleContainer(27);
-    private final SimpleContainer ammoPouch = new SimpleContainer(9);
+    // ---- Components (Phase 2). The public accessors below are thin delegates kept for API compatibility. ----
+    private final CatTalentLevels talents = new CatTalentLevels();
+    private final CatEquipment equipment = new CatEquipment();
+    private final CatStatistics stats = new CatStatistics();
+    private final CatTrust trust = new CatTrust();
+    private final CatCombatState combat = new CatCombatState();
+
+    public CatTalentLevels talents() { return talents; }
+    public CatEquipment equipment() { return equipment; }
+    public CatStatistics stats() { return stats; }
+    public CatTrust trust() { return trust; }
+    public CatCombatState combat() { return combat; }
+
     private final com.kittytalents.work.JobData jobData = new com.kittytalents.work.JobData();
     private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> catItemCapability =
             net.minecraftforge.common.util.LazyOptional.of(() -> new com.kittytalents.work.CatAmmoAndPackItemHandler(this));
 
-    private ItemStack equippedWeapon = ItemStack.EMPTY;
-    private ItemStack equippedTool = ItemStack.EMPTY;
-    private ItemStack equippedHelmet = ItemStack.EMPTY;
-    private ItemStack equippedChest = ItemStack.EMPTY;
-    private ItemStack equippedLegs = ItemStack.EMPTY;
-    private ItemStack equippedBoots = ItemStack.EMPTY;
-    private ItemStack equippedAccessory = ItemStack.EMPTY;
-    private final ItemStack[] cosmeticSlots = new ItemStack[] { ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY };
 
     @Nullable
     private BlockPos homeBedPos = null;
@@ -158,44 +165,25 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     private int galeCooldown = 0;
     private int catastropheCooldown = 0;
     private int quietUntilTick = 0;
-    private final Map<UUID, String> trustedPlayers = new LinkedHashMap<>();
 
-    // Companion Statistics
-    private int totalKills = 0;
-    private int hostileKills = 0;
-    private int passiveKills = 0;
-    private float damageDealt = 0.0F;
-    private float damageTaken = 0.0F;
-    private double distanceTraveled = 0.0D;
-    private int foodConsumed = 0;
 
-    // RPG System
-    private com.kittytalents.combat.CatRole catRole = com.kittytalents.combat.CatRole.NONE;
-    private com.kittytalents.combat.FelineElement primaryElement = com.kittytalents.combat.FelineElement.PHYSICAL;
-    private com.kittytalents.combat.FelineElement secondaryElement = com.kittytalents.combat.FelineElement.PHYSICAL;
-    private String abilitySlot1 = "pounce";
-    private String abilitySlot2 = "feline_hiss";
-    private String abilitySlot3 = "healing_purr";
-    private String abilityUltimate = "catnip_frenzy";
     private int energy = 100;
 
-    public com.kittytalents.combat.CatRole getCatRole() { return catRole; }
-    public void setCatRole(com.kittytalents.combat.CatRole role) { this.catRole = role; }
-    
-    public com.kittytalents.combat.FelineElement getPrimaryElement() { return primaryElement; }
-    public void setPrimaryElement(com.kittytalents.combat.FelineElement element) { this.primaryElement = element; }
-    
-    public com.kittytalents.combat.FelineElement getSecondaryElement() { return secondaryElement; }
-    public void setSecondaryElement(com.kittytalents.combat.FelineElement element) { this.secondaryElement = element; }
+    public com.kittytalents.combat.CatRole getCatRole() { return combat.getRole(); }
+    public void setCatRole(com.kittytalents.combat.CatRole role) { combat.setRole(role); }
+    public com.kittytalents.combat.FelineElement getPrimaryElement() { return combat.getPrimaryElement(); }
+    public void setPrimaryElement(com.kittytalents.combat.FelineElement element) { combat.setPrimaryElement(element); }
+    public com.kittytalents.combat.FelineElement getSecondaryElement() { return combat.getSecondaryElement(); }
+    public void setSecondaryElement(com.kittytalents.combat.FelineElement element) { combat.setSecondaryElement(element); }
 
-    public String getAbilitySlot1() { return (abilitySlot1 == null || abilitySlot1.isEmpty()) ? "pounce" : abilitySlot1; }
-    public void setAbilitySlot1(String slot) { this.abilitySlot1 = (slot == null || slot.isEmpty()) ? "pounce" : slot; }
-    public String getAbilitySlot2() { return (abilitySlot2 == null || abilitySlot2.isEmpty()) ? "feline_hiss" : abilitySlot2; }
-    public void setAbilitySlot2(String slot) { this.abilitySlot2 = (slot == null || slot.isEmpty()) ? "feline_hiss" : slot; }
-    public String getAbilitySlot3() { return (abilitySlot3 == null || abilitySlot3.isEmpty()) ? "healing_purr" : abilitySlot3; }
-    public void setAbilitySlot3(String slot) { this.abilitySlot3 = (slot == null || slot.isEmpty()) ? "healing_purr" : slot; }
-    public String getAbilityUltimate() { return (abilityUltimate == null || abilityUltimate.isEmpty()) ? "catnip_frenzy" : abilityUltimate; }
-    public void setAbilityUltimate(String slot) { this.abilityUltimate = (slot == null || slot.isEmpty()) ? "catnip_frenzy" : slot; }
+    public String getAbilitySlot1() { return combat.getSlot1(); }
+    public void setAbilitySlot1(String slot) { combat.setSlot1(slot); }
+    public String getAbilitySlot2() { return combat.getSlot2(); }
+    public void setAbilitySlot2(String slot) { combat.setSlot2(slot); }
+    public String getAbilitySlot3() { return combat.getSlot3(); }
+    public void setAbilitySlot3(String slot) { combat.setSlot3(slot); }
+    public String getAbilityUltimate() { return combat.getUltimate(); }
+    public void setAbilityUltimate(String slot) { combat.setUltimate(slot); }
 
     public int getEnergy() { return this.entityData != null ? this.entityData.get(DATA_ENERGY) : energy; }
     public int getMaxEnergy() { return com.kittytalents.combat.FelineEnergyEngine.getMaxEnergy(this); }
@@ -206,25 +194,15 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         }
     }
 
-    private int outOfCombatTicks = 100;
-    public int getOutOfCombatTicks() { return outOfCombatTicks; }
-    public void setOutOfCombatTicks(int val) { this.outOfCombatTicks = val; }
-    public void incrementOutOfCombatTicks() { this.outOfCombatTicks++; }
-    public void resetOutOfCombatTicks() { this.outOfCombatTicks = 0; }
+    public int getOutOfCombatTicks() { return combat.outOfCombatTicks; }
+    public void setOutOfCombatTicks(int val) { combat.outOfCombatTicks = val; }
+    public void incrementOutOfCombatTicks() { combat.outOfCombatTicks++; }
+    public void resetOutOfCombatTicks() { combat.outOfCombatTicks = 0; }
 
-    /** Game time at which the Nine Lives instant revive is available again. */
-    private long nineLivesReadyAt = 0L;
-    public long getNineLivesReadyAt() { return nineLivesReadyAt; }
+    public long getNineLivesReadyAt() { return combat.getNineLivesReadyAt(); }
 
-    /** Ability id (lower-case) -> game time of last cast. Saved under {@link CatSchema#KEY_ABILITY_COOLDOWNS}. */
-    private final Map<String, Long> abilityCooldowns = new HashMap<>();
-    public long getAbilityCooldown(String id) {
-        if (id == null) return 0L;
-        return abilityCooldowns.getOrDefault(id.toLowerCase(java.util.Locale.ROOT), 0L);
-    }
-    public void setAbilityCooldown(String id, long gameTime) {
-        if (id != null) abilityCooldowns.put(id.toLowerCase(java.util.Locale.ROOT), gameTime);
-    }
+    public long getAbilityCooldown(String id) { return combat.getCooldown(id); }
+    public void setAbilityCooldown(String id, long gameTime) { combat.setCooldown(id, gameTime); }
 
     /** Fed Spirit Catnip and not yet bred: the next offspring is guaranteed Nekomata. */
     private boolean spiritCatnipPrimed = false;
@@ -232,20 +210,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void setSpiritCatnipPrimed(boolean primed) { this.spiritCatnipPrimed = primed; }
 
     /** Transient (not saved): last Twine right-click pounce, for its 1-second cooldown. */
-    private long lastTwinePounceTick = 0L;
-    public long getLastTwinePounceTick() { return lastTwinePounceTick; }
-    public void setLastTwinePounceTick(long tick) { this.lastTwinePounceTick = tick; }
+    public long getLastTwinePounceTick() { return combat.lastTwinePounceTick; }
+    public void setLastTwinePounceTick(long tick) { combat.lastTwinePounceTick = tick; }
 
-    private ItemStack carriedToy = ItemStack.EMPTY;
-    public ItemStack getCarriedToy() { return carriedToy; }
-    public void setCarriedToy(ItemStack toy) { this.carriedToy = toy != null ? toy.copy() : ItemStack.EMPTY; }
-    private int blocksMined = 0;
-    private int pouncesPerformed = 0;
-    private int itemsRetrieved = 0;
-    private int creepersScared = 0;
-    private int healingProvided = 0;
-    private int timesPet = 0;
-    private int frenzyActivations = 0;
+    public ItemStack getCarriedToy() { return equipment.getCarriedToy(); }
+    public void setCarriedToy(ItemStack toy) { equipment.setCarriedToy(toy); }
 
     public TalentedCat(EntityType<? extends Cat> entityType, Level level) {
         super(entityType, level);
@@ -450,7 +419,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     public void increaseHunger(int amount) {
         setHunger(getHunger() + amount);
-        this.foodConsumed += Math.max(1, amount / 10);
+        stats.addFoodConsumed(Math.max(1, amount / 10));
     }
 
     private float satiety = 0.0F;
@@ -546,12 +515,12 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         ItemStack torchStack = ItemStack.EMPTY;
         int packSlot = -1;
         boolean inToolSlot = false;
-        if (!equippedTool.isEmpty() && (equippedTool.is(net.minecraft.world.item.Items.TORCH) || equippedTool.is(net.minecraft.world.item.Items.SOUL_TORCH))) {
-            torchStack = equippedTool;
+        if (!getEquippedTool().isEmpty() && (getEquippedTool().is(net.minecraft.world.item.Items.TORCH) || getEquippedTool().is(net.minecraft.world.item.Items.SOUL_TORCH))) {
+            torchStack = getEquippedTool();
             inToolSlot = true;
         } else {
-            for (int i = 0; i < catPack.getContainerSize(); i++) {
-                ItemStack st = catPack.getItem(i);
+            for (int i = 0; i < equipment.pack().getContainerSize(); i++) {
+                ItemStack st = equipment.pack().getItem(i);
                 if (!st.isEmpty() && (st.is(net.minecraft.world.item.Items.TORCH) || st.is(net.minecraft.world.item.Items.SOUL_TORCH))) {
                     torchStack = st;
                     packSlot = i;
@@ -585,10 +554,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 sl.sendParticles(ParticleTypes.FLAME, targetPos.getX() + 0.5D, targetPos.getY() + 0.6D, targetPos.getZ() + 0.5D, 5, 0.1D, 0.1D, 0.1D, 0.02D);
             }
             if (inToolSlot) {
-                equippedTool.shrink(1);
-                if (equippedTool.isEmpty()) setEquippedTool(ItemStack.EMPTY);
+                getEquippedTool().shrink(1);
+                if (getEquippedTool().isEmpty()) setEquippedTool(ItemStack.EMPTY);
             } else if (packSlot >= 0) {
-                catPack.removeItem(packSlot, 1);
+                equipment.pack().removeItem(packSlot, 1);
             }
             return true;
         }
@@ -596,14 +565,14 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     public boolean tryUseEquippedTool() {
-        if (this.isIncapacitated() || equippedTool.isEmpty()) return false;
+        if (this.isIncapacitated() || getEquippedTool().isEmpty()) return false;
         BlockPos frontPos = this.blockPosition().relative(this.getDirection());
         net.minecraft.world.level.block.state.BlockState state = this.level().getBlockState(frontPos);
         if (!state.isAir()) {
-            if (equippedTool.getItem() instanceof net.minecraft.world.item.DiggerItem digger) {
+            if (getEquippedTool().getItem() instanceof net.minecraft.world.item.DiggerItem digger) {
                 if (digger.isCorrectToolForDrops(state)) {
                     this.level().destroyBlock(frontPos, true, this);
-                    equippedTool.hurtAndBreak(1, this, c -> {
+                    getEquippedTool().hurtAndBreak(1, this, c -> {
                         c.playSound(SoundEvents.ITEM_BREAK, 1.0F, 1.0F);
                         c.setEquippedTool(ItemStack.EMPTY);
                     });
@@ -774,28 +743,29 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.set(DATA_DIRE_AWAKENED, val);
     }
 
+    /** Standard talents (Talent#isStandard) are free at this rank on every cat. */
+    public static final int STANDARD_TALENT_BASELINE = 5;
+
     public int getTalentLevel(Talent talent) {
-        if (talent != null && talent.isStandard()) {
-            return Math.max(1, talentLevels.getOrDefault(talent.getId(), 5));
+        if (talent == null) return 0;
+        if (talent.isStandard()) {
+            return Math.max(1, talents.getOrDefault(talent.getId(), STANDARD_TALENT_BASELINE));
         }
-        return talentLevels.getOrDefault(talent.getId(), 0);
+        return talents.getOrDefault(talent.getId(), 0);
     }
 
     public void setAllTalentLevels(Map<String, Integer> levels) {
-        this.talentLevels.clear();
-        if (levels != null) {
-            this.talentLevels.putAll(levels);
-        }
+        talents.replaceAll(levels);
     }
 
     public Map<String, Integer> getAllTalentLevels() {
-        return Collections.unmodifiableMap(this.talentLevels);
+        return talents.view();
     }
 
     public void syncTalents(ServerPlayer player) {
         if (!this.level().isClientSide && player != null) {
             com.kittytalents.network.PacketSyncTalents packet =
-                    new com.kittytalents.network.PacketSyncTalents(this.getId(), this.getSkillPoints(), this.talentLevels);
+                    new com.kittytalents.network.PacketSyncTalents(this.getId(), this.getSkillPoints(), talents.view());
             PacketHandler.sendToPlayer(packet, player);
         }
     }
@@ -803,7 +773,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void syncTalents() {
         if (!this.level().isClientSide) {
             com.kittytalents.network.PacketSyncTalents packet =
-                    new com.kittytalents.network.PacketSyncTalents(this.getId(), this.getSkillPoints(), this.talentLevels);
+                    new com.kittytalents.network.PacketSyncTalents(this.getId(), this.getSkillPoints(), talents.view());
             PacketHandler.INSTANCE.send(
                     PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> this),
                     packet
@@ -812,7 +782,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     public void setTalentLevel(Talent talent, int level) {
-        talentLevels.put(talent.getId(), Math.max(0, Math.min(talent.getMaxLevel(), level)));
+        talents.set(talent.getId(), Math.min(talent.getMaxLevel(), level));
         updateAttributes();
         this.refreshDimensions();
         syncTalents();
@@ -854,7 +824,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         int refundedPoints = 0;
         for (Talent talent : Talents.getAll()) {
             int lvl = getTalentLevel(talent);
-            for (int r = 1; r <= lvl; r++) {
+            // Standard talents are free up to the baseline; refunding those ranks minted free skill points every respec.
+            int freeRanks = talent.isStandard() ? STANDARD_TALENT_BASELINE : 0;
+            for (int r = freeRanks + 1; r <= lvl; r++) {
                 if (talent.requiresDireTreat()) {
                     refundedPoints += r * 3;
                 } else if (talent.getMaxLevel() <= 5) {
@@ -866,7 +838,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 }
             }
         }
-        talentLevels.clear();
+        talents.clear();
         setSkillPoints(getSkillPoints() + refundedPoints);
         updateAttributes();
         this.refreshDimensions();
@@ -880,47 +852,31 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     // Equipment, Tools & Accessories
-    public ItemStack getEquippedWeapon() { return equippedWeapon; }
+    public ItemStack getEquippedWeapon() { return equipment.get(CatEquipment.Slot.WEAPON); }
     public void setEquippedWeapon(ItemStack stack) {
-        this.equippedWeapon = stack.copy();
+        equipment.set(CatEquipment.Slot.WEAPON, stack);
         updateAttributes();
         syncEquipment();
-        if (!this.level().isClientSide && com.kittytalents.compat.tacz.TacZCompat.isGun(this.equippedWeapon)) {
-            com.kittytalents.compat.tacz.TacZCompat.onGunEquipped(this, this.equippedWeapon);
+        ItemStack weapon = getEquippedWeapon();
+        if (!this.level().isClientSide && com.kittytalents.compat.tacz.TacZCompat.isGun(weapon)) {
+            com.kittytalents.compat.tacz.TacZCompat.onGunEquipped(this, weapon);
         }
     }
-    public void setEquippedWeaponClient(ItemStack stack) { this.equippedWeapon = stack.copy(); updateAttributes(); }
+    public void setEquippedWeaponClient(ItemStack stack) { equipment.set(CatEquipment.Slot.WEAPON, stack); updateAttributes(); }
 
-    public ItemStack getEquippedTool() { return equippedTool; }
-    public void setEquippedTool(ItemStack stack) { this.equippedTool = stack.copy(); syncEquipment(); }
-    public void setEquippedToolClient(ItemStack stack) { this.equippedTool = stack.copy(); }
+    public ItemStack getEquippedTool() { return equipment.get(CatEquipment.Slot.TOOL); }
+    public void setEquippedTool(ItemStack stack) { equipment.set(CatEquipment.Slot.TOOL, stack); syncEquipment(); }
+    public void setEquippedToolClient(ItemStack stack) { equipment.set(CatEquipment.Slot.TOOL, stack); }
 
-    public ItemStack getArmorSlotItem(int slot) {
-        return switch (slot) {
-            case 1 -> equippedHelmet;
-            case 2 -> equippedChest;
-            case 3 -> equippedLegs;
-            case 4 -> equippedBoots;
-            default -> ItemStack.EMPTY;
-        };
-    }
+    /** @param slot 1 = helmet, 2 = chest, 3 = legs, 4 = boots */
+    public ItemStack getArmorSlotItem(int slot) { return equipment.get(CatEquipment.Slot.armor(slot)); }
     public void setArmorSlotItem(int slot, ItemStack stack) {
-        switch (slot) {
-            case 1 -> equippedHelmet = stack.copy();
-            case 2 -> equippedChest = stack.copy();
-            case 3 -> equippedLegs = stack.copy();
-            case 4 -> equippedBoots = stack.copy();
-        }
+        equipment.set(CatEquipment.Slot.armor(slot), stack);
         updateAttributes();
         syncEquipment();
     }
     public void setArmorSlotItemClient(int slot, ItemStack stack) {
-        switch (slot) {
-            case 1 -> equippedHelmet = stack.copy();
-            case 2 -> equippedChest = stack.copy();
-            case 3 -> equippedLegs = stack.copy();
-            case 4 -> equippedBoots = stack.copy();
-        }
+        equipment.set(CatEquipment.Slot.armor(slot), stack);
         updateAttributes();
     }
 
@@ -952,25 +908,15 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         }
     }
 
-    public ItemStack getEquippedAccessory() { return equippedAccessory; }
-    public void setEquippedAccessory(ItemStack stack) { this.equippedAccessory = stack.copy(); syncEquipment(); }
-    public void setEquippedAccessoryClient(ItemStack stack) { this.equippedAccessory = stack.copy(); }
+    public ItemStack getEquippedAccessory() { return equipment.get(CatEquipment.Slot.ACCESSORY); }
+    public void setEquippedAccessory(ItemStack stack) { equipment.set(CatEquipment.Slot.ACCESSORY, stack); syncEquipment(); }
+    public void setEquippedAccessoryClient(ItemStack stack) { equipment.set(CatEquipment.Slot.ACCESSORY, stack); }
 
-    public ItemStack getCosmeticSlot(int index) {
-        if (index >= 0 && index < cosmeticSlots.length) return cosmeticSlots[index];
-        return ItemStack.EMPTY;
-    }
+    public ItemStack getCosmeticSlot(int index) { return equipment.getCosmetic(index); }
     public void setCosmeticSlot(int index, ItemStack stack) {
-        if (index >= 0 && index < cosmeticSlots.length) {
-            cosmeticSlots[index] = stack.copy();
-            syncEquipment();
-        }
+        if (equipment.setCosmetic(index, stack)) syncEquipment();
     }
-    public void setCosmeticSlotClient(int index, ItemStack stack) {
-        if (index >= 0 && index < cosmeticSlots.length) {
-            cosmeticSlots[index] = stack.copy();
-        }
-    }
+    public void setCosmeticSlotClient(int index, ItemStack stack) { equipment.setCosmetic(index, stack); }
 
     public boolean isCosmeticsVisible() {
         return this.entityData.get(DATA_COSMETICS_VISIBLE);
@@ -991,16 +937,16 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (!this.level().isClientSide) {
             PacketSyncCatEquipment packet = new PacketSyncCatEquipment(
                     this.getId(),
-                    this.equippedWeapon,
-                    this.equippedTool,
-                    this.equippedHelmet,
-                    this.equippedChest,
-                    this.equippedLegs,
-                    this.equippedBoots,
-                    this.equippedAccessory,
-                    this.cosmeticSlots[0],
-                    this.cosmeticSlots[1],
-                    this.cosmeticSlots[2],
+                    getEquippedWeapon(),
+                    getEquippedTool(),
+                    getArmorSlotItem(1),
+                    getArmorSlotItem(2),
+                    getArmorSlotItem(3),
+                    getArmorSlotItem(4),
+                    getEquippedAccessory(),
+                    equipment.getCosmetic(0),
+                    equipment.getCosmetic(1),
+                    equipment.getCosmetic(2),
                     this.isCosmeticsVisible()
             );
             PacketHandler.INSTANCE.send(
@@ -1014,16 +960,16 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (!this.level().isClientSide && player != null) {
             PacketSyncCatEquipment packet = new PacketSyncCatEquipment(
                     this.getId(),
-                    this.equippedWeapon,
-                    this.equippedTool,
-                    this.equippedHelmet,
-                    this.equippedChest,
-                    this.equippedLegs,
-                    this.equippedBoots,
-                    this.equippedAccessory,
-                    this.cosmeticSlots[0],
-                    this.cosmeticSlots[1],
-                    this.cosmeticSlots[2],
+                    getEquippedWeapon(),
+                    getEquippedTool(),
+                    getArmorSlotItem(1),
+                    getArmorSlotItem(2),
+                    getArmorSlotItem(3),
+                    getArmorSlotItem(4),
+                    getEquippedAccessory(),
+                    equipment.getCosmetic(0),
+                    equipment.getCosmetic(1),
+                    equipment.getCosmetic(2),
                     this.isCosmeticsVisible()
             );
             PacketHandler.sendToPlayer(packet, player);
@@ -1060,7 +1006,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                     ItemStack old = current.copy();
                     setArmorSlotItem(slot, stack.split(1));
                     if (player != null) player.getInventory().add(old);
-                    else catPack.addItem(old);
+                    else equipment.pack().addItem(old);
                     updateAttributes();
                     syncEquipment();
                     playSound(SoundEvents.ARMOR_EQUIP_GENERIC, 1.0F, 1.0F);
@@ -1098,7 +1044,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 playSound(SoundEvents.ARMOR_EQUIP_LEATHER, 1.0F, 1.0F);
                 return true;
             }
-            for (int i = 0; i < cosmeticSlots.length; i++) {
+            for (int i = 0; i < CatEquipment.COSMETIC_SLOTS; i++) {
                 if (getCosmeticSlot(i).isEmpty()) {
                     setCosmeticSlot(i, stack.split(1));
                     playSound(SoundEvents.ARMOR_EQUIP_LEATHER, 1.0F, 1.0F);
@@ -1109,7 +1055,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         // Cosmetics (Collars, Capes, etc.)
         if (stack.getItem() instanceof com.kittytalents.item.CatCollarItem) {
-            for (int i = 0; i < cosmeticSlots.length; i++) {
+            for (int i = 0; i < CatEquipment.COSMETIC_SLOTS; i++) {
                 if (getCosmeticSlot(i).isEmpty()) {
                     setCosmeticSlot(i, stack.split(1));
                     playSound(SoundEvents.ARMOR_EQUIP_LEATHER, 1.0F, 1.0F);
@@ -1130,27 +1076,26 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void setQuietUntil(int tick) { this.quietUntilTick = tick; }
 
     // Player Trust System (shared co-ownership)
-    public Map<UUID, String> getTrustedPlayers() { return trustedPlayers; }
-    public boolean isTrusted(UUID id) { return id != null && trustedPlayers.containsKey(id); }
+    public Map<UUID, String> getTrustedPlayers() { return trust.view(); }
+    public boolean isTrusted(UUID id) { return trust.contains(id); }
     public boolean isTrusted(Player player) { return player != null && isTrusted(player.getUUID()); }
-    public void addTrustedPlayer(UUID id, String name) { trustedPlayers.put(id, name); }
-    public void removeTrustedPlayer(UUID id) { trustedPlayers.remove(id); }
+    public void addTrustedPlayer(UUID id, String name) { trust.add(id, name); }
+    public void removeTrustedPlayer(UUID id) { trust.remove(id); }
     public void setTrustedPlayers(Map<UUID, String> players) {
-        trustedPlayers.clear();
-        trustedPlayers.putAll(players);
+        trust.replaceAll(players);
     }
     public void syncTrust() {
         if (!this.level().isClientSide) {
             PacketHandler.INSTANCE.send(
                     PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> this),
-                    new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), this.trustedPlayers)
+                    new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view())
             );
         }
     }
     public void syncTrust(ServerPlayer player) {
         if (!this.level().isClientSide && player != null) {
             PacketHandler.sendToPlayer(
-                    new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), this.trustedPlayers),
+                    new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view()),
                     player
             );
         }
@@ -1165,25 +1110,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         return super.isOwnedBy(entity) || (entity instanceof Player p && isTrusted(p));
     }
 
-    public void resetStatistics() {
-        this.totalKills = 0;
-        this.hostileKills = 0;
-        this.passiveKills = 0;
-        this.damageDealt = 0.0F;
-        this.damageTaken = 0.0F;
-        this.distanceTraveled = 0.0D;
-        this.foodConsumed = 0;
-        this.blocksMined = 0;
-        this.pouncesPerformed = 0;
-        this.itemsRetrieved = 0;
-        this.creepersScared = 0;
-        this.healingProvided = 0;
-        this.timesPet = 0;
-        this.frenzyActivations = 0;
-    }
+    public void resetStatistics() { stats.reset(); }
 
-    public SimpleContainer getCatPack() { return catPack; }
-    public SimpleContainer getAmmoPouch() { return ammoPouch; }
+    public SimpleContainer getCatPack() { return equipment.pack(); }
+    public SimpleContainer getAmmoPouch() { return equipment.ammoPouch(); }
     public com.kittytalents.work.JobData getJobData() { return jobData; }
 
     public com.kittytalents.work.CatJob getCatJob() {
@@ -1335,23 +1265,23 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             this.playSound(SoundEvents.RAVAGER_ATTACK, 0.6F, 1.6F);
         }
 
-        if (!equippedWeapon.isEmpty()) {
+        if (!getEquippedWeapon().isEmpty()) {
             damage += 4.0F;
             if (entity instanceof LivingEntity livingTarget) {
-                damage += net.minecraft.world.item.enchantment.EnchantmentHelper.getDamageBonus(equippedWeapon, livingTarget.getMobType());
-                int fireAspect = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT, equippedWeapon);
+                damage += net.minecraft.world.item.enchantment.EnchantmentHelper.getDamageBonus(getEquippedWeapon(), livingTarget.getMobType());
+                int fireAspect = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT, getEquippedWeapon());
                 if (fireAspect > 0) {
                     livingTarget.setSecondsOnFire(fireAspect * 4);
                 }
-                int knockback = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(net.minecraft.world.item.enchantment.Enchantments.KNOCKBACK, equippedWeapon);
+                int knockback = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(net.minecraft.world.item.enchantment.Enchantments.KNOCKBACK, getEquippedWeapon());
                 if (knockback > 0) {
                     livingTarget.knockback(knockback * 0.5F, (double) net.minecraft.util.Mth.sin(this.getYRot() * ((float) Math.PI / 180F)), (double) (-net.minecraft.util.Mth.cos(this.getYRot() * ((float) Math.PI / 180F))));
                 }
             }
             if (!this.level().isClientSide) {
-                equippedWeapon.hurtAndBreak(1, this, (cat) -> {
+                getEquippedWeapon().hurtAndBreak(1, this, (cat) -> {
                     this.playSound(SoundEvents.ITEM_BREAK, 1.0F, 1.0F);
-                    this.equippedWeapon = ItemStack.EMPTY;
+                    equipment.set(CatEquipment.Slot.WEAPON, ItemStack.EMPTY);
                     syncEquipment();
                 });
             }
@@ -1362,14 +1292,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         boolean hurt = entity.hurt(this.damageSources().mobAttack(this), damage);
         if (hurt) {
-            this.damageDealt += damage;
+            stats.addDamageDealt(damage);
             if (!entity.isAlive()) {
-                this.totalKills++;
-                if (entity instanceof Monster) {
-                    this.hostileKills++;
-                } else {
-                    this.passiveKills++;
-                }
+                stats.recordKill(entity instanceof Monster);
             }
             if (armoryLvl >= 3) {
                 entity.setSecondsOnFire(4 * (armoryLvl - 2));
@@ -1445,7 +1370,6 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             amount *= Math.max(0.4F, 1.0F - (guardianLvl * 0.12F));
         }
 
-        this.damageTaken += amount;
 
         int agility = getTalentLevel(Talents.FELINE_AGILITY);
         if (source.isIndirect() && agility > 0) {
@@ -1454,6 +1378,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 return false;
             }
         }
+        // Counted after the dodge roll so dodged hits are not recorded as damage taken.
+        stats.addDamageTaken(amount);
 
         // Damage armor durability
         if (!this.level().isClientSide && amount > 2.0F) {
@@ -1473,9 +1399,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             // Nine Lives instant totem revival
             int nineLives = getTalentLevel(Talents.NINE_LIVES);
             long now = this.level().getGameTime();
-            if (nineLives > 0 && !isIncapacitated() && now >= nineLivesReadyAt) {
+            if (nineLives > 0 && !isIncapacitated() && now >= combat.getNineLivesReadyAt()) {
                 // Instant revive recharges after (10 min - 1 min per rank); otherwise the cat goes down instead.
-                this.nineLivesReadyAt = now + Math.max(1200L, 12000L - 1200L * nineLives);
+                combat.setNineLivesReadyAt(now + Math.max(1200L, 12000L - 1200L * nineLives));
                 this.setHealth(Math.max(4.0F, this.getMaxHealth() * (0.18F * nineLives)));
                 this.level().broadcastEntityEvent(this, (byte) 35);
                 this.playSound(SoundEvents.TOTEM_USE, 1.0F, 1.0F);
@@ -1658,7 +1584,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         // Track distance
         double deltaMovementLength = Math.sqrt(getDeltaMovement().x * getDeltaMovement().x + getDeltaMovement().z * getDeltaMovement().z);
         if (deltaMovementLength > 0.05D) {
-            this.distanceTraveled += deltaMovementLength;
+            stats.addDistance(deltaMovementLength);
         }
 
         if (isIncapacitated()) {
@@ -2061,9 +1987,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         // Storing Gun Ammo into ammo pouch / backpack by right-clicking with ammo
         if (com.kittytalents.compat.tacz.TacZCompat.isAmmo(held) && (isOwnedBy(player) || isTrusted(player.getUUID()))) {
-            ItemStack remaining = this.ammoPouch.addItem(held.copy());
+            ItemStack remaining = equipment.ammoPouch().addItem(held.copy());
             if (!remaining.isEmpty() && getPackSlotCount() > 0) {
-                remaining = this.catPack.addItem(remaining);
+                remaining = equipment.pack().addItem(remaining);
             }
             int added = held.getCount() - remaining.getCount();
             if (added > 0) {
@@ -2249,7 +2175,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 this.getName()
         ), buf -> buf.writeInt(this.getId()));
         com.kittytalents.network.PacketHandler.sendToPlayer(
-                new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), this.trustedPlayers), player);
+                new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view()), player);
         syncEquipment(player);
         syncTalents(player);
     }
@@ -2266,27 +2192,27 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     // Statistics getters & helpers
-    public int getTotalKills() { return totalKills; }
-    public int getHostileKills() { return hostileKills; }
-    public int getPassiveKills() { return passiveKills; }
-    public float getDamageDealt() { return damageDealt; }
-    public float getDamageTaken() { return damageTaken; }
-    public double getDistanceTraveled() { return distanceTraveled; }
-    public int getFoodConsumed() { return foodConsumed; }
-    public int getBlocksMined() { return blocksMined; }
-    public void incrementBlocksMined() { blocksMined++; }
-    public int getPouncesPerformed() { return pouncesPerformed; }
-    public void incrementPounces() { pouncesPerformed++; }
-    public int getItemsRetrieved() { return itemsRetrieved; }
-    public void incrementItemsRetrieved() { itemsRetrieved++; }
-    public int getCreepersScared() { return creepersScared; }
-    public void incrementCreepersScared() { creepersScared++; }
-    public int getHealingProvided() { return healingProvided; }
-    public void addHealingProvided(int amount) { healingProvided += amount; }
-    public int getTimesPet() { return timesPet; }
-    public void incrementTimesPet() { timesPet++; }
-    public int getFrenzyActivations() { return frenzyActivations; }
-    public void incrementFrenzyActivations() { frenzyActivations++; }
+    public int getTotalKills() { return stats.getTotalKills(); }
+    public int getHostileKills() { return stats.getHostileKills(); }
+    public int getPassiveKills() { return stats.getPassiveKills(); }
+    public float getDamageDealt() { return stats.getDamageDealt(); }
+    public float getDamageTaken() { return stats.getDamageTaken(); }
+    public double getDistanceTraveled() { return stats.getDistanceTraveled(); }
+    public int getFoodConsumed() { return stats.getFoodConsumed(); }
+    public int getBlocksMined() { return stats.getBlocksMined(); }
+    public void incrementBlocksMined() { stats.incrementBlocksMined(); }
+    public int getPouncesPerformed() { return stats.getPouncesPerformed(); }
+    public void incrementPounces() { stats.incrementPounces(); }
+    public int getItemsRetrieved() { return stats.getItemsRetrieved(); }
+    public void incrementItemsRetrieved() { stats.incrementItemsRetrieved(); }
+    public int getCreepersScared() { return stats.getCreepersScared(); }
+    public void incrementCreepersScared() { stats.incrementCreepersScared(); }
+    public int getHealingProvided() { return stats.getHealingProvided(); }
+    public void addHealingProvided(int amount) { stats.addHealingProvided(amount); }
+    public int getTimesPet() { return stats.getTimesPet(); }
+    public void incrementTimesPet() { stats.incrementTimesPet(); }
+    public int getFrenzyActivations() { return stats.getFrenzyActivations(); }
+    public void incrementFrenzyActivations() { stats.incrementFrenzyActivations(); }
 
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
@@ -2297,14 +2223,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         tag.putFloat("Satiety", satiety);
         tag.putInt(CatSchema.KEY_SCHEMA, CatSchema.CURRENT);
         tag.putString(CatSchema.KEY_MODE_NAME, getCatMode().name());
-        if (!abilityCooldowns.isEmpty()) {
-            CompoundTag cds = new CompoundTag();
-            abilityCooldowns.forEach(cds::putLong);
-            tag.put(CatSchema.KEY_ABILITY_COOLDOWNS, cds);
-        }
         if (spiritCatnipPrimed) tag.putBoolean(CatSchema.KEY_SPIRIT_PRIMED, true);
         tag.putBoolean("Incapacitated", isIncapacitated());
-        tag.putLong("NineLivesReadyAt", nineLivesReadyAt);
         tag.putInt("SkinId", getSkinId());
         tag.putBoolean("DireAwakened", isDireAwakened());
         tag.putBoolean("Female", isFemale());
@@ -2319,81 +2239,14 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (homeBedPos != null) tag.put("HomeBedPos", NbtUtils.writeBlockPos(homeBedPos));
         if (homeBedDimension != null && !homeBedDimension.isEmpty()) tag.putString("HomeBedDim", homeBedDimension);
 
-        tag.putInt("TotalKills", totalKills);
-        tag.putInt("HostileKills", hostileKills);
-        tag.putInt("PassiveKills", passiveKills);
-        tag.putFloat("DamageDealt", damageDealt);
-        tag.putFloat("DamageTaken", damageTaken);
-        tag.putDouble("DistanceTraveled", distanceTraveled);
-        tag.putInt("FoodConsumed", foodConsumed);
-        tag.putInt("BlocksMined", blocksMined);
-        tag.putInt("PouncesPerformed", pouncesPerformed);
-        tag.putInt("ItemsRetrieved", itemsRetrieved);
-        tag.putInt("CreepersScared", creepersScared);
-        tag.putInt("HealingProvided", healingProvided);
-        tag.putInt("TimesPet", timesPet);
-        tag.putInt("FrenzyActivations", frenzyActivations);
+        stats.save(tag);
 
-        if (!equippedWeapon.isEmpty()) tag.put("EquippedWeapon", equippedWeapon.save(new CompoundTag()));
-        if (!equippedTool.isEmpty()) tag.put("EquippedTool", equippedTool.save(new CompoundTag()));
-        if (!equippedHelmet.isEmpty()) tag.put("EquippedHelmet", equippedHelmet.save(new CompoundTag()));
-        if (!equippedChest.isEmpty()) tag.put("EquippedChest", equippedChest.save(new CompoundTag()));
-        if (!equippedLegs.isEmpty()) tag.put("EquippedLegs", equippedLegs.save(new CompoundTag()));
-        if (!equippedBoots.isEmpty()) tag.put("EquippedBoots", equippedBoots.save(new CompoundTag()));
-        if (!equippedAccessory.isEmpty()) tag.put("EquippedAccessory", equippedAccessory.save(new CompoundTag()));
-        for (int i = 0; i < cosmeticSlots.length; i++) {
-            if (!cosmeticSlots[i].isEmpty()) {
-                tag.put("CosmeticSlot" + i, cosmeticSlots[i].save(new CompoundTag()));
-            }
-        }
-        if (!carriedToy.isEmpty()) tag.put("CarriedToy", carriedToy.save(new CompoundTag()));
-        tag.putString("CatRole", catRole.name());
-        tag.putString("PrimaryElement", primaryElement.name());
-        tag.putString("SecondaryElement", secondaryElement.name());
-        tag.putString("AbilitySlot1", abilitySlot1 != null ? abilitySlot1 : "");
-        tag.putString("AbilitySlot2", abilitySlot2 != null ? abilitySlot2 : "");
-        tag.putString("AbilitySlot3", abilitySlot3 != null ? abilitySlot3 : "");
-        tag.putString("AbilityUltimate", abilityUltimate != null ? abilityUltimate : "");
+        equipment.save(tag);
+        combat.save(tag);
         tag.putInt("Energy", energy);
 
-        ListTag trustList = new ListTag();
-        for (Map.Entry<UUID, String> e : trustedPlayers.entrySet()) {
-            CompoundTag t = new CompoundTag();
-            t.putUUID("Id", e.getKey());
-            t.putString("Name", e.getValue());
-            trustList.add(t);
-        }
-        tag.put("TrustedPlayers", trustList);
-
-        CompoundTag talentsTag = new CompoundTag();
-        for (Map.Entry<String, Integer> entry : talentLevels.entrySet()) {
-            talentsTag.putInt(entry.getKey(), entry.getValue());
-        }
-        tag.put("Talents", talentsTag);
-
-        ListTag invTag = new ListTag();
-        for (int i = 0; i < catPack.getContainerSize(); i++) {
-            ItemStack stack = catPack.getItem(i);
-            if (!stack.isEmpty()) {
-                CompoundTag itemTag = new CompoundTag();
-                itemTag.putByte("Slot", (byte) i);
-                stack.save(itemTag);
-                invTag.add(itemTag);
-            }
-        }
-        tag.put("CatPack", invTag);
-
-        ListTag ammoTag = new ListTag();
-        for (int i = 0; i < ammoPouch.getContainerSize(); i++) {
-            ItemStack stack = ammoPouch.getItem(i);
-            if (!stack.isEmpty()) {
-                CompoundTag itemTag = new CompoundTag();
-                itemTag.putByte("Slot", (byte) i);
-                stack.save(itemTag);
-                ammoTag.add(itemTag);
-            }
-        }
-        tag.put("AmmoPouch", ammoTag);
+        trust.save(tag);
+        talents.save(tag);
         tag.put("JobData", jobData.save());
     }
 
@@ -2407,12 +2260,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (tag.contains("Hunger")) setHunger(tag.getInt("Hunger"));
         this.satiety = tag.getFloat("Satiety");
         if (tag.contains(CatSchema.KEY_MODE_NAME)) setCatMode(CatMode.byName(tag.getString(CatSchema.KEY_MODE_NAME)));
-        abilityCooldowns.clear();
-        CompoundTag cds = tag.getCompound(CatSchema.KEY_ABILITY_COOLDOWNS);
-        for (String id : cds.getAllKeys()) abilityCooldowns.put(id, cds.getLong(id));
         this.spiritCatnipPrimed = tag.getBoolean(CatSchema.KEY_SPIRIT_PRIMED);
         if (tag.contains("Incapacitated")) setIncapacitated(tag.getBoolean("Incapacitated"));
-        this.nineLivesReadyAt = tag.getLong("NineLivesReadyAt");
         if (tag.contains("SkinId")) setSkinId(tag.getInt("SkinId"));
         if (tag.contains("DireAwakened")) setDireAwakened(tag.getBoolean("DireAwakened"));
         if (tag.contains("Female")) setFemale(tag.getBoolean("Female"));
@@ -2428,110 +2277,14 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (tag.contains("HomeBedPos")) this.homeBedPos = NbtUtils.readBlockPos(tag.getCompound("HomeBedPos"));
         if (tag.contains("HomeBedDim")) this.homeBedDimension = tag.getString("HomeBedDim");
 
-        if (tag.contains("TotalKills")) this.totalKills = tag.getInt("TotalKills");
-        if (tag.contains("HostileKills")) this.hostileKills = tag.getInt("HostileKills");
-        if (tag.contains("PassiveKills")) this.passiveKills = tag.getInt("PassiveKills");
-        if (tag.contains("DamageDealt")) this.damageDealt = tag.getFloat("DamageDealt");
-        if (tag.contains("DamageTaken")) this.damageTaken = tag.getFloat("DamageTaken");
-        if (tag.contains("DistanceTraveled")) this.distanceTraveled = tag.getDouble("DistanceTraveled");
-        if (tag.contains("FoodConsumed")) this.foodConsumed = tag.getInt("FoodConsumed");
-        if (tag.contains("BlocksMined")) this.blocksMined = tag.getInt("BlocksMined");
-        if (tag.contains("PouncesPerformed")) this.pouncesPerformed = tag.getInt("PouncesPerformed");
-        if (tag.contains("ItemsRetrieved")) this.itemsRetrieved = tag.getInt("ItemsRetrieved");
-        if (tag.contains("CreepersScared")) this.creepersScared = tag.getInt("CreepersScared");
-        if (tag.contains("HealingProvided")) this.healingProvided = tag.getInt("HealingProvided");
-        if (tag.contains("TimesPet")) this.timesPet = tag.getInt("TimesPet");
-        if (tag.contains("FrenzyActivations")) this.frenzyActivations = tag.getInt("FrenzyActivations");
+        stats.load(tag);
 
-        if (tag.contains("EquippedWeapon")) equippedWeapon = ItemStack.of(tag.getCompound("EquippedWeapon"));
-        if (tag.contains("EquippedTool")) equippedTool = ItemStack.of(tag.getCompound("EquippedTool"));
-        if (tag.contains("EquippedHelmet")) equippedHelmet = ItemStack.of(tag.getCompound("EquippedHelmet"));
-        if (tag.contains("EquippedChest")) equippedChest = ItemStack.of(tag.getCompound("EquippedChest"));
-        if (tag.contains("EquippedLegs")) equippedLegs = ItemStack.of(tag.getCompound("EquippedLegs"));
-        if (tag.contains("EquippedBoots")) equippedBoots = ItemStack.of(tag.getCompound("EquippedBoots"));
-        if (tag.contains("EquippedAccessory")) equippedAccessory = ItemStack.of(tag.getCompound("EquippedAccessory"));
-        for (int i = 0; i < cosmeticSlots.length; i++) {
-            if (tag.contains("CosmeticSlot" + i)) {
-                cosmeticSlots[i] = ItemStack.of(tag.getCompound("CosmeticSlot" + i));
-            } else {
-                cosmeticSlots[i] = ItemStack.EMPTY;
-            }
-        }
-
-        if (tag.contains("CarriedToy")) {
-            this.carriedToy = ItemStack.of(tag.getCompound("CarriedToy"));
-        } else {
-            this.carriedToy = ItemStack.EMPTY;
-        }
-
-        if (tag.contains("CatRole")) {
-            try {
-                this.catRole = com.kittytalents.combat.CatRole.valueOf(tag.getString("CatRole"));
-            } catch (Exception ignored) {
-                this.catRole = com.kittytalents.combat.CatRole.NONE;
-            }
-        }
-        if (tag.contains("PrimaryElement")) {
-            try {
-                this.primaryElement = com.kittytalents.combat.FelineElement.valueOf(tag.getString("PrimaryElement"));
-            } catch (Exception ignored) {
-                this.primaryElement = com.kittytalents.combat.FelineElement.PHYSICAL;
-            }
-        }
-        if (tag.contains("SecondaryElement")) {
-            try {
-                this.secondaryElement = com.kittytalents.combat.FelineElement.valueOf(tag.getString("SecondaryElement"));
-            } catch (Exception ignored) {
-                this.secondaryElement = com.kittytalents.combat.FelineElement.PHYSICAL;
-            }
-        }
-        if (tag.contains("AbilitySlot1")) setAbilitySlot1(tag.getString("AbilitySlot1"));
-        if (tag.contains("AbilitySlot2")) setAbilitySlot2(tag.getString("AbilitySlot2"));
-        if (tag.contains("AbilitySlot3")) setAbilitySlot3(tag.getString("AbilitySlot3"));
-        if (tag.contains("AbilityUltimate")) setAbilityUltimate(tag.getString("AbilityUltimate"));
+        equipment.load(tag);
+        combat.load(tag);
         if (tag.contains("Energy")) setEnergy(tag.getInt("Energy"));
 
-        trustedPlayers.clear();
-        if (tag.contains("TrustedPlayers", Tag.TAG_LIST)) {
-            ListTag trustList = tag.getList("TrustedPlayers", Tag.TAG_COMPOUND);
-            for (int i = 0; i < trustList.size(); i++) {
-                CompoundTag t = trustList.getCompound(i);
-                if (t.hasUUID("Id")) {
-                    trustedPlayers.put(t.getUUID("Id"), t.getString("Name"));
-                }
-            }
-        }
-
-        if (tag.contains("Talents", Tag.TAG_COMPOUND)) {
-            CompoundTag talentsTag = tag.getCompound("Talents");
-            talentLevels.clear();
-            for (String key : talentsTag.getAllKeys()) {
-                talentLevels.put(key, talentsTag.getInt(key));
-            }
-        }
-
-        if (tag.contains("CatPack", Tag.TAG_LIST)) {
-            ListTag invTag = tag.getList("CatPack", Tag.TAG_COMPOUND);
-            catPack.clearContent();
-            for (int i = 0; i < invTag.size(); i++) {
-                CompoundTag itemTag = invTag.getCompound(i);
-                int slot = itemTag.getByte("Slot") & 255;
-                if (slot < catPack.getContainerSize()) {
-                    catPack.setItem(slot, ItemStack.of(itemTag));
-                }
-            }
-        }
-        if (tag.contains("AmmoPouch", Tag.TAG_LIST)) {
-            ListTag ammoTag = tag.getList("AmmoPouch", Tag.TAG_COMPOUND);
-            ammoPouch.clearContent();
-            for (int i = 0; i < ammoTag.size(); i++) {
-                CompoundTag itemTag = ammoTag.getCompound(i);
-                int slot = itemTag.getByte("Slot") & 255;
-                if (slot < ammoPouch.getContainerSize()) {
-                    ammoPouch.setItem(slot, ItemStack.of(itemTag));
-                }
-            }
-        }
+        trust.load(tag);
+        talents.load(tag);
         if (tag.contains("JobData", Tag.TAG_COMPOUND)) {
             jobData.load(tag.getCompound("JobData"));
         }
@@ -2558,17 +2311,18 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     @Override
     public void die(DamageSource cause) {
         if (!this.level().isClientSide) {
-            Containers.dropContents(this.level(), this, this.catPack);
-            Containers.dropContents(this.level(), this, this.ammoPouch);
-            if (!equippedWeapon.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedWeapon);
-            if (!equippedTool.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedTool);
-            if (!equippedHelmet.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedHelmet);
-            if (!equippedChest.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedChest);
-            if (!equippedLegs.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedLegs);
-            if (!equippedBoots.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedBoots);
-            if (!equippedAccessory.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), equippedAccessory);
-            if (!carriedToy.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), carriedToy);
-            for (ItemStack cosmetic : cosmeticSlots) {
+            Containers.dropContents(this.level(), this, equipment.pack());
+            Containers.dropContents(this.level(), this, equipment.ammoPouch());
+            if (!getEquippedWeapon().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getEquippedWeapon());
+            if (!getEquippedTool().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getEquippedTool());
+            if (!getArmorSlotItem(1).isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getArmorSlotItem(1));
+            if (!getArmorSlotItem(2).isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getArmorSlotItem(2));
+            if (!getArmorSlotItem(3).isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getArmorSlotItem(3));
+            if (!getArmorSlotItem(4).isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getArmorSlotItem(4));
+            if (!getEquippedAccessory().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getEquippedAccessory());
+            if (!getCarriedToy().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getCarriedToy());
+            for (int ci = 0; ci < CatEquipment.COSMETIC_SLOTS; ci++) {
+                ItemStack cosmetic = getCosmeticSlot(ci);
                 if (!cosmetic.isEmpty()) {
                     Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), cosmetic);
                 }

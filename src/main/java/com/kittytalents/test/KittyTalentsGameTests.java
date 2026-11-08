@@ -155,6 +155,79 @@ public class KittyTalentsGameTests {
         helper.succeed();
     }
 
+    /** R37: a heavily progressed cat survives save + reload with every component intact. */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testFullCatSaveReloadRoundTrip(GameTestHelper helper) {
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        long now = helper.getLevel().getGameTime();
+        cat.setCatLevel(88);
+        cat.setSkillPoints(7);
+        cat.setTalentLevel(Talents.POUNCE, 4);
+        cat.setTalentLevel(Talents.MOUSER, 0); // explicit 0 on a standard talent must stay 0, not fall back to the free baseline
+        cat.setEquippedWeapon(new ItemStack(Items.DIAMOND_SWORD));
+        cat.setEquippedTool(new ItemStack(Items.TORCH, 12));
+        cat.setArmorSlotItem(1, new ItemStack(Items.IRON_HELMET));
+        cat.setArmorSlotItem(4, new ItemStack(Items.GOLDEN_BOOTS));
+        cat.setCosmeticSlot(2, new ItemStack(Items.RED_BANNER));
+        cat.setCarriedToy(new ItemStack(Items.STRING));
+        cat.getCatPack().setItem(5, new ItemStack(Items.COOKED_SALMON, 9));
+        cat.getAmmoPouch().setItem(0, new ItemStack(Items.ARROW, 32));
+        java.util.UUID friend = java.util.UUID.randomUUID();
+        cat.addTrustedPlayer(friend, "Friend");
+        cat.stats().recordKill(true);
+        cat.stats().addDistance(123.5);
+        cat.setCatRole(com.kittytalents.combat.CatRole.values()[cat.getCatRole().ordinal() == 0 ? 1 : 0]);
+        cat.setAbilitySlot2("venom_fang");
+        cat.setAbilityCooldown("venom_fang", now - 5);
+        cat.setSpiritCatnipPrimed(true);
+        cat.setCatMode(CatMode.GUARD);
+
+        net.minecraft.nbt.CompoundTag tag = cat.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+        tag.remove("UUID");
+        TalentedCat copy = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(4, 1, 4));
+        copy.load(tag);
+
+        helper.assertTrue(copy.getCatLevel() == 88 && copy.getSkillPoints() == 7, "Level/points lost");
+        helper.assertTrue(copy.getTalentLevel(Talents.POUNCE) == 4, "Talent rank lost");
+        helper.assertTrue(copy.getTalentLevel(Talents.MOUSER) == 1, "Standard talent set to 0 should read as its minimum (1), not the free baseline");
+        helper.assertTrue(ItemStack.matches(copy.getEquippedWeapon(), cat.getEquippedWeapon()), "Weapon lost");
+        helper.assertTrue(ItemStack.matches(copy.getEquippedTool(), cat.getEquippedTool()), "Tool lost");
+        helper.assertTrue(ItemStack.matches(copy.getArmorSlotItem(1), cat.getArmorSlotItem(1)), "Helmet lost");
+        helper.assertTrue(copy.getArmorSlotItem(2).isEmpty(), "Empty chest slot should stay empty");
+        helper.assertTrue(ItemStack.matches(copy.getArmorSlotItem(4), cat.getArmorSlotItem(4)), "Boots lost");
+        helper.assertTrue(ItemStack.matches(copy.getCosmeticSlot(2), cat.getCosmeticSlot(2)), "Cosmetic slot 3 lost");
+        helper.assertTrue(ItemStack.matches(copy.getCarriedToy(), cat.getCarriedToy()), "Carried toy lost");
+        helper.assertTrue(ItemStack.matches(copy.getCatPack().getItem(5), cat.getCatPack().getItem(5)), "Pack item lost");
+        helper.assertTrue(ItemStack.matches(copy.getAmmoPouch().getItem(0), cat.getAmmoPouch().getItem(0)), "Ammo lost");
+        helper.assertTrue(copy.isTrusted(friend), "Trust lost");
+        helper.assertTrue(copy.getTotalKills() == 1 && copy.getHostileKills() == 1, "Kill stats lost");
+        helper.assertTrue(copy.getDistanceTraveled() == 123.5, "Distance stat lost");
+        helper.assertTrue(copy.getCatRole() == cat.getCatRole(), "Role lost");
+        helper.assertTrue("venom_fang".equals(copy.getAbilitySlot2()), "Ability slot lost");
+        helper.assertTrue(copy.getAbilityCooldown("venom_fang") == now - 5, "Ability cooldown lost");
+        helper.assertTrue(copy.isSpiritCatnipPrimed(), "Spirit Catnip flag lost");
+        helper.assertTrue(copy.getCatMode() == CatMode.GUARD, "Mode lost");
+        helper.succeed();
+    }
+
+    /** Respec must refund only ranks actually paid for; free standard-talent ranks used to mint points. */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void testRespecRefundsOnlyPaidRanks(GameTestHelper helper) {
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        cat.setSkillPoints(10);
+        cat.trainTalent(Talents.POUNCE); // rank 1, max 8 -> costs 1
+        cat.trainTalent(Talents.POUNCE); // rank 2 -> costs 1
+        helper.assertTrue(cat.getSkillPoints() == 8, "Training two Pounce ranks should cost 2, have " + cat.getSkillPoints());
+
+        int refunded = cat.respecAllTalents();
+        helper.assertTrue(refunded == 2, "Respec should refund exactly the 2 paid points, refunded " + refunded);
+        helper.assertTrue(cat.getSkillPoints() == 10, "Points should be back to 10, have " + cat.getSkillPoints());
+
+        int again = cat.respecAllTalents();
+        helper.assertTrue(again == 0, "A second respec must refund nothing, refunded " + again);
+        helper.succeed();
+    }
+
     private static boolean anySlotOnCooldown(TalentedCat cat) {
         for (String id : new String[]{cat.getAbilitySlot1(), cat.getAbilitySlot2(), cat.getAbilitySlot3(), cat.getAbilityUltimate()}) {
             if (id != null && !id.isEmpty() && cat.getAbilityCooldown(id) > 0) return true;
