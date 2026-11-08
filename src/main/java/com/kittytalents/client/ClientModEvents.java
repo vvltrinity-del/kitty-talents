@@ -65,6 +65,6 @@ public class ClientModEvents {
 
     @SubscribeEvent
     public static void registerKeyMappings(net.minecraftforge.client.event.RegisterKeyMappingsEvent event) {
-        ClientTwineHandler.registerKeys(event);
+        com.kittytalents.client.twine.TwineInput.registerKeys(event);
     }
 }

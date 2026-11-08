@@ -1,6 +1,6 @@
 package com.kittytalents.client.network;
 
-import com.kittytalents.client.ClientTwineHandler;
+import com.kittytalents.client.twine.ClientTwineState;
 import com.kittytalents.client.gui.CatTalentScreen;
 import com.kittytalents.client.gui.VariantChartScreen;
 import com.kittytalents.entity.TalentedCat;
@@ -94,7 +94,7 @@ public class ClientPacketHandlers {
     }
 
     public static void handleSyncTwine(int catEntityId, boolean twined) {
-        ClientTwineHandler.handleSyncTwine(catEntityId, twined);
+        ClientTwineState.handleSync(catEntityId, twined);
     }
 
     public static void openVariantChartScreen() {

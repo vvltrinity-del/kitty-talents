@@ -1,6 +1,6 @@
 package com.kittytalents.client.hud;
 
-import com.kittytalents.client.ClientTwineHandler;
+import com.kittytalents.client.twine.ClientTwineState;
 import com.kittytalents.client.gui.theme.KTTheme;
 import com.kittytalents.client.gui.theme.KTText;
 import com.kittytalents.config.KittyTalentsClientConfig;
@@ -44,7 +44,7 @@ public final class CompanionHud implements IGuiOverlay {
     @Override
     public void render(ForgeGui gui, GuiGraphics g, float partialTick, int screenWidth, int screenHeight) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || mc.player == null || mc.options.hideGui || ClientTwineHandler.isTwined()) return;
+        if (mc.level == null || mc.player == null || mc.options.hideGui || ClientTwineState.isTwined()) return;
         if (!KittyTalentsClientConfig.SHOW_COMPANION_HUD.get()) return;
         int y = Y;
         for (TalentedCat cat : shownCats(mc)) {

@@ -1472,8 +1472,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             if (isTwined()) {
                 return net.minecraftforge.fml.DistExecutor.unsafeCallWhenOn(
                         net.minecraftforge.api.distmarker.Dist.CLIENT,
-                        () -> () -> com.kittytalents.client.ClientTwineHandler.isTwined() &&
-                                com.kittytalents.client.ClientTwineHandler.activeTwinedCatId == this.getId()
+                        () -> () -> com.kittytalents.client.twine.ClientTwineState.isTwinedWith(this.getId())
                 ) == Boolean.TRUE;
             }
             Entity passenger = this.getControllingPassenger();

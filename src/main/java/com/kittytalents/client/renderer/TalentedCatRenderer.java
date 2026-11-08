@@ -30,8 +30,7 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, KTCatModel> {
     public void render(TalentedCat cat, float entityYaw, float partialTicks, PoseStack poseStack, net.minecraft.client.renderer.MultiBufferSource buffer, int packedLight) {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         boolean isFirstPersonTwine = mc.options.getCameraType().isFirstPerson() &&
-                (mc.getCameraEntity() == cat || (com.kittytalents.client.ClientTwineHandler.isTwined() &&
-                        com.kittytalents.client.ClientTwineHandler.activeTwinedCatId == cat.getId()));
+                (mc.getCameraEntity() == cat || com.kittytalents.client.twine.ClientTwineState.isTwinedWith(cat.getId()));
         if (isFirstPersonTwine) {
             return;
         }

@@ -2,7 +2,7 @@ package com.kittytalents.client.hud;
 
 import com.kittytalents.ability.CatAbilities;
 import com.kittytalents.ability.CatAbility;
-import com.kittytalents.client.ClientTwineHandler;
+import com.kittytalents.client.twine.ClientTwineState;
 import com.kittytalents.client.gui.theme.KTTheme;
 import com.kittytalents.client.gui.theme.KTText;
 import com.kittytalents.combat.CatRole;
@@ -35,10 +35,10 @@ public final class TwineHud implements IGuiOverlay {
 
     @Override
     public void render(ForgeGui gui, GuiGraphics g, float partialTick, int screenWidth, int screenHeight) {
-        if (!ClientTwineHandler.isTwined()) return;
+        if (!ClientTwineState.isTwined()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.options.hideGui) return;
-        Entity entity = mc.level.getEntity(ClientTwineHandler.activeTwinedCatId);
+        Entity entity = mc.level.getEntity(ClientTwineState.activeCatId());
         if (!(entity instanceof TalentedCat cat)) return;
         draw(g, mc, cat, screenWidth, screenHeight);
     }

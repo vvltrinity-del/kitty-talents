@@ -62,8 +62,7 @@ public class TalentedCatGunHarnessLayer extends RenderLayer<TalentedCat, KTCatMo
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.getCameraType().isFirstPerson() &&
-                (mc.getCameraEntity() == cat || (com.kittytalents.client.ClientTwineHandler.isTwined() &&
-                        com.kittytalents.client.ClientTwineHandler.activeTwinedCatId == cat.getId()))) {
+                (mc.getCameraEntity() == cat || com.kittytalents.client.twine.ClientTwineState.isTwinedWith(cat.getId()))) {
             return;
         }
 
