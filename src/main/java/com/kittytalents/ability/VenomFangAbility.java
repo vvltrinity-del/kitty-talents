@@ -25,7 +25,8 @@ public class VenomFangAbility extends CatAbility {
 
     @Override
     public float getAiPriority(TalentedCat cat) {
-        if (cat.getTarget() != null && cat.distanceToSqr(cat.getTarget()) < 25.0D) {
+        // Must match execute()'s bite range (< 4 blocks), otherwise the AI keeps picking a cast that always fails.
+        if (cat.getTarget() != null && cat.distanceToSqr(cat.getTarget()) < 16.0D) {
             return 1.7f;
         }
         return 0.5f;

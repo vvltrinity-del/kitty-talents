@@ -12,7 +12,9 @@ public class UseAbilityGoal extends Goal {
 
     public UseAbilityGoal(TalentedCat cat) {
         this.cat = cat;
-        this.setFlags(EnumSet.of(Goal.Flag.LOOK));
+        // No control flags: casting is instantaneous. Claiming LOOK made this goal unable to start while an
+        // equal-priority MeleeAttackGoal held LOOK, i.e. cats could almost never cast during a fight.
+        this.setFlags(EnumSet.noneOf(Goal.Flag.class));
     }
 
     @Override
