@@ -218,71 +218,18 @@ public class ForgeEvents {
             return;
         }
 
-        // Autonomous Player Bodyguard AI:
-        double distSq = sp.distanceToSqr(cat);
+        // Dormant body: it stays still and NEVER turns. The Twine camera reads the local player's rotation as mouse
+        // input, so any server-side rotation of the player (lookAt, or a teleport with absolute angles) reaches the
+        // client as a fake mouse delta and turns the camera on its own. (The old "bodyguard AI" called lookAt every
+        // tick, which is exactly what made the camera drift.) The body is invulnerable while twined, so it needs no AI.
+        sp.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
 
-        // Teleport if too far
-        if (distSq > 1024.0D) { // > 32 blocks
-            sp.teleportTo(cat.getX() - cat.getLookAngle().x * 2.0D, cat.getY(), cat.getZ() - cat.getLookAngle().z * 2.0D);
-            distSq = sp.distanceToSqr(cat);
+        // Keep the body within chunk-loading range of the cat. Relative X/Y rotation = "leave the client's angles alone".
+        if (sp.distanceToSqr(cat) > 1024.0D) { // > 32 blocks
+            net.minecraft.world.phys.Vec3 look = cat.getLookAngle();
+            sp.connection.teleport(cat.getX() - look.x * 2.0D, cat.getY(), cat.getZ() - look.z * 2.0D, 0.0F, 0.0F,
+                    java.util.EnumSet.of(net.minecraft.world.entity.RelativeMovement.X_ROT, net.minecraft.world.entity.RelativeMovement.Y_ROT));
         }
-
-        // Find threats: hostiles targeting cat or player, or hostile monsters within 8 blocks
-        net.minecraft.world.phys.AABB scan = sp.getBoundingBox().inflate(8.0D);
-        List<net.minecraft.world.entity.LivingEntity> threats = sp.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, scan, target -> {
-            if (target == sp || target == cat || !target.isAlive()) return false;
-            if (target instanceof net.minecraft.world.entity.monster.Enemy) return true;
-            if (target instanceof net.minecraft.world.entity.Mob mob) {
-                return mob.getTarget() == cat || mob.getTarget() == sp;
-            }
-            return false;
-        });
-
-        net.minecraft.world.entity.LivingEntity closestThreat = null;
-        double minThreatDist = Double.MAX_VALUE;
-        for (net.minecraft.world.entity.LivingEntity threat : threats) {
-            double d = sp.distanceToSqr(threat);
-            if (d < minThreatDist) {
-                minThreatDist = d;
-                closestThreat = threat;
-            }
-        }
-
-        if (closestThreat != null) {
-            // Face the threat
-            sp.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, closestThreat.getEyePosition());
-            double threatDist = Math.sqrt(minThreatDist);
-
-            if (threatDist <= 3.5D) {
-                // In melee reach! Attack!
-                if (sp.getAttackStrengthScale(0.5F) >= 0.85F) {
-                    sp.attack(closestThreat);
-                    sp.swing(InteractionHand.MAIN_HAND, true);
-                    sp.resetAttackStrengthTicker();
-                }
-                sp.setDeltaMovement(0.0D, Math.min(0.0D, sp.getDeltaMovement().y), 0.0D);
-            } else if (distSq < 100.0D) { // Advance toward threat if near cat
-                net.minecraft.world.phys.Vec3 diff = closestThreat.position().subtract(sp.position());
-                net.minecraft.world.phys.Vec3 dir = diff.lengthSqr() > 1.0E-4D ? diff.normalize() : new net.minecraft.world.phys.Vec3(0, 0, 1);
-                sp.setDeltaMovement(dir.x * 0.28D, sp.getDeltaMovement().y, dir.z * 0.28D);
-            }
-        } else {
-            // Follow cat at 3-6 blocks distance
-            if (distSq > 36.0D) { // > 6 blocks
-                net.minecraft.world.phys.Vec3 diff = cat.position().subtract(sp.position());
-                net.minecraft.world.phys.Vec3 dir = diff.lengthSqr() > 1.0E-4D ? diff.normalize() : new net.minecraft.world.phys.Vec3(0, 0, 1);
-                double speed = (distSq > 100.0D || cat.isSprinting()) ? 0.35D : 0.24D;
-                sp.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, cat.position());
-                sp.setDeltaMovement(dir.x * speed, sp.getDeltaMovement().y, dir.z * speed);
-            } else if (distSq < 9.0D) { // < 3 blocks: hold ground
-                sp.setDeltaMovement(0.0D, Math.min(0.0D, sp.getDeltaMovement().y), 0.0D);
-            } else {
-                // In 3-6 block sweet spot
-                sp.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, cat.position());
-                sp.setDeltaMovement(0.0D, Math.min(0.0D, sp.getDeltaMovement().y), 0.0D);
-            }
-        }
-        sp.hurtMarked = true;
     }
 
     @SubscribeEvent
