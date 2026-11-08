@@ -86,6 +86,15 @@ minecraft {
             property 'forge.enabledGameTestNamespaces', mod_id
         }
 
+        // Offscreen "render matrix" of cat looks for visual regression checks; writes PNGs to run-render/matrix and quits.
+        // Needs a world named render_world in run-render/saves (tools/run_render_matrix.sh copies one in).
+        renderMatrix {
+            parent runs.client
+            workingDirectory project.file('run-render')
+            property 'kittytalents.renderMatrix', project.file('run-render/matrix').absolutePath
+            args '--quickPlaySingleplayer', 'render_world'
+        }
+
         server {
             // Own folder so a dedicated-server check can run while a dev client holds run/ locks.
             workingDirectory project.file('run-server')

@@ -26,3 +26,4 @@ run-data
 forge*changelog.txt
 run-gametest
 run-server
+run-render
