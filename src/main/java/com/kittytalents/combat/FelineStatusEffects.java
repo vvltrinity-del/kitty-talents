@@ -135,7 +135,11 @@ public class FelineStatusEffects {
         CompoundTag statuses = data.getCompound(NBT_STATUSES);
         boolean changed = false;
 
-        for (String key : statuses.getAllKeys()) {
+        // Iterate a snapshot: expired entries are removed below, and executeStatusTick may remove statuses too.
+        // Iterating the live key set threw ConcurrentModificationException (a server crash) whenever an entity had
+        // 2+ statuses and one expired, e.g. Venom Fang's Poison + Bleed.
+        for (String key : new java.util.ArrayList<>(statuses.getAllKeys())) {
+            if (!statuses.contains(key)) continue;
             CompoundTag effectData = statuses.getCompound(key);
             int ticks = effectData.getInt("Ticks");
             int power = Math.max(1, effectData.getInt("Power"));

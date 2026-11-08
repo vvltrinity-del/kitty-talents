@@ -228,6 +228,63 @@ public class KittyTalentsGameTests {
         helper.succeed();
     }
 
+    /** Two statuses where one expires first used to throw ConcurrentModificationException in the tick (server crash). */
+    @GameTest(template = "empty", timeoutTicks = 80)
+    public static void testStatusExpiryWithMultipleStatusesDoesNotCrash(GameTestHelper helper) {
+        // Not undead: undead are immune to Poison and Bleed. Statuses enforce a 20-tick minimum duration.
+        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.PIG, new BlockPos(2, 1, 2));
+        zombie.setNoAi(true);
+        zombie.setInvulnerable(true); // only the status bookkeeping is under test, not the damage
+        com.kittytalents.combat.FelineStatusEffects.applyStatus(zombie, com.kittytalents.combat.FelineStatusType.POISON, 1, 20);
+        com.kittytalents.combat.FelineStatusEffects.applyStatus(zombie, com.kittytalents.combat.FelineStatusType.BLEED, 1, 60);
+        helper.runAfterDelay(35, () -> {
+            helper.assertTrue(com.kittytalents.combat.FelineStatusEffects.getStatusPower(zombie, com.kittytalents.combat.FelineStatusType.POISON) == 0,
+                    "Poison should have expired");
+            helper.assertTrue(com.kittytalents.combat.FelineStatusEffects.getStatusPower(zombie, com.kittytalents.combat.FelineStatusType.BLEED) > 0,
+                    "Bleed should still be active");
+            helper.succeed();
+        });
+    }
+
+    /** Twine: with no player input, the AI must not move, turn-to-target or attack on its own. */
+    // 240 ticks: 60 twined + up to ~100 for the AI to re-scan after untwine (it scans every 30 ticks with no player nearby).
+    @GameTest(template = "empty", timeoutTicks = 240)
+    public static void testTwinedCatIgnoresAiWithoutInput(GameTestHelper helper) {
+        TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 1, 2));
+        cat.setCatMode(CatMode.AGGRESSIVE);
+        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.ZOMBIE, new BlockPos(5, 1, 5));
+        zombie.setNoAi(true); // keep the provocation still so any cat movement is the cat's own AI
+
+        var player = helper.makeMockPlayer();
+        cat.setTwinedPlayer(player);
+        cat.setTwineInput(0.0F, 0.0F);
+        net.minecraft.world.phys.Vec3 start = cat.position();
+        float startYaw = cat.getYRot();
+        // The mock player is not in the server player list, so TalentedCat's safety check (correctly) ends the
+        // session each tick. Re-link it every tick to stand in for a connected player.
+        boolean[] twinePhase = {true};
+        helper.onEachTick(() -> {
+            if (twinePhase[0] && !cat.isTwined()) {
+                cat.setTwinedPlayer(player);
+                cat.setTwineInput(0.0F, 0.0F);
+            }
+        });
+
+        helper.runAfterDelay(60, () -> {
+            twinePhase[0] = false;
+            helper.assertTrue(cat.getTarget() == null, "Twined cat picked its own target: " + cat.getTarget());
+            double moved = cat.position().subtract(start).horizontalDistance();
+            helper.assertTrue(moved < 0.25, "Twined cat moved " + moved + " blocks with no input");
+            helper.assertTrue(Math.abs(net.minecraft.util.Mth.wrapDegrees(cat.getYRot() - startYaw)) < 1.0F,
+                    "Twined cat turned on its own: " + startYaw + " -> " + cat.getYRot());
+
+            // Untwine: AI control must come straight back.
+            cat.setTwinedPlayer(null);
+            cat.clearTwineState();
+            helper.succeedWhen(() -> helper.assertTrue(cat.getTarget() == zombie, "AI should retarget after untwine"));
+        });
+    }
+
     private static boolean anySlotOnCooldown(TalentedCat cat) {
         for (String id : new String[]{cat.getAbilitySlot1(), cat.getAbilitySlot2(), cat.getAbilitySlot3(), cat.getAbilityUltimate()}) {
             if (id != null && !id.isEmpty() && cat.getAbilityCooldown(id) > 0) return true;

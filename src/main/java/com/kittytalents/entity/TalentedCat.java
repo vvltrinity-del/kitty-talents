@@ -625,11 +625,32 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             this.setOrderedToSit(false);
             this.setInSittingPose(false);
             this.getNavigation().stop();
+            this.setTarget(null);
             TwineManager.register(player.getUUID(), this.getUUID());
         } else {
             this.twineXxa = 0.0F;
             this.twineZza = 0.0F;
         }
+        if (!this.level().isClientSide) updateControlFlags(); // apply now, not on the next 5-tick refresh
+    }
+
+    /**
+     * While twined the player is the only driver: AI goals lose MOVE / LOOK / JUMP and target goals lose TARGET,
+     * so running goals are stopped and new ones cannot start. (customServerAiStep runs AFTER the goal selectors,
+     * so returning early there never stopped goals from pathing, turning or attacking on their own.)
+     */
+    @Override
+    protected void updateControlFlags() {
+        if (isTwined()) {
+            this.goalSelector.setControlFlag(net.minecraft.world.entity.ai.goal.Goal.Flag.MOVE, false);
+            this.goalSelector.setControlFlag(net.minecraft.world.entity.ai.goal.Goal.Flag.JUMP, false);
+            this.goalSelector.setControlFlag(net.minecraft.world.entity.ai.goal.Goal.Flag.LOOK, false);
+            this.targetSelector.setControlFlag(net.minecraft.world.entity.ai.goal.Goal.Flag.TARGET, false);
+            return;
+        }
+        // Vanilla 1.20.1 never touches TARGET here, so we must re-enable it ourselves after a Twine session.
+        this.targetSelector.setControlFlag(net.minecraft.world.entity.ai.goal.Goal.Flag.TARGET, true);
+        super.updateControlFlags();
     }
 
     /** Clears local twine state only (session registry is handled by TwineManager). */
@@ -638,6 +659,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.set(DATA_TWINED, false);
         this.twineXxa = 0.0F;
         this.twineZza = 0.0F;
+        if (!this.level().isClientSide) updateControlFlags(); // hand control back to the AI immediately
     }
 
     public void setTwineInput(float xxa, float zza) {
