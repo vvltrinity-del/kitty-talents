@@ -299,6 +299,21 @@ com.kittytalents
 - **Phase 5 is complete pending the user's in-game playtest** (walking, sprinting, sleeping, pouncing and Twine in the
   live world; the render matrix can't show motion).
 
+### 2026-11-08: Playtest round 2 fixes. Commits `820ff76` → `a10c1ae`
+- **Spirit Catnip never made a Nekomata:** vanilla breeding consumed it before the item's own logic ran. Fixed, with a test.
+- **Dire Treat:** the recipe no longer needs a Nether Star (Master Catnip Treat + Ghast Tear + Diamond), and only one
+  treat is needed (it awakens the cat). Dire ranks used to consume a treat each, 26 Nether Stars total.
+- **Production tiers** scale health, armor, toughness and damage (Netherite +36 HP, +9 armor, +6.75 damage). The tier
+  enum was out of order (Iron listed before Coal), which broke Tier Upgrade Treats, the Variant Chart, attack effects and breeding.
+- **Starting skill points:** tamed cats get enough to max any one non-Dire talent (17), once. Existing cats get it on load.
+- **Forests:** Cat Mount size applies only while ridden; a stuck follower teleports to its owner after 2 seconds.
+- **Sleep:** the bed and Return Home goals no longer order the cat to sit, which had cut the lie-down off.
+- **AI stalking** (crouched creep toward unaware targets) and **AI dodging** (projectiles, swelling creepers, melee swings).
+- **Armor:** per-slot shell sizes (no z-fighting), shorter chest shell (no rump plate), filled leggings bottoms.
+  Snow Leopard redone in a softer style.
+- **Follow-up:** after a stalk, melee sometimes reaches the target before the pounce starts (a race between goals at
+  different priorities). Worth tightening so a completed stalk always ends in a pounce.
+
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).
