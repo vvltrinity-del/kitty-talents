@@ -288,6 +288,17 @@ com.kittytalents
   geometry). Sky Feline wings use the grey vanilla elytra texture. Nothing has been checked in the live game yet: the
   matrix uses the inventory renderer, so walking, sprinting and lying down need an in-world check at the phase gate.
 
+### 2026-11-08: Phase 5 part 2: animations and textures. Commit `d30f07f`
+- **One-shot animations:** pounce leap, dodge, ability cast and groom. The server broadcasts entity events 60–63
+  (`TalentedCat.playAnimation`), and `CatAnimator` times and blends them client-side. Stalking uses the synced crouch
+  pose. Sleeping on the bed now curls up (vanilla "lying" state + the side roll in the renderer).
+- **Textures** (`tools/asset_gen/phase5_textures.py`): Snow Leopard has rosettes and a ringed tail, armor back plates are
+  filled in for every material, and Sky Feline has its own blue wing texture.
+- **Skipped at the user's request:** new skins (their idea was Pokémon-style skins; copies of Pokémon designs aren't
+  possible, and they dropped the request).
+- **Phase 5 is complete pending the user's in-game playtest** (walking, sprinting, sleeping, pouncing and Twine in the
+  live world; the render matrix can't show motion).
+
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).
