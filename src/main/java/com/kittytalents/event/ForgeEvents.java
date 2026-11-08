@@ -304,22 +304,45 @@ public class ForgeEvents {
         ServerLevel fromLevel = server.getLevel(event.getFrom());
         ServerLevel toLevel = server.getLevel(event.getTo());
         if (fromLevel == null || toLevel == null) return;
+        bringFollowers(player, fromLevel, toLevel);
+    }
 
+    /**
+     * Brings the player's following cats along through a dimension change, placing them where the player arrived.
+     * Uses an explicit teleporter: the default one runs the portal search, which crashes (NullPointerException on the
+     * portal position) for an entity that isn't standing in the portal. Returns the cats as they now exist in the new level.
+     */
+    public static List<net.minecraft.world.entity.Entity> bringFollowers(net.minecraft.server.level.ServerPlayer player, ServerLevel fromLevel, ServerLevel toLevel) {
+        // Collect first: changing dimension removes the cat from the level being iterated.
+        List<TalentedCat> followers = new java.util.ArrayList<>();
         for (net.minecraft.world.entity.Entity entity : fromLevel.getAllEntities()) {
-            if (entity instanceof TalentedCat cat && cat.isAlive() && !cat.isIncapacitated() && !cat.isOrderedToSit()) {
-                if (cat.isPrimaryOwner(player)) {
-                    com.kittytalents.entity.CatMode mode = cat.getCatMode();
-                    if (mode == com.kittytalents.entity.CatMode.FOLLOW ||
-                        mode == com.kittytalents.entity.CatMode.GUARD ||
-                        mode == com.kittytalents.entity.CatMode.TACTICAL ||
-                        mode == com.kittytalents.entity.CatMode.AGGRESSIVE) {
-                        net.minecraft.world.entity.Entity moved = cat.changeDimension(toLevel);
-                        if (moved instanceof TalentedCat movedCat) {
-                            movedCat.teleportTo(player.getX(), player.getY(), player.getZ());
-                        }
-                    }
+            if (entity instanceof TalentedCat cat && cat.isAlive() && !cat.isIncapacitated() && !cat.isOrderedToSit()
+                    && !cat.isTwined() && !cat.isPassenger() && cat.isPrimaryOwner(player)) {
+                com.kittytalents.entity.CatMode mode = cat.getCatMode();
+                if (mode == com.kittytalents.entity.CatMode.FOLLOW || mode == com.kittytalents.entity.CatMode.GUARD
+                        || mode == com.kittytalents.entity.CatMode.TACTICAL || mode == com.kittytalents.entity.CatMode.AGGRESSIVE) {
+                    followers.add(cat);
                 }
             }
         }
+        net.minecraft.world.phys.Vec3 arrival = player.position();
+        net.minecraftforge.common.util.ITeleporter toPlayer = new net.minecraftforge.common.util.ITeleporter() {
+            @Override
+            public net.minecraft.world.level.portal.PortalInfo getPortalInfo(net.minecraft.world.entity.Entity entity, ServerLevel dest,
+                    java.util.function.Function<ServerLevel, net.minecraft.world.level.portal.PortalInfo> defaultPortalInfo) {
+                return new net.minecraft.world.level.portal.PortalInfo(arrival, net.minecraft.world.phys.Vec3.ZERO, entity.getYRot(), entity.getXRot());
+            }
+
+            @Override
+            public boolean playTeleportSound(net.minecraft.server.level.ServerPlayer p, ServerLevel src, ServerLevel dest) {
+                return false;
+            }
+        };
+        List<net.minecraft.world.entity.Entity> moved = new java.util.ArrayList<>();
+        for (TalentedCat cat : followers) {
+            net.minecraft.world.entity.Entity copy = cat.changeDimension(toLevel, toPlayer);
+            if (copy != null) moved.add(copy);
+        }
+        return moved;
     }
 }

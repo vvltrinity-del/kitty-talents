@@ -306,4 +306,30 @@ public class KittyRegressionGameTests {
             leave(h, fp);
         });
     }
+
+    /** Playtest crash: following cats crossing a dimension ran the portal search and threw a NullPointerException. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testFollowingCatsComeAlongThroughDimensions(GameTestHelper h) {
+        var fp = joinFakeOwner(h, new BlockPos(3, 2, 2));
+        try {
+            TalentedCat follower = ownedCat(h, fp, new BlockPos(2, 2, 2));
+            follower.setOrderedToSit(false);
+            follower.setCatMode(CatMode.FOLLOW);
+            TalentedCat sitter = ownedCat(h, fp, new BlockPos(2, 2, 4)); // ordered to stay: must not come along
+            sitter.setOrderedToSit(true);
+            var nether = h.getLevel().getServer().getLevel(net.minecraft.world.level.Level.NETHER);
+            h.assertTrue(nether != null, "GameTest server needs a Nether");
+            var moved = com.kittytalents.event.ForgeEvents.bringFollowers(fp, h.getLevel(), nether);
+            h.assertTrue(moved.size() == 1, "Exactly the following cat should travel, moved " + moved.size());
+            h.assertTrue(follower.isRemoved() && sitter.isAlive() && !sitter.isRemoved(), "Follower left, sitter stayed");
+            var arrived = moved.get(0);
+            h.assertTrue(arrived instanceof TalentedCat && arrived.level() == nether
+                    && arrived.distanceToSqr(fp.position()) < 1.0D, "Follower should arrive at the player's position in the Nether: "
+                    + arrived.level().dimension().location() + " " + arrived.position());
+            arrived.discard();
+            h.succeed();
+        } finally {
+            leave(h, fp);
+        }
+    }
 }

@@ -157,7 +157,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public boolean isFrenzied() { return frenzyTimer > 0; }
 
     // ---- One-shot animations (Phase 5). Server broadcasts an entity event; clients time the pose locally. ----
-    public static final byte ANIM_POUNCE = 60, ANIM_DODGE = 61, ANIM_CAST = 62, ANIM_GROOM = 63;
+    // IDs 110-113: vanilla claims 60 (death poof) and 63 (handled by ClientPacketListener as the Sniffer dig sound,
+    // which threw "TalentedCat cannot be cast to Sniffer" on every groom).
+    public static final byte ANIM_POUNCE = 110, ANIM_DODGE = 111, ANIM_CAST = 112, ANIM_GROOM = 113;
     private byte animType = 0;
     private int animStartTick = -10_000;
     public byte getAnimType() { return animType; }
