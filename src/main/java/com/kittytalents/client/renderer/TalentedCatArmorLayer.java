@@ -1,6 +1,8 @@
 package com.kittytalents.client.renderer;
 
+import com.kittytalents.client.model.KTCatModel;
 import com.kittytalents.entity.TalentedCat;
+import net.minecraft.client.model.geom.EntityModelSet;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -24,19 +26,16 @@ import net.minecraft.world.item.Items;
 import javax.annotation.Nullable;
 import java.util.Locale;
 
-public class TalentedCatArmorLayer extends RenderLayer<TalentedCat, TalentedCatModel> {
-    private final TalentedCatArmorModel outerArmorModel;
-    private final TalentedCatArmorModel innerArmorModel;
+public class TalentedCatArmorLayer extends RenderLayer<TalentedCat, KTCatModel> {
+    /** Helmet, chest and front-leg guards: a shell 0.3 px out from the skin. */
+    private final KTCatModel outerArmorModel;
+    /** Hind-leg guards (the "leggings" slot) sit a little tighter so they never overlap the chest shell. */
+    private final KTCatModel innerArmorModel;
 
-    public TalentedCatArmorLayer(RenderLayerParent<TalentedCat, TalentedCatModel> parent) {
+    public TalentedCatArmorLayer(RenderLayerParent<TalentedCat, KTCatModel> parent, EntityModelSet models) {
         super(parent);
-        MeshDefinition outerMesh = TalentedCatArmorModel.createArmorMesh(new CubeDeformation(0.22F));
-        ModelPart outerRoot = outerMesh.getRoot().bake(64, 32);
-        this.outerArmorModel = new TalentedCatArmorModel(outerRoot);
-
-        MeshDefinition innerMesh = TalentedCatArmorModel.createArmorMesh(new CubeDeformation(0.12F));
-        ModelPart innerRoot = innerMesh.getRoot().bake(64, 32);
-        this.innerArmorModel = new TalentedCatArmorModel(innerRoot);
+        this.outerArmorModel = new KTCatModel(models.bakeLayer(KTCatModel.ARMOR_OUTER));
+        this.innerArmorModel = new KTCatModel(models.bakeLayer(KTCatModel.ARMOR_INNER));
     }
 
     @Override
@@ -45,30 +44,27 @@ public class TalentedCatArmorLayer extends RenderLayer<TalentedCat, TalentedCatM
         Minecraft mc = Minecraft.getInstance();
         if (mc.getCameraEntity() == cat && mc.options.getCameraType().isFirstPerson()) return;
 
-        // Slot 1: Helmet
-        renderArmorPiece(poseStack, buffer, packedLight, cat, cat.getArmorSlotItem(1), EquipmentSlot.HEAD, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch);
-        // Slot 2: Chestplate / Battle Harness
-        renderArmorPiece(poseStack, buffer, packedLight, cat, cat.getArmorSlotItem(2), EquipmentSlot.CHEST, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch);
-        // Slot 3: Leggings / Flank Guards
-        renderArmorPiece(poseStack, buffer, packedLight, cat, cat.getArmorSlotItem(3), EquipmentSlot.LEGS, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch);
-        // Slot 4: Boots / Paw Guards
-        renderArmorPiece(poseStack, buffer, packedLight, cat, cat.getArmorSlotItem(4), EquipmentSlot.FEET, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch);
+        renderArmorPiece(poseStack, buffer, packedLight, cat, cat.getArmorSlotItem(1), EquipmentSlot.HEAD);
+        renderArmorPiece(poseStack, buffer, packedLight, cat, cat.getArmorSlotItem(2), EquipmentSlot.CHEST);
+        renderArmorPiece(poseStack, buffer, packedLight, cat, cat.getArmorSlotItem(3), EquipmentSlot.LEGS);
+        renderArmorPiece(poseStack, buffer, packedLight, cat, cat.getArmorSlotItem(4), EquipmentSlot.FEET);
     }
 
-    private void renderArmorPiece(PoseStack poseStack, MultiBufferSource buffer, int packedLight, TalentedCat cat, ItemStack stack, EquipmentSlot slot, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
+    private void renderArmorPiece(PoseStack poseStack, MultiBufferSource buffer, int packedLight, TalentedCat cat, ItemStack stack, EquipmentSlot slot) {
         if (stack.isEmpty()) return;
 
         // Elytra on chest is handled by TalentedCatWingLayer with authentic wing folding & flaring
         if (slot == EquipmentSlot.CHEST && stack.is(Items.ELYTRA)) return;
 
-        if (stack.getItem() instanceof ArmorItem armorItem) {
-            TalentedCatArmorModel model = (slot == EquipmentSlot.LEGS) ? this.innerArmorModel : this.outerArmorModel;
-            this.getParentModel().copyPropertiesTo(model);
-            // CRITICAL: Call prepareMobModel so the armor model adopts the cat's sitting/sneaking bone transforms!
-            model.prepareMobModel(cat, limbSwing, limbSwingAmount, partialTicks);
-            model.setupAnim(cat, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
-            model.copyBonesFrom(this.getParentModel());
-            model.setSlotVisible(slot);
+        if (stack.getItem() instanceof ArmorItem) {
+            KTCatModel model = (slot == EquipmentSlot.LEGS) ? this.innerArmorModel : this.outerArmorModel;
+            this.getParentModel().copyPoseTo(model);
+            switch (slot) {
+                case HEAD -> model.showOnly(model.head);
+                case CHEST -> model.showOnly(model.body);
+                case LEGS -> model.showOnly(model.leftHindLeg, model.rightHindLeg);
+                default -> model.showOnly(model.leftFrontLeg, model.rightFrontLeg);
+            }
 
             boolean isLeather = isLeatherArmor(stack);
             ResourceLocation tex = getFelineArmorLocation(cat, stack, slot, null);
@@ -95,8 +91,8 @@ public class TalentedCatArmorLayer extends RenderLayer<TalentedCat, TalentedCatM
             }
         } else if (slot == EquipmentSlot.HEAD && (stack.is(Items.CARVED_PUMPKIN) || stack.is(Items.SKELETON_SKULL) || stack.is(Items.WITHER_SKELETON_SKULL) || stack.is(Items.ZOMBIE_HEAD) || stack.is(Items.CREEPER_HEAD) || stack.is(Items.PIGLIN_HEAD))) {
             poseStack.pushPose();
-            this.getParentModel().getHeadPart().translateAndRotate(poseStack);
-            poseStack.translate(0.0D, -0.32D, 0.0D);
+            this.getParentModel().translateToAnchor(KTCatModel.Anchor.HEAD_TOP, poseStack);
+            poseStack.translate(0.0D, -0.14D, 0.0D);
             poseStack.scale(0.55F, 0.55F, 0.55F);
             Minecraft.getInstance().getItemRenderer().renderStatic(
                     stack,
@@ -112,7 +108,7 @@ public class TalentedCatArmorLayer extends RenderLayer<TalentedCat, TalentedCatM
         }
     }
 
-    private void renderModel(PoseStack poseStack, MultiBufferSource buffer, int packedLight, boolean hasFoil, TalentedCatArmorModel model, float red, float green, float blue, ResourceLocation texture) {
+    private void renderModel(PoseStack poseStack, MultiBufferSource buffer, int packedLight, boolean hasFoil, KTCatModel model, float red, float green, float blue, ResourceLocation texture) {
         VertexConsumer vertexConsumer = ItemRenderer.getArmorFoilBuffer(buffer, RenderType.armorCutoutNoCull(texture), false, hasFoil);
         model.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, red, green, blue, 1.0F);
     }

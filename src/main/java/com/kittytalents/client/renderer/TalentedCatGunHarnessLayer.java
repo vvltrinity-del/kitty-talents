@@ -1,6 +1,7 @@
 package com.kittytalents.client.renderer;
 
 import com.kittytalents.compat.tacz.TacZCompat;
+import com.kittytalents.client.model.KTCatModel;
 import com.kittytalents.entity.TalentedCat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -25,11 +26,11 @@ import net.minecraft.world.item.ItemStack;
  * directly above the cat's dorsal spine. Tracks head yaw/pitch, kicks back on firing,
  * and tilts sideways while reloading.
  */
-public class TalentedCatGunHarnessLayer extends RenderLayer<TalentedCat, TalentedCatModel> {
+public class TalentedCatGunHarnessLayer extends RenderLayer<TalentedCat, KTCatModel> {
     private static final ResourceLocation HARNESS_TEX = new ResourceLocation("kittytalents", "textures/models/accessories/cat_backpack.png");
     private final ModelPart harnessPart;
 
-    public TalentedCatGunHarnessLayer(RenderLayerParent<TalentedCat, TalentedCatModel> parent) {
+    public TalentedCatGunHarnessLayer(RenderLayerParent<TalentedCat, KTCatModel> parent) {
         super(parent);
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();

@@ -4,23 +4,21 @@ import com.kittytalents.KittyTalents;
 import com.kittytalents.entity.TalentedCat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import net.minecraft.client.model.CatModel;
-import net.minecraft.client.model.geom.ModelLayers;
+import com.kittytalents.client.model.KTCatModel;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 
-public class TalentedCatRenderer extends MobRenderer<TalentedCat, TalentedCatModel> {
+public class TalentedCatRenderer extends MobRenderer<TalentedCat, KTCatModel> {
     public TalentedCatRenderer(EntityRendererProvider.Context context) {
-        super(context, new TalentedCatModel(context.bakeLayer(ModelLayers.CAT)), 0.4F);
-        this.addLayer(new TalentedCatArmorLayer(this));
+        super(context, new KTCatModel(context.bakeLayer(KTCatModel.MAIN)), 0.4F);
+        this.addLayer(new TalentedCatArmorLayer(this, context.getModelSet()));
         this.addLayer(new TalentedCatCollarLayer(this, context.getModelSet()));
         this.addLayer(new TalentedCatWeaponLayer(this));
         this.addLayer(new TalentedCatGunHarnessLayer(this));
         this.addLayer(new TalentedCatPackLayer(this));
         this.addLayer(new TalentedCatWingLayer(this, context.getModelSet()));
         this.addLayer(new TalentedCatAccessoryLayer(this));
-        this.addLayer(new TalentedCatTailLayer(this, context.getModelSet()));
     }
 
     private static final ResourceLocation[] VANILLA_SKINS = new ResourceLocation[] {
@@ -81,21 +79,7 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, TalentedCatMod
             return;
         }
 
-        TalentedCatModel model = this.getModel();
-        model.getHeadPart().visible = true;
-
-        boolean isNekomata = cat.getMutation() == com.kittytalents.entity.CatBreedingManager.MutationType.NEKOMATA;
-        if (isNekomata) {
-            model.getTail1().visible = false;
-            model.getTail2().visible = false;
-        }
-
         super.render(cat, entityYaw, partialTicks, poseStack, buffer, packedLight);
-
-        if (isNekomata) {
-            model.getTail1().visible = true;
-            model.getTail2().visible = true;
-        }
     }
 
     @Override

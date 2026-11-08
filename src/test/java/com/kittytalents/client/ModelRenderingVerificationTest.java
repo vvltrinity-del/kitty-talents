@@ -1,6 +1,6 @@
 package com.kittytalents.client;
 
-import com.kittytalents.client.renderer.TalentedCatArmorModel;
+import com.kittytalents.client.model.KTCatModel;
 import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
@@ -17,28 +17,23 @@ public class ModelRenderingVerificationTest {
 
 
     @org.junit.jupiter.api.Test
-    public void testArmorMeshHierarchy() {
-        MeshDefinition mesh = TalentedCatArmorModel.createArmorMesh(new CubeDeformation(0.2F));
-        PartDefinition root = mesh.getRoot();
-
-        // 1. Head Open Cowl + Tactical Goggles
-        PartDefinition head = root.getChild("head");
-        assertNotNull(head, "Head part definition is missing");
-
-        // 2. Torso: dorsal carapace (CHEST) + rump plate (LEGS) -- carapace remodel approved 2026-10-07
-        PartDefinition body = root.getChild("body");
-        assertNotNull(body, "Body part definition is missing");
-        assertNotNull(body.getChild("carapace"), "Dorsal carapace missing");
-        assertNotNull(body.getChild("rump_plate"), "Rump plate missing");
-
-        // 3. Every leg carries an armor cuff
-        for (String leg : new String[]{"left_front_leg", "right_front_leg", "left_hind_leg", "right_hind_leg"}) {
-            PartDefinition part = root.getChild(leg);
-            assertNotNull(part, leg + " missing");
-            assertNotNull(part.getChild("cuff"), leg + " cuff missing");
+    public void testCatSkeletonHasAnchorsAndTwinTail() {
+        for (KTCatModel.Shell shell : KTCatModel.Shell.values()) {
+            PartDefinition root = KTCatModel.createMesh(CubeDeformation.NONE, shell).getRoot();
+            PartDefinition head = root.getChild("head");
+            assertNotNull(head.getChild("head_top"), shell + ": head_top anchor missing");
+            assertNotNull(head.getChild("mouth"), shell + ": mouth anchor missing");
+            PartDefinition body = root.getChild("body");
+            assertNotNull(body.getChild("back"), shell + ": back anchor missing");
+            assertNotNull(body.getChild("neck"), shell + ": neck anchor missing");
+            PartDefinition tailRoot = root.getChild("tail_root");
+            // Both tails hang off the same root bone, so the Nekomata pair is symmetric by construction.
+            assertNotNull(tailRoot.getChild("tail").getChild("tail_tip"), shell + ": tail chain missing");
+            assertNotNull(tailRoot.getChild("tail_b").getChild("tail_b_tip"), shell + ": second tail chain missing");
+            for (String leg : new String[]{"left_front_leg", "right_front_leg", "left_hind_leg", "right_hind_leg"}) {
+                assertNotNull(root.getChild(leg), shell + ": " + leg + " missing");
+            }
         }
-
-        System.out.println("✓ Armor mesh hierarchy verified (head, carapace, rump plate, leg cuffs).");
     }
 
     @org.junit.jupiter.api.Test

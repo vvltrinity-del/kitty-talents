@@ -35,6 +35,14 @@ public class ClientModEvents {
         event.registerEntityRenderer(ModEntities.FELINE_HISS_PROJECTILE.get(), net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
     }
 
+    @SubscribeEvent
+    public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.MAIN, com.kittytalents.client.model.KTCatModel::createCatLayer);
+        event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.COLLAR, com.kittytalents.client.model.KTCatModel::createCollarLayer);
+        event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.ARMOR_OUTER, () -> com.kittytalents.client.model.KTCatModel.createArmorLayer(0.3F));
+        event.registerLayerDefinition(com.kittytalents.client.model.KTCatModel.ARMOR_INNER, () -> com.kittytalents.client.model.KTCatModel.createArmorLayer(0.2F));
+    }
+
     public static void openWhistleScreen() {
         net.minecraft.client.Minecraft.getInstance().setScreen(new com.kittytalents.client.gui.KittyWhistleScreen());
     }

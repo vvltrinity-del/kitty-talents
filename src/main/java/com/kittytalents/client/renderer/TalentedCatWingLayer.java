@@ -1,5 +1,6 @@
 package com.kittytalents.client.renderer;
 
+import com.kittytalents.client.model.KTCatModel;
 import com.kittytalents.entity.TalentedCat;
 import com.kittytalents.registry.ModItems;
 import com.kittytalents.talent.Talents;
@@ -19,12 +20,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-public class TalentedCatWingLayer extends RenderLayer<TalentedCat, TalentedCatModel> {
+public class TalentedCatWingLayer extends RenderLayer<TalentedCat, KTCatModel> {
     private static final ResourceLocation ELYTRA_LOCATION = new ResourceLocation("textures/entity/elytra.png");
     private static final ResourceLocation ANGEL_WINGS_LOCATION = new ResourceLocation("kittytalents", "textures/models/accessories/angel_wings.png");
     private final ElytraModel<TalentedCat> elytraModel;
 
-    public TalentedCatWingLayer(RenderLayerParent<TalentedCat, TalentedCatModel> parent, EntityModelSet modelSet) {
+    public TalentedCatWingLayer(RenderLayerParent<TalentedCat, KTCatModel> parent, EntityModelSet modelSet) {
         super(parent);
         this.elytraModel = new ElytraModel<>(modelSet.bakeLayer(ModelLayers.ELYTRA));
     }
@@ -55,15 +56,8 @@ public class TalentedCatWingLayer extends RenderLayer<TalentedCat, TalentedCatMo
 
         poseStack.pushPose();
 
-        // Attach directly to cat's torso so wings seamlessly follow standing, sitting, sneaking, and running poses!
-        this.getParentModel().getBodyPart().translateAndRotate(poseStack);
-
-        // In cat bodyPart local coordinate space:
-        // X = lateral (width 4, center 0)
-        // Y = along spine from neck (+3) to tail (+19)
-        // Z = dorso-ventral (-2 = top spine/back, -8 = belly)
-        // Position directly over upper shoulder blades on cat's back:
-        poseStack.translate(0.0D, 0.24D, -0.11D);
+        // Elytra space matches the BACK anchor: +Y runs down the spine, +Z points out of the back.
+        this.getParentModel().translateToAnchor(KTCatModel.Anchor.BACK, poseStack);
         poseStack.scale(0.38F, 0.38F, 0.38F);
 
         this.getParentModel().copyPropertiesTo(this.elytraModel);
