@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public final class CatCombatState {
 
-    public static final String DEFAULT_SLOT_1 = "pounce";
+    public static final String DEFAULT_SLOT_1 = "feline_dash";
     public static final String DEFAULT_SLOT_2 = "feline_hiss";
     public static final String DEFAULT_SLOT_3 = "healing_purr";
     public static final String DEFAULT_ULTIMATE = "catnip_frenzy";

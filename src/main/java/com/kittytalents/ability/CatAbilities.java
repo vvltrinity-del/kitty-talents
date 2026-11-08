@@ -11,7 +11,6 @@ public class CatAbilities {
     private static final Map<String, CatAbility> REGISTRY = new LinkedHashMap<>();
 
     // Physical & Signature Skills
-    public static final CatAbility POUNCE = register(new PounceAbility());
     public static final CatAbility FELINE_HISS = register(new FelineHissAbility());
     public static final CatAbility FELINE_DASH = register(new FelineDashAbility());
     public static final CatAbility FORTRESS_GUARD = register(new FortressGuardAbility());
@@ -67,7 +66,7 @@ public class CatAbilities {
      * Recommends a default signature ability matching the cat's primary element.
      */
     public static CatAbility getDefaultAbilityForElement(FelineElement element) {
-        if (element == null) return POUNCE;
+        if (element == null) return FELINE_DASH;
         return switch (element) {
             case FIRE -> INFERNO_SPIN;
             case FROST -> FROST_NOVA;
@@ -77,7 +76,7 @@ public class CatAbilities {
             case POISON -> VENOM_FANG;
             case NATURE -> HEALING_PURR;
             case ARCANE -> SOUL_FLAME_BARRAGE;
-            case PHYSICAL -> POUNCE;
+            case PHYSICAL -> FELINE_DASH;
         };
     }
 }

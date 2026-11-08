@@ -77,6 +77,18 @@ class CatSchemaTest {
     }
 
     @Test
+    void pounceAbilitySlotIsClearedInSchema2() {
+        CompoundTag root = new CompoundTag();
+        root.putInt(CatSchema.KEY_SCHEMA, 1);
+        root.putString("AbilitySlot1", "pounce");
+        root.putString("AbilitySlot2", "frost_nova");
+        assertEquals(1, CatSchema.migrate(root, new CompoundTag()));
+        assertFalse(root.contains("AbilitySlot1"), "pounce slot should be cleared so the default applies");
+        assertEquals("frost_nova", root.getString("AbilitySlot2"));
+        assertEquals(CatSchema.CURRENT, root.getInt(CatSchema.KEY_SCHEMA));
+    }
+
+    @Test
     void currentVersionIsIdempotent() {
         CompoundTag root = new CompoundTag();
         root.putInt(CatSchema.KEY_SCHEMA, CatSchema.CURRENT);

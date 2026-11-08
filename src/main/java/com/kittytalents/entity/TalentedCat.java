@@ -900,6 +900,22 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         super.startSeenByPlayer(player);
         syncEquipment(player);
         syncTalents(player);
+        syncLoadout(player);
+    }
+
+    /** Send the authoritative combat loadout to everyone tracking this cat. */
+    public void syncLoadout() {
+        if (!this.level().isClientSide) {
+            PacketHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> this),
+                    new com.kittytalents.network.PacketSyncCatLoadout(this.getId(), com.kittytalents.core.component.CatLoadout.of(this)));
+        }
+    }
+
+    public void syncLoadout(ServerPlayer player) {
+        if (!this.level().isClientSide && player != null) {
+            PacketHandler.sendToPlayer(new com.kittytalents.network.PacketSyncCatLoadout(this.getId(),
+                    com.kittytalents.core.component.CatLoadout.of(this)), player);
+        }
     }
 
     public boolean tryAutoEquip(ItemStack stack, Player player) {
@@ -1866,6 +1882,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view()), player);
         syncEquipment(player);
         syncTalents(player);
+        syncLoadout(player);
     }
 
     public void openPackScreen(ServerPlayer player) {

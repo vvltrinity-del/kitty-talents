@@ -19,13 +19,16 @@ import java.util.List;
  *   <li><b>1</b>: CatMode stored by name ({@value #KEY_MODE_NAME}); ability cooldowns in
  *       {@value #KEY_ABILITY_COOLDOWNS}; Spirit Catnip flag in {@value #KEY_SPIRIT_PRIMED}; transient
  *       combat keys removed from persistent data.</li>
+ *   <li><b>2</b>: Pounce is every cat's built-in move, no longer an equippable ability: a saved "pounce" in an
+ *       ability slot is cleared so the slot falls back to its default. Mode names may be legacy (mapped by
+ *       CatMode#fromSavedName after the 21 -> 12 mode merge).</li>
  * </ul>
  *
  * <p>This class is pure NBT logic (no world / entity access) so it can be unit-tested without a Minecraft bootstrap.</p>
  */
 public final class CatSchema {
 
-    public static final int CURRENT = 1;
+    public static final int CURRENT = 2;
 
     public static final String KEY_SCHEMA = "KTSchema";
     public static final String KEY_MODE_NAME = "CatModeName";
@@ -64,8 +67,17 @@ public final class CatSchema {
     public static int migrate(CompoundTag root, CompoundTag forgeData) {
         int from = versionOf(root);
         if (from < 1) migrate0to1(root, forgeData);
+        if (from < 2) migrate1to2(root);
         root.putInt(KEY_SCHEMA, CURRENT);
         return from;
+    }
+
+    static final List<String> ABILITY_SLOT_KEYS = List.of("AbilitySlot1", "AbilitySlot2", "AbilitySlot3", "AbilityUltimate");
+
+    private static void migrate1to2(CompoundTag root) {
+        for (String key : ABILITY_SLOT_KEYS) {
+            if ("pounce".equalsIgnoreCase(root.getString(key))) root.remove(key);
+        }
     }
 
     private static void migrate0to1(CompoundTag root, CompoundTag forgeData) {

@@ -81,6 +81,18 @@ public class ClientPacketHandlers {
         }
     }
 
+    public static void handleSyncLoadout(int entityId, com.kittytalents.core.component.CatLoadout loadout) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        Entity e = mc.level.getEntity(entityId);
+        if (e instanceof TalentedCat cat) {
+            loadout.applyTo(cat);
+            if (mc.screen instanceof CatTalentScreen screen) {
+                screen.refreshCombatUi();
+            }
+        }
+    }
+
     public static void handleSyncTwine(int catEntityId, boolean twined) {
         ClientTwineHandler.handleSyncTwine(catEntityId, twined);
     }

@@ -73,6 +73,18 @@ public class PacketHandler {
                 .consumerMainThread(PacketSyncTrustedPlayers::handle)
                 .add();
 
+        INSTANCE.messageBuilder(PacketSetCatLoadout.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .decoder(PacketSetCatLoadout::new)
+                .encoder(PacketSetCatLoadout::toBytes)
+                .consumerMainThread(PacketSetCatLoadout::handle)
+                .add();
+
+        INSTANCE.messageBuilder(PacketSyncCatLoadout.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(PacketSyncCatLoadout::new)
+                .encoder(PacketSyncCatLoadout::toBytes)
+                .consumerMainThread(PacketSyncCatLoadout::handle)
+                .add();
+
         INSTANCE.messageBuilder(PacketSyncCatEquipment.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(PacketSyncCatEquipment::new)
                 .encoder(PacketSyncCatEquipment::toBytes)

@@ -210,6 +210,41 @@ public class KittyAiGameTests {
         h.succeed();
     }
 
+    /** Combat tab loadout reaches the server: owner can set a valid loadout; invalid ones and strangers are rejected. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testLoadoutPacketValidatesAndAuthorizes(GameTestHelper h) {
+        TalentedCat c = cat(h, new BlockPos(2, 2, 2), CatMode.FOLLOW);
+        var owner = net.minecraftforge.common.util.FakePlayerFactory.get(h.getLevel(),
+                new com.mojang.authlib.GameProfile(java.util.UUID.randomUUID(), "kt_owner"));
+        var stranger = net.minecraftforge.common.util.FakePlayerFactory.get(h.getLevel(),
+                new com.mojang.authlib.GameProfile(java.util.UUID.randomUUID(), "kt_stranger"));
+        BlockPos at = h.absolutePos(new BlockPos(2, 2, 3));
+        owner.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+        stranger.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+        c.tame(owner);
+
+        var fire = com.kittytalents.combat.FelineElement.FIRE;
+        var role = c.getCatRole();
+        var good = new com.kittytalents.core.component.CatLoadout(role, fire, "frost_nova", "venom_fang", "tidal_surge", "tempest_claws");
+        h.assertTrue(com.kittytalents.network.PacketSetCatLoadout.apply(owner, c.getId(), good), "Owner's valid loadout was rejected");
+        h.assertTrue("frost_nova".equals(c.getAbilitySlot1()) && "tempest_claws".equals(c.getAbilityUltimate())
+                && c.getPrimaryElement() == fire, "Valid loadout was not applied on the server");
+
+        var pounceSlot = new com.kittytalents.core.component.CatLoadout(role, fire, "pounce", "venom_fang", "tidal_surge", "tempest_claws");
+        var ultInSkill = new com.kittytalents.core.component.CatLoadout(role, fire, "apex_predator", "venom_fang", "tidal_surge", "tempest_claws");
+        var duplicate = new com.kittytalents.core.component.CatLoadout(role, fire, "venom_fang", "venom_fang", "tidal_surge", "tempest_claws");
+        var skillAsUlt = new com.kittytalents.core.component.CatLoadout(role, fire, "frost_nova", "venom_fang", "tidal_surge", "feline_hiss");
+        for (var bad : java.util.List.of(pounceSlot, ultInSkill, duplicate, skillAsUlt)) {
+            h.assertFalse(com.kittytalents.network.PacketSetCatLoadout.apply(owner, c.getId(), bad), "Invalid loadout accepted: " + bad);
+        }
+        h.assertTrue("frost_nova".equals(c.getAbilitySlot1()), "Rejected loadout must not change the cat");
+
+        var other = new com.kittytalents.core.component.CatLoadout(role, fire, "feline_dash", "feline_hiss", "healing_purr", "catnip_frenzy");
+        h.assertFalse(com.kittytalents.network.PacketSetCatLoadout.apply(stranger, c.getId(), other), "A stranger changed the loadout");
+        h.assertTrue("frost_nova".equals(c.getAbilitySlot1()), "Stranger's loadout must not apply");
+        h.succeed();
+    }
+
     @SuppressWarnings("unused")
     private static boolean alive(LivingEntity e) { return e != null && e.isAlive(); }
 }

@@ -254,7 +254,7 @@ public class CatTestHarness {
         } catch (Throwable ignored) {
         }
         int count = 0;
-        String[] ids = {"pounce", "feline_hiss", "healing_purr", "shadow_strike", "utility_interact", "volt_dash"};
+        String[] ids = {"feline_dash", "feline_hiss", "healing_purr", "shadow_strike", "utility_interact", "volt_dash"};
         for (String id : ids) {
             if (CatAbilities.get(id) != null) {
                 count++;

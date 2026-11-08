@@ -144,6 +144,16 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         if (currentTab == 2) rebuildInterface();
     }
 
+    public void refreshCombatUi() {
+        if (currentTab == 5) rebuildInterface();
+    }
+
+    /** The Combat tab edits the local copy for instant feedback; the server validates, applies and syncs back. */
+    private void sendLoadout() {
+        PacketHandler.sendToServer(new com.kittytalents.network.PacketSetCatLoadout(cat.getId(),
+                com.kittytalents.core.component.CatLoadout.of(cat)));
+    }
+
     public void refreshTalentUi() {
         if (currentTab == 1) rebuildInterface();
     }
@@ -589,7 +599,7 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
             this.addRenderableWidget(Button.builder(
                     Component.literal(r.getDisplayName()).withStyle(isSel ? ChatFormatting.GOLD : ChatFormatting.GRAY),
                     button -> {
-                        cat.setCatRole(r);
+                        cat.setCatRole(r); sendLoadout();
                         rebuildInterface();
                     }
             ).bounds(rX + i * (rBtnW + 2), startY + 26, rBtnW, 18).build());
@@ -615,7 +625,7 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
             this.addRenderableWidget(Button.builder(
                     Component.literal(el.name()).withStyle(isCur ? ChatFormatting.AQUA : ChatFormatting.DARK_GRAY),
                     button -> {
-                        cat.setPrimaryElement(el);
+                        cat.setPrimaryElement(el); sendLoadout();
                         rebuildInterface();
                     }
             ).bounds(elemX + (i % 4) * (elemBtnW + 4), elemY + (i / 4) * 20, elemBtnW, 18).build());
@@ -628,10 +638,10 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         this.addRenderableWidget(Button.builder(
                 Component.literal("Balanced Preset"),
                 button -> {
-                    cat.setAbilitySlot1("pounce");
+                    cat.setAbilitySlot1("feline_dash");
                     cat.setAbilitySlot2("feline_hiss");
                     cat.setAbilitySlot3("healing_purr");
-                    cat.setAbilityUltimate("catnip_frenzy");
+                    cat.setAbilityUltimate("catnip_frenzy"); sendLoadout();
                     rebuildInterface();
                 }
         ).bounds(loadoutX, loadoutY, 115, 18).build());
@@ -639,10 +649,10 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         this.addRenderableWidget(Button.builder(
                 Component.literal("Berserker Preset"),
                 button -> {
-                    cat.setAbilitySlot1("pounce");
+                    cat.setAbilitySlot1("shadow_strike");
                     cat.setAbilitySlot2("venom_fang");
                     cat.setAbilitySlot3("inferno_spin");
-                    cat.setAbilityUltimate("apex_predator");
+                    cat.setAbilityUltimate("apex_predator"); sendLoadout();
                     rebuildInterface();
                 }
         ).bounds(loadoutX + 120, loadoutY, 115, 18).build());
@@ -653,7 +663,7 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
                     cat.setAbilitySlot1("volt_dash");
                     cat.setAbilitySlot2("frost_nova");
                     cat.setAbilitySlot3("tidal_surge");
-                    cat.setAbilityUltimate("soul_flame_barrage");
+                    cat.setAbilityUltimate("soul_flame_barrage"); sendLoadout();
                     rebuildInterface();
                 }
         ).bounds(loadoutX, loadoutY + 20, 115, 18).build());
@@ -664,7 +674,7 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
                     cat.setAbilitySlot1("fortress_guard");
                     cat.setAbilitySlot2("feline_dash");
                     cat.setAbilitySlot3("healing_purr");
-                    cat.setAbilityUltimate("celestial_purr");
+                    cat.setAbilityUltimate("celestial_purr"); sendLoadout();
                     rebuildInterface();
                 }
         ).bounds(loadoutX + 120, loadoutY + 20, 115, 18).build());
@@ -711,19 +721,19 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         if (slot == 1) {
             String cur = cat.getAbilitySlot1();
             int idx = findAbilityIndex(skills, cur);
-            cat.setAbilitySlot1(skills.get((idx + 1) % skills.size()).getId());
+            cat.setAbilitySlot1(skills.get((idx + 1) % skills.size()).getId()); sendLoadout();
         } else if (slot == 2) {
             String cur = cat.getAbilitySlot2();
             int idx = findAbilityIndex(skills, cur);
-            cat.setAbilitySlot2(skills.get((idx + 1) % skills.size()).getId());
+            cat.setAbilitySlot2(skills.get((idx + 1) % skills.size()).getId()); sendLoadout();
         } else if (slot == 3) {
             String cur = cat.getAbilitySlot3();
             int idx = findAbilityIndex(skills, cur);
-            cat.setAbilitySlot3(skills.get((idx + 1) % skills.size()).getId());
+            cat.setAbilitySlot3(skills.get((idx + 1) % skills.size()).getId()); sendLoadout();
         } else if (slot == 4 && !ults.isEmpty()) {
             String cur = cat.getAbilityUltimate();
             int idx = findAbilityIndex(ults, cur);
-            cat.setAbilityUltimate(ults.get((idx + 1) % ults.size()).getId());
+            cat.setAbilityUltimate(ults.get((idx + 1) % ults.size()).getId()); sendLoadout();
         }
     }
 
@@ -1029,7 +1039,7 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         graphics.drawString(this.font, "§aActive Ability Loadout (Twine Hotkeys)", rightX, startY + 10, 0xFFFFFFFF, false);
 
         // Ability Card 1 (V)
-        renderAbilitySlotInfo(graphics, rightX, startY + 26, "V", cat.getAbilitySlot1(), "pounce");
+        renderAbilitySlotInfo(graphics, rightX, startY + 26, "V", cat.getAbilitySlot1(), "feline_dash");
 
         // Ability Card 2 (G)
         renderAbilitySlotInfo(graphics, rightX + 110, startY + 26, "G", cat.getAbilitySlot2(), "feline_hiss");
