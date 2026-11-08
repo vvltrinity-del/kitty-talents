@@ -249,6 +249,24 @@ com.kittytalents
   TACTICAL and SUPPORT tethering and teleport-to-owner, and defending the owner. GameTest fake players aren't
   resolvable as owners.
 
+### 2026-11-07: Phase 4 (talents, mastery, XP) done. Commits `b4f6db3` and Phase 4b
+- **Talent hooks:** `talent/effect/` holds the `TalentEffect` interface (tick with a staggered interval, outgoing and
+  incoming damage, on-hit, attributes, kill, owner-hurt, owner-fall) and the `TalentEngine` dispatcher. About 45 talents
+  moved out of `TalentedCat` and the deleted `TalentGameplayHandler` into small classes grouped by category. Talents whose
+  gameplay belongs to a system (jobs, goals, TacZ, Pounce) stay there and check `TalentEngine.isMastered(...)`.
+- **Mastery perks:** all 51 talents have one at max rank, shown in the Talents tab (gold when earned) and listed in
+  `en_us.json` as `talent.kittytalents.<id>.mastery`. `LangCompletenessTest` enforces them. Standard talents must be *trained* to max (the free rank 5 doesn't count); Nine Lives max is 5 → 8.
+- **XP:** `core/progression/CatProgression`. Every kill credited to the cat (melee, pounce, abilities, guns) gives XP
+  (hostiles ≈ max HP / 2, bosses ×5), and so does each job task. Levels give skill points, the cap is respected, and the Home tab shows XP.
+- **Abilities:** hostile AoEs and AI enemy counts use `CatTargeting.canHarm`, heals use `isFriendly`; Venom Fang is skipped against undead.
+- **`CatAttackEffects`** (role effects, tier bleed, element visuals) is wired into melee hits.
+- **About 12 bugs fixed**, listed in the `b4f6db3` commit message: the Aqua Kitty boost was applied twice and accelerated
+  forever; Gate Purr left gates open; the Catnip burst re-triggered itself; Hunter Cat's "double drops" was never
+  implemented; Home Whiskers had no effect; and more.
+- **Tests:** 35 GameTests (8 new). 100-cat stress: **~4.9 ms/tick** (was 6.1).
+- **Deferred:** talent numbers in datapack JSON (talents are now one small class each, so this is a mechanical follow-up,
+  best done together with the 4.0 `api/` registries), and moving status effects from Forge persistent data to a capability.
+
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).
