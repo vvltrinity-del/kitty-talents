@@ -319,6 +319,39 @@ public class KittyAiGameTests {
                         + ", sitOrder=" + c.isOrderedToSit() + ", dist=" + Math.sqrt(c.distanceToSqr(h.absoluteVec(bedRel.getCenter()))) + ")"));
     }
 
+    /** Playtest request: creep up crouched on an unaware target, then pounce once in range. */
+    @GameTest(template = "arena", timeoutTicks = 300)
+    public static void testStalksUnawareTargetThenPounces(GameTestHelper h) {
+        TalentedCat c = cat(h, new BlockPos(2, 2, 16), CatMode.HUNTING);
+        Zombie z = dummy(h, new BlockPos(18, 2, 16)); // 16 blocks: beyond pounce range
+        c.setTarget(z);
+        boolean[] stalkedFar = {false};
+        h.onEachTick(() -> {
+            if (c.getTarget() != z && z.isAlive()) c.setTarget(z);
+            if (c.isCrouching() && c.distanceTo(z) > com.kittytalents.ai.goal.CatPounceGoal.maxRange(c) + 1) stalkedFar[0] = true;
+        });
+        h.succeedWhen(() -> {
+            h.assertTrue(stalkedFar[0], "Cat should creep up crouched while out of pounce range");
+            h.assertTrue(c.getPouncesPerformed() > 0, "Cat should pounce after the stalk: " + pounceBlocker(c));
+        });
+    }
+
+    /** Playtest request: AI cats dodge on their own (it used to be Twine-only). */
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public static void testDodgesIncomingArrow(GameTestHelper h) {
+        TalentedCat c = cat(h, new BlockPos(8, 2, 8), CatMode.FOLLOW);
+        c.setEnergy(100);
+        int energy = c.getEnergy();
+        var arrow = new net.minecraft.world.entity.projectile.Arrow(h.getLevel(), 0, 0, 0);
+        net.minecraft.world.phys.Vec3 from = h.absoluteVec(new net.minecraft.world.phys.Vec3(8.5, 3.0, 13.5));
+        arrow.setPos(from);
+        arrow.setNoGravity(true);
+        arrow.shoot(0, -0.1, -1, 0.6F, 0.0F); // slowly towards the cat
+        h.getLevel().addFreshEntity(arrow);
+        h.succeedWhen(() -> h.assertTrue(c.combat().dodgeEnd > 0 && c.getEnergy() < energy + 5,
+                "Cat should dodge the incoming arrow (dodgeEnd=" + c.combat().dodgeEnd + ")"));
+    }
+
     @SuppressWarnings("unused")
     private static boolean alive(LivingEntity e) { return e != null && e.isAlive(); }
 }

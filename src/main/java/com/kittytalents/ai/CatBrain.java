@@ -49,6 +49,8 @@ public final class CatBrain {
         g.addGoal(ORDERS, new CatRetreatGoal(cat));
 
         g.addGoal(COMBAT, new CatPounceGoal(cat));
+        g.addGoal(COMBAT, new CatStalkGoal(cat));   // creep up on unaware targets until in pounce range
+        g.addGoal(COMBAT, new CatDodgeGoal(cat));   // no control flags: instant dodge impulse
         g.addGoal(COMBAT, new CatGunAttackGoal(cat, 1.25D, 8.0F, 22.0F));
 
         g.addGoal(MELEE, new CatMeleeGoal(cat));
