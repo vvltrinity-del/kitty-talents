@@ -95,6 +95,14 @@ minecraft {
             args '--quickPlaySingleplayer', 'render_world'
         }
 
+        // Screenshots of the companion screen (every tab, GUI scale 2 and 3) for UI review; writes run-render/screens and quits.
+        screenShots {
+            parent runs.client
+            workingDirectory project.file('run-render')
+            property 'kittytalents.screenShots', project.file('run-render/screens').absolutePath
+            args '--quickPlaySingleplayer', 'render_world', '--width', '1280', '--height', '720'
+        }
+
         server {
             // Own folder so a dedicated-server check can run while a dev client holds run/ locks.
             workingDirectory project.file('run-server')

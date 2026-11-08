@@ -314,6 +314,25 @@ com.kittytalents
 - **Follow-up:** after a stalk, melee sometimes reaches the target before the pounce starts (a race between goals at
   different priorities). Worth tightening so a completed stalk always ends in a pounce.
 
+### 2026-11-08: Phase 6 part 1: companion screen redesign
+- **Look:** wood and leather theme from the user's mockups. Dark-oak frame with iron rivets, spruce title strip
+  ("TALENTED CAT — section"), folder tabs with coloured labels on top, stitched-leather panels, stone buttons with gold
+  (TRAIN), amethyst (TWINE) and red-brick (Respec) accents. The block textures come from the game, so resource packs restyle the screen.
+  Theme code: `client/gui/theme` (`KTTheme` drawing helpers, `KTButton`, `KTWidget`, `KTText`).
+- **Structure:** `CatTalentScreen` is now a 255-line shell (geometry, tabs, title strip, text-field focus, refresh hooks).
+  Each page is a class in `client/gui/tab` (Home, Talents, Gear, Style, Stats, Combat, Twine). Tab objects outlive
+  widget rebuilds, so the selected talent, scroll position and sub-page survive server syncs. All packets and behaviours are unchanged.
+- **Layouts:** Talents has a scrollable list with rank pips, a detail card, a mastery box and a gold TRAIN button.
+  Gear has a framed cat with slots around it. Style has a round portrait. Stats has two icon columns. Combat has
+  full-width ability cards and presets. Twine has a key map and capability badges. Home switches to a compact layout on small GUIs.
+  The cat model now scales to its frame.
+- **Keyboard:** Ctrl+Tab / Ctrl+Shift+Tab or 1-7 switch tabs; text fields swallow keys while typing.
+- **Lang:** every screen label is a `gui.kittytalents.screen.*` key with an English fallback. `tools/gen_screen_lang.py`
+  regenerates the en_us block (169 keys), and `LangCompletenessTest` now fails if a `KTText` key is missing.
+- **Screenshot harness:** `./gradlew runScreenShots` opens every tab at GUI scales 2 and 3 and writes `run-render/screens/*.png`.
+- **Still to do for Phase 6:** `CompanionHud` / `TwineHud` restyle as registered overlays, synced status state for the
+  Twine badges, and making the screen read synced job and clock state instead of previewing them on the client.
+
 ### Findings to carry into later phases
 - **No XP system exists.** Cats level only from treats, plus a 20% chance of a full level per *gun* kill, with no cap
   check. Melee kills give nothing. Phase 4 needs a real `CatProgression` (XP from kills, work and training, with a level cap).

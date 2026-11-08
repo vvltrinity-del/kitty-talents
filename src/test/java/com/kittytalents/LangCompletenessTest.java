@@ -27,6 +27,8 @@ class LangCompletenessTest {
 
     private static final Pattern LITERAL_KEY = Pattern.compile(
             "\"((?:mode|message|gui|item|block|entity|talent|ability|key|tooltip|container|combat)\\.kittytalents\\.[a-z0-9_.]+)\"");
+    /** Companion-screen labels: KTText.t/s("key", "fallback") resolve to gui.kittytalents.screen.key (tools/gen_screen_lang.py). */
+    private static final Pattern SCREEN_KEY = Pattern.compile("KTText\\.[ts]\\(\\s*\"([a-z0-9_.]+)\"");
     private static final Pattern TALENT_ID = Pattern.compile("new Talent\\(\"([a-z0-9_]+)\"");
     private static final Pattern ITEM_ID = Pattern.compile("ITEMS\\.register\\(\"([a-z0-9_]+)\"");
     private static final Pattern BLOCK_ID = Pattern.compile("BLOCKS\\.register\\(\"([a-z0-9_]+)\"");
@@ -38,7 +40,9 @@ class LangCompletenessTest {
 
         try (Stream<Path> files = Files.walk(SRC)) {
             for (Path f : (Iterable<Path>) files.filter(p -> p.toString().endsWith(".java"))::iterator) {
-                collect(LITERAL_KEY, Files.readString(f, StandardCharsets.UTF_8), "", "", required);
+                String text = Files.readString(f, StandardCharsets.UTF_8);
+                collect(LITERAL_KEY, text, "", "", required);
+                collect(SCREEN_KEY, text, "gui.kittytalents.screen.", "", required);
             }
         }
         String talents = Files.readString(SRC.resolve("talent/Talents.java"), StandardCharsets.UTF_8);
@@ -53,6 +57,7 @@ class LangCompletenessTest {
         collect(ITEM_ID, Files.readString(SRC.resolve("registry/ModItems.java"), StandardCharsets.UTF_8), "", "", items);
         items.stream().filter(i -> !blocks.contains(i)).forEach(i -> required.add("item.kittytalents." + i));
 
+        required.removeIf(k -> k.endsWith(".")); // a prefix joined with an id at runtime, not a key
         Set<String> missing = new TreeSet<>();
         for (String key : required) if (!lang.has(key)) missing.add(key);
         assertTrue(missing.isEmpty(), "Missing en_us translations (" + missing.size() + "): " + missing);
