@@ -738,19 +738,52 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         syncTalents();
     }
 
+    /** Skill-point cost of training {@code talent} up to {@code rank}. The single source for training and respec. */
+    public static int costOfRank(Talent talent, int rank) {
+        if (talent.requiresDireTreat()) return rank * 3;
+        if (talent.getMaxLevel() <= 5) return rank <= 2 ? 1 : 2;
+        if (rank <= 2) return 1;
+        if (rank <= 5) return 2;
+        return 3;
+    }
+
+    /** Points needed to take {@code talent} from its free baseline (standard talents start at rank 5) to max. */
+    public static int costToMax(Talent talent) {
+        int total = 0;
+        for (int r = (talent.isStandard() ? STANDARD_TALENT_BASELINE : 0) + 1; r <= talent.getMaxLevel(); r++) {
+            total += costOfRank(talent, r);
+        }
+        return total;
+    }
+
+    /** Starting skill points for a newly tamed cat: enough to max any one non-Dire talent (currently 17). */
+    public static int startingSkillPoints() {
+        int max = 0;
+        for (Talent t : Talents.getAll()) {
+            if (!t.requiresDireTreat()) max = Math.max(max, costToMax(t));
+        }
+        return max;
+    }
+
+    /** Whether this cat already received its starting skill points (saved). */
+    private boolean startingPointsGranted = false;
+
+    private void grantStartingPoints() {
+        if (startingPointsGranted || this.level().isClientSide || !this.isTame()) return;
+        startingPointsGranted = true;
+        setSkillPoints(getSkillPoints() + startingSkillPoints());
+    }
+
+    @Override
+    public void tame(Player player) {
+        super.tame(player);
+        grantStartingPoints();
+    }
+
     public int getCostForNextRank(Talent talent) {
         int currentLvl = getTalentLevel(talent);
         if (currentLvl >= talent.getMaxLevel()) return 0;
-        int nextRank = currentLvl + 1;
-        if (talent.requiresDireTreat()) {
-            return nextRank * 3;
-        } else if (talent.getMaxLevel() <= 5) {
-            return nextRank <= 2 ? 1 : 2;
-        } else {
-            if (nextRank <= 2) return 1;
-            else if (nextRank <= 5) return 2;
-            else return 3;
-        }
+        return costOfRank(talent, currentLvl + 1);
     }
 
     public boolean canTrainTalent(Talent talent) {
@@ -777,15 +810,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             // Standard talents are free up to the baseline; refunding those ranks minted free skill points every respec.
             int freeRanks = talent.isStandard() ? STANDARD_TALENT_BASELINE : 0;
             for (int r = freeRanks + 1; r <= lvl; r++) {
-                if (talent.requiresDireTreat()) {
-                    refundedPoints += r * 3;
-                } else if (talent.getMaxLevel() <= 5) {
-                    refundedPoints += (r <= 2 ? 1 : 2);
-                } else {
-                    if (r <= 2) refundedPoints += 1;
-                    else if (r <= 5) refundedPoints += 2;
-                    else refundedPoints += 3;
-                }
+                refundedPoints += costOfRank(talent, r);
             }
         }
         talents.clear();
@@ -1645,6 +1670,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         super.addAdditionalSaveData(tag);
         tag.putInt("CatLevel", getCatLevel());
         tag.putInt("CatXp", getCatXp());
+        tag.putBoolean("StartingPointsGranted", startingPointsGranted);
         tag.putInt("SkillPoints", getSkillPoints());
         tag.putInt("Hunger", getHunger());
         tag.putFloat("Satiety", satiety);
@@ -1685,6 +1711,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         CatSchema.migrate(tag, getPersistentData());
         if (tag.contains("CatLevel")) setCatLevel(tag.getInt("CatLevel"));
         setCatXp(tag.getInt("CatXp"));
+        this.startingPointsGranted = tag.getBoolean("StartingPointsGranted");
         if (tag.contains("SkillPoints")) setSkillPoints(tag.getInt("SkillPoints"));
         if (tag.contains("Hunger")) setHunger(tag.getInt("Hunger"));
         this.satiety = tag.getFloat("Satiety");
@@ -1737,6 +1764,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         }
         updateAttributes();
         this.refreshDimensions();
+        // Cats tamed before the starting pool existed get it once (the flag is saved afterwards).
+        grantStartingPoints();
     }
 
     @Override

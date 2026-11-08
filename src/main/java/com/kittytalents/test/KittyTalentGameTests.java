@@ -240,6 +240,36 @@ public class KittyTalentGameTests {
         h.succeed();
     }
 
+    /** User request: a newly tamed cat can max any one non-Dire talent with its starting points, once. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testStartingPointsMaxAnyOneTalentOnce(GameTestHelper h) {
+        var owner = joinFakeOwner(h, new BlockPos(3, 2, 3));
+        try {
+            TalentedCat c = cat(h, new BlockPos(2, 2, 2));
+            int before = c.getSkillPoints();
+            c.tame(owner);
+            int pool = TalentedCat.startingSkillPoints();
+            h.assertTrue(pool == 17, "Pool should cover an 8-rank talent (17 points), got " + pool);
+            h.assertTrue(c.getSkillPoints() == before + pool, "Taming should grant the pool");
+            for (Talent t : Talents.getAll()) {
+                if (!t.requiresDireTreat()) h.assertTrue(TalentedCat.costToMax(t) <= pool, t.getId() + " can't be maxed with the pool");
+            }
+            while (c.trainTalent(Talents.POUNCE)) { }
+            h.assertTrue(c.getTalentLevel(Talents.POUNCE) == Talents.POUNCE.getMaxLevel(), "The pool should max Pounce Training");
+
+            c.tame(owner); // taming again must not grant again
+            var tag = c.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+            tag.remove("UUID");
+            TalentedCat reloaded = cat(h, new BlockPos(5, 2, 5));
+            reloaded.load(tag);
+            h.assertTrue(reloaded.getSkillPoints() == c.getSkillPoints() && c.getSkillPoints() == before,
+                    "The pool is granted exactly once (points " + c.getSkillPoints() + ", reloaded " + reloaded.getSkillPoints() + ")");
+            h.succeed();
+        } finally {
+            leave(h, owner);
+        }
+    }
+
     // ---------------------------------------------------------------- Abilities
 
     /** Frost Nova used to freeze everything around the cat, villagers included. */
