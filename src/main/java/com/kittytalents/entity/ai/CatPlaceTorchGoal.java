@@ -137,6 +137,7 @@ public class CatPlaceTorchGoal extends Goal {
     }
 
     private boolean consumeOneTorch() {
+        if (com.kittytalents.talent.effect.TalentEngine.isMastered(cat, com.kittytalents.talent.Talents.TORCH_KITTY)) return true; // mastery: torches are free
         SimpleContainer pack = cat.getCatPack();
         for (int i = 0; i < pack.getContainerSize(); i++) {
             ItemStack stack = pack.getItem(i);

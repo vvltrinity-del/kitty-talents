@@ -32,7 +32,7 @@ public class TempestClawsUltimate extends CatAbility {
     public float getAiPriority(TalentedCat cat) {
         AABB aoe = cat.getBoundingBox().inflate(8.0D);
         int enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != cat.getOwner() && !cat.isAlliedTo(e)).size();
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e)).size();
         return enemies >= 2 ? 3.3f : 0.4f;
     }
 
@@ -42,7 +42,7 @@ public class TempestClawsUltimate extends CatAbility {
 
         AABB aoe = cat.getBoundingBox().inflate(10.0D);
         List<LivingEntity> enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != player && e != cat.getOwner() && !cat.isAlliedTo(e));
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e));
 
         if (enemies.isEmpty()) return false;
 

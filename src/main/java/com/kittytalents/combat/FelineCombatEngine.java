@@ -69,7 +69,8 @@ public class FelineCombatEngine {
         // 12 ticks of dodge invulnerability (0.6s)
         cat.combat().dodgeEnd = gameTime + 12;
         // First 6 ticks are the Perfect Dodge window (0.3s)
-        cat.combat().perfectDodgeEnd = gameTime + 6;
+        // Feline Reflexes mastery "Perfect Reflexes": the perfect-dodge window is doubled.
+        cat.combat().perfectDodgeEnd = gameTime + (com.kittytalents.talent.effect.TalentEngine.isMastered(cat, Talents.FELINE_REFLEXES) ? 12 : 6);
 
         // Directional impulse vector
         float targetYaw = cat.getYRot() + direction.getYawOffset();
@@ -167,6 +168,11 @@ public class FelineCombatEngine {
 
                 // Apply cat's primary element
                 FelineStatusEffects.applyElementStatus(enemy, cat.getPrimaryElement(), 1, 80);
+                if (com.kittytalents.talent.effect.TalentEngine.isMastered(cat, Talents.POUNCE)) {
+                    // Pounce Training mastery "Apex Pounce": landings stun.
+                    enemy.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 4));
+                    enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 1));
+                }
 
                 // Small radial knockback
                 Vec3 push = enemy.position().subtract(cat.position()).normalize().scale(0.65);
@@ -186,6 +192,8 @@ public class FelineCombatEngine {
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLivingAttack(LivingAttackEvent event) {
+        // Void / kill damage can never be dodged (a dodging cat below the world would fall forever).
+        if (event.getSource().is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
         if (event.getEntity() instanceof TalentedCat cat) {
             long gameTime = cat.level().getGameTime();
 

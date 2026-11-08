@@ -44,6 +44,7 @@ class LangCompletenessTest {
         String talents = Files.readString(SRC.resolve("talent/Talents.java"), StandardCharsets.UTF_8);
         collect(TALENT_ID, talents, "talent.kittytalents.", "", required);
         collect(TALENT_ID, talents, "talent.kittytalents.", ".desc", required);
+        collect(TALENT_ID, talents, "talent.kittytalents.", ".mastery", required);
 
         Set<String> blocks = new TreeSet<>();
         collect(BLOCK_ID, Files.readString(SRC.resolve("registry/ModBlocks.java"), StandardCharsets.UTF_8), "", "", blocks);

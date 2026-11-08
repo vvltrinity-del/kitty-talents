@@ -333,7 +333,9 @@ public class KittyTalentsGameTests {
         cat.setCatMode(CatMode.FOLLOW);
         cat.setAbilitySlot1("venom_fang");
         cat.setEnergy(100);
-        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.ZOMBIE, new BlockPos(4, 2, 2));
+        // A pillager, not a zombie: undead are immune to Venom Fang's poison, so the AI rightly won't cast it on them.
+        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.PILLAGER, new BlockPos(4, 2, 2));
+        zombie.setNoAi(true);
         helper.succeedWhen(() -> {
             if (cat.getTarget() != zombie) cat.setTarget(zombie);
             helper.assertTrue(anySlotOnCooldown(cat), "Cat in combat should have cast an ability");

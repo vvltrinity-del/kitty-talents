@@ -27,7 +27,7 @@ public class InfernoSpinAbility extends CatAbility {
     public float getAiPriority(TalentedCat cat) {
         AABB aoe = cat.getBoundingBox().inflate(4.0D);
         int enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != cat.getOwner() && !cat.isAlliedTo(e)).size();
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e)).size();
         return enemies >= 2 ? 2.2f : 0.6f;
     }
 
@@ -40,7 +40,7 @@ public class InfernoSpinAbility extends CatAbility {
         float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.4F;
 
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != player && e != cat.getOwner() && !cat.isAlliedTo(e))) {
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
             target.hurt(cat.damageSources().inFire(), dmg);
             target.setSecondsOnFire(5);
             FelineStatusEffects.applyStatus(target, FelineStatusType.BURN, 2, 100);

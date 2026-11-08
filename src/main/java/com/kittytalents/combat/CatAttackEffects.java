@@ -46,12 +46,10 @@ public class CatAttackEffects {
 
         // 2. Production Tier Scaling
         int tierOrdinal = tier != null ? tier.ordinal() : 0;
-        int statusPower = Math.max(1, 1 + (tierOrdinal / 3));
-        int statusDuration = 60 + (tierOrdinal * 15);
 
         // 3. Elemental Affinity Affliction & VFX Burst
         if (catElem != null && catElem != FelineElement.PHYSICAL) {
-            FelineStatusEffects.applyElementStatus(target, catElem, statusPower, statusDuration);
+            // (Element status itself is applied by FelineCombatEngine#onLivingHurt; only the visuals here.)
             spawnElementalBurst(sl, target.position().add(0, target.getBbHeight() * 0.5, 0), catElem, tierOrdinal);
 
             // Play elemental audio feedback

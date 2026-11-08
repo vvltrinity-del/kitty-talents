@@ -876,6 +876,17 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
                 lineY += 10;
             }
 
+            // Mastery perk (Phase 4): gold when earned, grey with the required rank when not.
+            boolean mastered = com.kittytalents.talent.effect.TalentEngine.isMastered(cat, selectedTalent);
+            Component masteryLabel = Component.translatable("gui.kittytalents.mastery")
+                    .append(mastered ? " ★ " : " (rank " + selectedTalent.getMaxLevel() + "): ");
+            Component masteryText = masteryLabel.copy().append(Component.translatable("talent.kittytalents." + selectedTalent.getId() + ".mastery"));
+            lineY += 6;
+            for (net.minecraft.util.FormattedCharSequence line : this.font.split(masteryText, rightW - 10)) {
+                graphics.drawString(this.font, line, rightX, lineY, mastered ? 0xFFFBBF24 : 0xFF9CA3AF, false);
+                lineY += 10;
+            }
+
             // Level Badge & Crest
             int crestY = startY + panelH - 42;
             int currentLvl = cat.getTalentLevel(selectedTalent);

@@ -74,6 +74,9 @@ public class TacZEvents {
             if (marksman >= 3) {
                 event.setHeadshotMultiplier(event.getHeadshotMultiplier() + 0.25F);
             }
+            if (com.kittytalents.talent.effect.TalentEngine.isMastered(cat, Talents.MARKSMAN)) {
+                event.setHeadshotMultiplier(event.getHeadshotMultiplier() + 0.5F); // mastery "Deadeye"
+            }
         }
 
         // 3. Friendly-fire protection & ballistic damage reduction when a TalentedCat is hit
@@ -122,11 +125,7 @@ public class TacZEvents {
     public void onEntityKillByGun(EntityKillByGunEvent event) {
         if (event.getLogicalSide().isClient()) return;
         if (event.getAttacker() instanceof TalentedCat cat) {
-            // Award XP chance on gun kill
-            if (cat.getRandom().nextInt(5) == 0) {
-                cat.setCatLevel(cat.getCatLevel() + 1);
-                cat.setSkillPoints(cat.getSkillPoints() + 1);
-            }
+            // (Removed: a 20% chance of a whole free level per gun kill. Gun kills now give normal kill XP.)
 
             // AMMO_SCAVENGER Rank 3+: 20% chance to scavenge extra rounds into ammoPouch
             int scavenger = cat.getTalentLevel(Talents.AMMO_SCAVENGER);

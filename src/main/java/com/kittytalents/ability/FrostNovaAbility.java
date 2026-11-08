@@ -27,7 +27,7 @@ public class FrostNovaAbility extends CatAbility {
     public float getAiPriority(TalentedCat cat) {
         AABB aoe = cat.getBoundingBox().inflate(5.0D);
         int enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != cat.getOwner() && !cat.isAlliedTo(e)).size();
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e)).size();
         return enemies >= 2 ? 2.0f : 0.7f;
     }
 
@@ -40,7 +40,7 @@ public class FrostNovaAbility extends CatAbility {
         float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.2F;
 
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != player && e != cat.getOwner() && !cat.isAlliedTo(e))) {
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
             target.hurt(cat.damageSources().freeze(), dmg);
             FelineStatusEffects.applyStatus(target, FelineStatusType.FREEZE, 2, 100);
             if (target.canFreeze()) {

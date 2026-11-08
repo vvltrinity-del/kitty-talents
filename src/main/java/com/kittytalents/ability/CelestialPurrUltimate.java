@@ -41,7 +41,7 @@ public class CelestialPurrUltimate extends CatAbility {
 
         AABB aoe = cat.getBoundingBox().inflate(12.0D);
         List<LivingEntity> allies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e == cat || e == player || e == cat.getOwner() || cat.isAlliedTo(e));
+                e -> com.kittytalents.ai.CatTargeting.isFriendly(cat, e));
 
         for (LivingEntity ally : allies) {
             ally.heal(ally.getMaxHealth() * 0.60F);

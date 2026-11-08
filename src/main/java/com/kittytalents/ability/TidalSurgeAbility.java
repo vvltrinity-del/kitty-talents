@@ -40,7 +40,7 @@ public class TidalSurgeAbility extends CatAbility {
         float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.1F;
 
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != player && e != cat.getOwner() && !cat.isAlliedTo(e))) {
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
             target.hurt(cat.damageSources().drown(), dmg);
             target.clearFire();
             Vec3 push = target.position().subtract(cat.position()).normalize().scale(1.2);
@@ -49,7 +49,7 @@ public class TidalSurgeAbility extends CatAbility {
 
         // Cleanse allies of Burn and Weakness
         for (LivingEntity ally : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e == cat || e == player || e == cat.getOwner() || cat.isAlliedTo(e))) {
+                e -> com.kittytalents.ai.CatTargeting.isFriendly(cat, e))) {
             ally.clearFire();
             FelineStatusEffects.removeStatus(ally, FelineStatusType.BURN);
             FelineStatusEffects.removeStatus(ally, FelineStatusType.WEAKNESS);

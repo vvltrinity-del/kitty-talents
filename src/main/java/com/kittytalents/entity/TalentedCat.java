@@ -122,6 +122,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Integer> DATA_LAST_SHOT_TICK =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_XP =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_ENERGY =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
 
@@ -145,6 +147,16 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public CatTrust trust() { return trust; }
     public CatCombatState combat() { return combat; }
 
+    /** Transient per-talent cooldowns ("talentId:key" -> game time ready). See TalentContext#ready. */
+    private final java.util.Map<String, Long> talentCooldowns = new java.util.HashMap<>();
+    public java.util.Map<String, Long> talentCooldowns() { return talentCooldowns; }
+
+    public boolean isFrenzied() { return frenzyTimer > 0; }
+
+    /** XP towards the next level (Phase 4). Synced for the UI. */
+    public int getCatXp() { return this.entityData.get(DATA_XP); }
+    public void setCatXp(int xp) { this.entityData.set(DATA_XP, Math.max(0, xp)); }
+
     private final com.kittytalents.work.JobData jobData = new com.kittytalents.work.JobData();
     private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> catItemCapability =
             net.minecraftforge.common.util.LazyOptional.of(() -> new com.kittytalents.work.CatAmmoAndPackItemHandler(this));
@@ -155,15 +167,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     private String homeBedDimension = "";
 
     private int hungerTimer = 0;
-    private int purrTimer = 0;
-    private int radarTimer = 0;
     private int frenzyCooldown = 0;
     private int frenzyTimer = 0;
-    private int hissCooldown = 0;
-    private int medicCooldown = 0;
-    private int rescueCooldown = 0;
-    private int galeCooldown = 0;
-    private int catastropheCooldown = 0;
     private int quietUntilTick = 0;
 
 
@@ -261,6 +266,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.define(DATA_WORK_STATUS, "Idle");
         this.entityData.define(DATA_LAST_SHOT_TICK, -100);
         this.entityData.define(DATA_ENERGY, 100);
+        this.entityData.define(DATA_XP, 0);
     }
 
     @Override
@@ -450,7 +456,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             if (this.level() instanceof ServerLevel sl) {
                 sl.sendParticles(ParticleTypes.FLAME, targetPos.getX() + 0.5D, targetPos.getY() + 0.6D, targetPos.getZ() + 0.5D, 5, 0.1D, 0.1D, 0.1D, 0.02D);
             }
-            if (inToolSlot) {
+            if (com.kittytalents.talent.effect.TalentEngine.isMastered(this, Talents.TORCH_KITTY)) {
+                // Torch Kitty mastery "Everburning": torches are free.
+            } else if (inToolSlot) {
                 getEquippedTool().shrink(1);
                 if (getEquippedTool().isEmpty()) setEquippedTool(ItemStack.EMPTY);
             } else if (packSlot >= 0) {
@@ -1136,41 +1144,27 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     public void updateAttributes() {
-        double maxHealth = 20.0D + (getCatLevel() * 0.6D);
-        if (this.getAttribute(Attributes.MAX_HEALTH) != null) {
-            this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(maxHealth);
-        }
-        int agility = getTalentLevel(Talents.FELINE_AGILITY);
-        double speed = 0.3D + (agility * 0.03D);
-        if (this.getAttribute(Attributes.MOVEMENT_SPEED) != null) {
-            this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(speed);
-        }
-        int armory = getTalentLevel(Talents.CAT_ARMORY);
-        double damage = 4.0D + (armory * 2.5D);
-        if (this.getAttribute(Attributes.ATTACK_DAMAGE) != null) {
-            this.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(damage);
-        }
-        int armor = getTalentLevel(Talents.CAT_ARMOR);
-        double armorVal = 2.0D + (armor * 3.0D);
-        double toughness = armor * 1.5D;
-
+        // Base values; talents add on top through TalentEngine (Cat Armory, Cat Armor, Feline Agility, ...).
+        com.kittytalents.talent.effect.AttributeTotals t = new com.kittytalents.talent.effect.AttributeTotals(
+                20.0D + getCatLevel() * 0.6D, 0.3D, 4.0D, 2.0D);
         for (int i = 1; i <= 4; i++) {
-            ItemStack stack = getArmorSlotItem(i);
-            if (stack.getItem() instanceof ArmorItem armorItem) {
-                armorVal += armorItem.getDefense();
-                toughness += armorItem.getToughness();
+            if (getArmorSlotItem(i).getItem() instanceof ArmorItem armorItem) {
+                t.armor += armorItem.getDefense();
+                t.armorToughness += armorItem.getToughness();
             }
         }
+        com.kittytalents.talent.effect.TalentEngine.applyAttributes(this, t);
+        setBase(Attributes.MAX_HEALTH, t.maxHealth);
+        setBase(Attributes.MOVEMENT_SPEED, t.movementSpeed);
+        setBase(Attributes.ATTACK_DAMAGE, t.attackDamage);
+        setBase(Attributes.ARMOR, t.armor);
+        setBase(Attributes.ARMOR_TOUGHNESS, t.armorToughness);
+        setBase(Attributes.KNOCKBACK_RESISTANCE, Math.min(0.75D, t.knockbackResistance));
+    }
 
-        if (this.getAttribute(Attributes.ARMOR) != null) {
-            this.getAttribute(Attributes.ARMOR).setBaseValue(armorVal);
-        }
-        if (this.getAttribute(Attributes.ARMOR_TOUGHNESS) != null) {
-            this.getAttribute(Attributes.ARMOR_TOUGHNESS).setBaseValue(toughness);
-        }
-        if (this.getAttribute(Attributes.KNOCKBACK_RESISTANCE) != null) {
-            this.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(Math.min(0.75D, armor * 0.15D));
-        }
+    private void setBase(net.minecraft.world.entity.ai.attributes.Attribute attribute, double value) {
+        var instance = this.getAttribute(attribute);
+        if (instance != null) instance.setBaseValue(value);
     }
 
     @Override
@@ -1183,21 +1177,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         int armoryLvl = getTalentLevel(Talents.CAT_ARMORY);
         float damage = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
 
-        int pestLvl = getTalentLevel(Talents.PEST_HUNTER);
-        if (pestLvl > 0 && (entity instanceof Spider || entity instanceof Silverfish ||
-                entity instanceof Endermite || entity instanceof Bat || entity instanceof Phantom)) {
-            damage *= (1.5F + pestLvl * 0.4F);
-        }
-
-        int hunterLvl = getTalentLevel(Talents.HUNTER_CAT);
-        if (hunterLvl > 0 && entity instanceof Animal) {
-            damage += (hunterLvl * 2.5F);
-        }
-
-        int berserkLvl = getTalentLevel(Talents.FELINE_BERSERKER);
-        if (berserkLvl > 0 && (this.getHealth() < this.getMaxHealth() * 0.4F || frenzyTimer > 0)) {
-            damage += (3.0F + berserkLvl * 2.0F);
-            this.playSound(SoundEvents.RAVAGER_ATTACK, 0.6F, 1.6F);
+        if (entity instanceof LivingEntity livingVictim) {
+            // Talent damage bonuses (Pest Hunter, Hunter Cat, Berserker, masteries...) - Phase 4 TalentEngine.
+            damage = com.kittytalents.talent.effect.TalentEngine.modifyOutgoing(this, livingVictim, damage);
         }
 
         if (!getEquippedWeapon().isEmpty()) {
@@ -1231,28 +1213,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             if (!entity.isAlive()) {
                 stats.recordKill(entity instanceof Monster);
             }
-            if (armoryLvl >= 3) {
-                entity.setSecondsOnFire(4 * (armoryLvl - 2));
-            }
-
-            int infernoLvl = getTalentLevel(Talents.INFERNO_CAT);
-            if (infernoLvl > 0) {
-                entity.setSecondsOnFire(infernoLvl * 3);
-            }
-
-            int venomLvl = getTalentLevel(Talents.VENOM_CLAWS);
-            if (venomLvl > 0 && entity instanceof LivingEntity living) {
-                if (venomLvl >= 5) {
-                    living.addEffect(new MobEffectInstance(MobEffects.WITHER, 100, 1));
-                } else {
-                    living.addEffect(new MobEffectInstance(MobEffects.POISON, 60 + venomLvl * 20, Math.max(0, venomLvl - 1)));
-                }
-            }
-
-            int charmLvl = getTalentLevel(Talents.CHARM_WHISKERS);
-            if (charmLvl > 0 && entity instanceof LivingEntity living && this.random.nextFloat() < (0.15F * charmLvl)) {
-                living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, Math.max(0, charmLvl - 1)));
-                living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 1));
+            if (entity instanceof LivingEntity livingHit) {
+                // On-hit talents (Armory fire, Inferno, Venom, Charm, Alchemy, Catnip...) and role/tier attack effects.
+                com.kittytalents.talent.effect.TalentEngine.onHitDealt(this, livingHit, damage);
+                com.kittytalents.combat.CatAttackEffects.applyAttackEffects(this, livingHit, damage);
             }
 
             this.playSound(SoundEvents.PLAYER_ATTACK_STRONG, 0.8F, 1.3F);
@@ -1288,32 +1252,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             return false;
         }
 
-        // Fireproof Paws immunity to fire, hot floor and lava
-        if (getTalentLevel(Talents.FIREPROOF_PAWS) > 0 &&
-                (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE) ||
-                 source.is(net.minecraft.world.damagesource.DamageTypes.HOT_FLOOR) ||
-                 source.is(net.minecraft.world.damagesource.DamageTypes.LAVA) ||
-                 source.is(net.minecraft.world.damagesource.DamageTypes.IN_FIRE) ||
-                 source.is(net.minecraft.world.damagesource.DamageTypes.ON_FIRE))) {
-            this.clearFire();
-            return false;
-        }
-
-        // Guardian Cat damage reduction
-        int guardianLvl = getTalentLevel(Talents.GUARDIAN_CAT);
-        if (guardianLvl > 0 && amount > 1.0F) {
-            amount *= Math.max(0.4F, 1.0F - (guardianLvl * 0.12F));
-        }
-
-
-        int agility = getTalentLevel(Talents.FELINE_AGILITY);
-        if (source.isIndirect() && agility > 0) {
-            if (this.random.nextFloat() < (agility * 0.10F)) {
-                this.playSound(SoundEvents.CAT_PURREOW, 0.7F, 1.5F);
-                return false;
-            }
-        }
-        // Counted after the dodge roll so dodged hits are not recorded as damage taken.
+        // Talent defenses (Fireproof Paws, Guardian Cat, Feline Agility dodge, masteries...) - Phase 4 TalentEngine.
+        amount = com.kittytalents.talent.effect.TalentEngine.modifyIncoming(this, source, amount);
+        if (amount <= 0.0F) return false;
+        // Counted after talent dodges so dodged hits are not recorded as damage taken.
         stats.addDamageTaken(amount);
 
         // Damage armor durability
@@ -1336,8 +1278,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             long now = this.level().getGameTime();
             if (nineLives > 0 && !isIncapacitated() && now >= combat.getNineLivesReadyAt()) {
                 // Instant revive recharges after (10 min - 1 min per rank); otherwise the cat goes down instead.
-                combat.setNineLivesReadyAt(now + Math.max(1200L, 12000L - 1200L * nineLives));
-                this.setHealth(Math.max(4.0F, this.getMaxHealth() * (0.18F * nineLives)));
+                boolean tenthLife = com.kittytalents.talent.effect.TalentEngine.isMastered(this, Talents.NINE_LIVES);
+                long recharge = Math.max(1200L, 12000L - 1200L * nineLives);
+                combat.setNineLivesReadyAt(now + (tenthLife ? recharge / 2 : recharge));
+                this.setHealth(tenthLife ? this.getMaxHealth() : Math.max(4.0F, this.getMaxHealth() * Math.min(1.0F, 0.18F * nineLives)));
+                if (tenthLife) this.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 1));
                 this.level().broadcastEntityEvent(this, (byte) 35);
                 this.playSound(SoundEvents.TOTEM_USE, 1.0F, 1.0F);
                 this.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 1));
@@ -1546,19 +1491,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                         setHunger(getHunger() - 1);
                     }
                 }
-                // Energy regeneration (+3/sec when resting)
-                if (this.tickCount % 20 == 0) {
-                    this.energy = Math.min(100, this.energy + 3);
-                }
             }
             return;
-        }
-
-        // Aqua Kitty water breathing and swim boost
-        int aquaLvl = getTalentLevel(Talents.AQUA_KITTY);
-        if (aquaLvl > 0 && this.isInWater()) {
-            this.setAirSupply(this.getMaxAirSupply());
-            this.setDeltaMovement(this.getDeltaMovement().multiply(1.25D + (aquaLvl * 0.08D), 1.08D, 1.25D + (aquaLvl * 0.08D)));
         }
 
         // Torch Kitty bioluminescent glow
@@ -1589,10 +1523,6 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         }
 
         if (!this.level().isClientSide) {
-            // Energy regeneration (+1/sec when active)
-            if (this.tickCount % 20 == 0) {
-                this.energy = Math.min(100, this.energy + 1);
-            }
 
             // Hunger drain with Happy Eater reduction
             hungerTimer++;
@@ -1609,246 +1539,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 }
             }
 
-            // Purr Medic healing aura
-            int medicLvl = getTalentLevel(Talents.PURR_MEDIC);
-            if (medicLvl > 0) {
-                medicCooldown++;
-                if (medicCooldown >= 100) {
-                    medicCooldown = 0;
-                    if (this.getOwner() instanceof Player owner && this.distanceToSqr(owner) < 64.0D) {
-                        if (owner.getHealth() < owner.getMaxHealth()) {
-                            owner.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 80 + (medicLvl * 20), 1, false, false, true));
-                            if (medicLvl >= 3) {
-                                owner.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 120, 0, false, false, true));
-                            }
-                            this.playSound(SoundEvents.CAT_PURR, 1.0F, 1.0F);
-                        }
-                    }
-                }
-            }
-
-            // Feline Hiss ranged combat
-            int hissLvl = getTalentLevel(Talents.FELINE_HISS);
-            if (hissLvl > 0 && this.getTarget() != null) {
-                LivingEntity target = this.getTarget();
-                double distSqr = this.distanceToSqr(target);
-                if (distSqr >= 16.0D && distSqr <= 256.0D) {
-                    hissCooldown++;
-                    if (hissCooldown >= Math.max(30, 80 - hissLvl * 10)) {
-                        hissCooldown = 0;
-                        this.playSound(SoundEvents.CAT_HISS, 1.0F, 1.0F);
-                        FelineHissProjectileEntity projectile = new FelineHissProjectileEntity(this.level(), this, 4.0F + (hissLvl * 2.5F));
-                        double dx = target.getX() - this.getX();
-                        double dy = target.getY(0.5D) - this.getY(0.5D);
-                        double dz = target.getZ() - this.getZ();
-                        projectile.shoot(dx, dy, dz, 1.3F, 1.0F);
-                        this.level().addFreshEntity(projectile);
-                    }
-                }
-            }
-
-            int luckyPurr = getTalentLevel(Talents.LUCKY_PURR);
-            if (luckyPurr > 0) {
-                purrTimer++;
-                if (purrTimer >= 100) {
-                    purrTimer = 0;
-                    List<Player> nearby = this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(6.0D + luckyPurr * 2.0D));
-                    for (Player p : nearby) {
-                        p.addEffect(new MobEffectInstance(MobEffects.LUCK, 200, luckyPurr - 1, false, false, true));
-                        if (luckyPurr >= 3) {
-                            p.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, 0, false, false, true));
-                        }
-                    }
-                }
-            }
-
-            int radar = getTalentLevel(Talents.WHISKER_RADAR);
-            if (radar > 0) {
-                radarTimer++;
-                if (radarTimer >= 160) {
-                    radarTimer = 0;
-                    double radarDist = 8.0D + (radar * 4.0D);
-                    List<Monster> monsters = this.level().getEntitiesOfClass(
-                            Monster.class,
-                            this.getBoundingBox().inflate(radarDist)
-                    );
-                    if (!monsters.isEmpty()) {
-                        this.playSound(SoundEvents.CAT_BEG_FOR_FOOD, 0.8F, 1.2F);
-                    }
-                }
-            }
-
-            // Shadow Pelt - stealth in low light
-            int shadowLvl = getTalentLevel(Talents.SHADOW_PELT);
-            if (shadowLvl > 0) {
-                int light = this.level().getBrightness(LightLayer.BLOCK, this.blockPosition());
-                if (light <= 4 || this.isCrouching()) {
-                    this.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 40, 0, false, false, false));
-                }
-            }
-
-            // Water Pelt - extinguishes burning owner & grants water breathing
-            int waterPeltLvl = getTalentLevel(Talents.WATER_PELT);
-            if (waterPeltLvl > 0 && this.getOwner() instanceof Player owner && this.distanceToSqr(owner) < 64.0D) {
-                if (owner.isOnFire()) {
-                    owner.clearFire();
-                    this.level().playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.GENERIC_EXTINGUISH_FIRE, SoundSource.PLAYERS, 0.7F, 1.0F);
-                }
-                if (owner.isInWater() || this.isInWater()) {
-                    owner.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 60, 0, false, false, true));
-                }
-            }
-
-            // Rescue Purr - saves low health owner
-            int rescueLvl = getTalentLevel(Talents.RESCUE_PURR);
-            if (rescueLvl > 0 && this.getOwner() instanceof Player owner && !this.isIncapacitated()) {
-                if (owner.getHealth() <= owner.getMaxHealth() * 0.3F && this.distanceToSqr(owner) < 1024.0D) {
-                    if (this.rescueCooldown <= 0) {
-                        this.rescueCooldown = 600 - (rescueLvl * 60);
-                        this.teleportTo(owner.getX(), owner.getY(), owner.getZ());
-                        owner.heal(4.0F + (rescueLvl * 2.0F));
-                        owner.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 1));
-                        owner.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 200, 1));
-                        this.playSound(SoundEvents.BEACON_ACTIVATE, 1.0F, 1.6F);
-                        this.addHealingProvided(6 + rescueLvl * 2);
-                    }
-                }
-            }
-            if (rescueCooldown > 0) rescueCooldown--;
-
-            // Gale Purr - pushes back surrounding hostiles (throttled to 20-tick interval)
-            int galeLvl = getTalentLevel(Talents.GALE_PURR);
-            if (galeLvl > 0 && galeCooldown <= 0 && this.tickCount % 20 == 0) {
-                List<Monster> surrounding = this.level().getEntitiesOfClass(Monster.class, this.getBoundingBox().inflate(3.5D + galeLvl * 0.5D));
-                if (surrounding.size() >= 3) {
-                    galeCooldown = 200 - (galeLvl * 20);
-                    this.playSound(SoundEvents.PHANTOM_FLAP, 1.2F, 1.4F);
-                    for (Monster m : surrounding) {
-                        Vec3 diff = m.position().subtract(this.position());
-                        Vec3 push = diff.lengthSqr() > 1.0E-4D ? diff.normalize().scale(1.2D + galeLvl * 0.2D) : new Vec3(0, 0.5D, 0);
-                        m.push(push.x, 0.35D, push.z);
-                        m.hurt(this.damageSources().mobAttack(this), 2.0F + galeLvl);
-                    }
-                }
-            }
-            if (galeCooldown > 0) galeCooldown--;
-
-            // Gate Purr - opens nearby doors/gates for owner
-            int gateLvl = getTalentLevel(Talents.GATE_PURR);
-            if (gateLvl > 0 && this.tickCount % 20 == 0) {
-                BlockPos pos = this.blockPosition();
-                for (BlockPos p : BlockPos.betweenClosed(pos.offset(-2, -1, -2), pos.offset(2, 1, 2))) {
-                    net.minecraft.world.level.block.state.BlockState state = this.level().getBlockState(p);
-                    if (state.getBlock() instanceof net.minecraft.world.level.block.FenceGateBlock) {
-                        if (!state.getValue(net.minecraft.world.level.block.FenceGateBlock.OPEN)) {
-                            this.level().setBlock(p, state.setValue(net.minecraft.world.level.block.FenceGateBlock.OPEN, true), 3);
-                            this.playSound(SoundEvents.FENCE_GATE_OPEN, 0.8F, 1.2F);
-                        }
-                    }
-                }
-            }
-
-            // Charm Whiskers - Charms villagers and grants Hero of the Village effect
-            int charmWhiskersLvl = getTalentLevel(Talents.CHARM_WHISKERS);
-            if (charmWhiskersLvl > 0 && this.tickCount % 40 == 0) {
-                double charmRadius = 8.0D + charmWhiskersLvl * 2.0D;
-                List<net.minecraft.world.entity.npc.Villager> villagers = this.level().getEntitiesOfClass(
-                        net.minecraft.world.entity.npc.Villager.class,
-                        this.getBoundingBox().inflate(charmRadius),
-                        LivingEntity::isAlive
-                );
-                if (!villagers.isEmpty()) {
-                    int amp = Math.min(4, Math.max(0, charmWhiskersLvl - 1));
-                    if (this.getOwner() instanceof Player owner && this.distanceToSqr(owner) <= (charmRadius * charmRadius)) {
-                        owner.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, 120, amp, false, false, true));
-                    }
-                    if (this.isTwined() && this.twinedPlayerUUID != null && this.getServer() != null) {
-                        ServerPlayer twinedP = this.getServer().getPlayerList().getPlayer(this.twinedPlayerUUID);
-                        if (twinedP != null) {
-                            twinedP.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, 120, amp, false, false, true));
-                        }
-                    }
-                    if (this.tickCount % 80 == 0 && this.level() instanceof ServerLevel serverLevel) {
-                        serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER, this.getX(), this.getY() + 0.6D, this.getZ(), 3, 0.3, 0.2, 0.3, 0.02);
-                        for (net.minecraft.world.entity.npc.Villager v : villagers) {
-                            if (this.random.nextFloat() < 0.3F) {
-                                serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER, v.getX(), v.getY() + 1.2D, v.getZ(), 2, 0.2, 0.2, 0.2, 0.02);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Sniffer Whiskers - digs up items from ground
-            int snifferLvl = getTalentLevel(Talents.SNIFFER_WHISKERS);
-            if (snifferLvl > 0 && this.tickCount % 1200 == 0 && this.onGround()) {
-                net.minecraft.world.level.block.state.BlockState ground = this.level().getBlockState(this.blockPosition().below());
-                if (ground.is(net.minecraft.tags.BlockTags.DIRT)) {
-                    this.playSound(SoundEvents.SNIFFER_DIGGING, 0.8F, 1.2F);
-                    ItemStack[] drops = { new ItemStack(Items.WHEAT_SEEDS, 2), new ItemStack(Items.PUMPKIN_SEEDS), new ItemStack(Items.MELON_SEEDS), new ItemStack(Items.BEETROOT_SEEDS), new ItemStack(Items.BONE), new ItemStack(Items.IRON_NUGGET, 2), new ItemStack(ModItems.CATNIP.get()) };
-                    ItemStack reward = drops[this.random.nextInt(drops.length)];
-                    Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), reward);
-                }
-            }
-
-            // Alchemy Kitty - gives beneficial status effects
-            int alchemyLvl = getTalentLevel(Talents.ALCHEMY_KITTY);
-            if (alchemyLvl > 0 && this.tickCount % 1600 == 0) {
-                if (this.getOwner() instanceof Player owner && this.distanceToSqr(owner) < 64.0D) {
-                    MobEffectInstance[] effects = {
-                        new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 400, 1),
-                        new MobEffectInstance(MobEffects.NIGHT_VISION, 600, 0),
-                        new MobEffectInstance(MobEffects.DAMAGE_BOOST, 300, 0),
-                        new MobEffectInstance(MobEffects.DIG_SPEED, 400, 1)
-                    };
-                    MobEffectInstance selected = effects[this.random.nextInt(effects.length)];
-                    owner.addEffect(selected);
-                    this.playSound(SoundEvents.BREWING_STAND_BREW, 0.8F, 1.2F);
-                }
-            }
-
-            // Herding Kitty - attracts livestock
-            int herdingLvl = getTalentLevel(Talents.HERDING_KITTY);
-            if (herdingLvl > 0 && this.tickCount % 40 == 0) {
-                List<Animal> animals = this.level().getEntitiesOfClass(Animal.class, this.getBoundingBox().inflate(6.0D + herdingLvl * 2.0D), a -> !(a instanceof Cat));
-                for (Animal a : animals) {
-                    if (a.getTarget() == null && this.random.nextFloat() < 0.3F) {
-                        a.getNavigation().moveTo(this, 1.0D);
-                    }
-                }
-            }
-
-            // Paw Retriever - attracts dropped items
-            int retrieverLvl = getTalentLevel(Talents.PAW_RETRIEVER);
-            if (retrieverLvl > 0 && this.tickCount % 10 == 0) {
-                List<ItemEntity> items = this.level().getEntitiesOfClass(ItemEntity.class, this.getBoundingBox().inflate(4.0D + retrieverLvl * 2.0D));
-                for (ItemEntity item : items) {
-                    if (item.isAlive() && !item.hasPickUpDelay()) {
-                        Vec3 diff = this.position().subtract(item.position());
-                        Vec3 toCat = diff.lengthSqr() > 1.0E-4D ? diff.normalize().scale(0.35D) : new Vec3(0, 0, 0);
-                        item.setDeltaMovement(toCat.x, 0.1D, toCat.z);
-                        this.incrementItemsRetrieved();
-                    }
-                }
-            }
-
-            // Catnip Catastrophe - emergency shockwave when low health
-            int catastropheLvl = getTalentLevel(Talents.CATNIP_CATASTROPHE);
-            if (catastropheLvl > 0 && this.getHealth() < this.getMaxHealth() * 0.25F && catastropheCooldown <= 0) {
-                catastropheCooldown = 400;
-                this.playSound(SoundEvents.GENERIC_EXPLODE, 1.0F, 1.5F);
-                List<Monster> nearby = this.level().getEntitiesOfClass(Monster.class, this.getBoundingBox().inflate(6.0D));
-                for (Monster m : nearby) {
-                    Vec3 diff = m.position().subtract(this.position());
-                    Vec3 blast = diff.lengthSqr() > 1.0E-4D ? diff.normalize().scale(1.8D) : new Vec3(0, 0.5D, 0);
-                    m.push(blast.x, 0.5D, blast.z);
-                    m.hurt(this.damageSources().mobAttack(this), 8.0F + catastropheLvl * 3.0F);
-                }
-                if (this.level() instanceof ServerLevel sl) {
-                    sl.sendParticles(ParticleTypes.EXPLOSION_EMITTER, this.getX(), this.getY() + 0.5D, this.getZ(), 1, 0, 0, 0, 0);
-                }
-            }
-            if (catastropheCooldown > 0) catastropheCooldown--;
+            // Every talent's periodic behavior (and mastery) - Phase 4 TalentEngine; staggered per cat.
+            com.kittytalents.talent.effect.TalentEngine.tick(this);
         }
     }
 
@@ -1923,6 +1615,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putInt("CatLevel", getCatLevel());
+        tag.putInt("CatXp", getCatXp());
         tag.putInt("SkillPoints", getSkillPoints());
         tag.putInt("Hunger", getHunger());
         tag.putFloat("Satiety", satiety);
@@ -1962,6 +1655,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         // Upgrade old saves in place before reading any field (ForgeData is already loaded into getPersistentData()).
         CatSchema.migrate(tag, getPersistentData());
         if (tag.contains("CatLevel")) setCatLevel(tag.getInt("CatLevel"));
+        setCatXp(tag.getInt("CatXp"));
         if (tag.contains("SkillPoints")) setSkillPoints(tag.getInt("SkillPoints"));
         if (tag.contains("Hunger")) setHunger(tag.getInt("Hunger"));
         this.satiety = tag.getFloat("Satiety");

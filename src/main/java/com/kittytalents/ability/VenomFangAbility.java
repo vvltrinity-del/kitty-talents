@@ -26,6 +26,8 @@ public class VenomFangAbility extends CatAbility {
     @Override
     public float getAiPriority(TalentedCat cat) {
         // Must match execute()'s bite range (< 4 blocks), otherwise the AI keeps picking a cast that always fails.
+        // Undead are immune to Poison and Bleed: don't waste Energy on them.
+        if (cat.getTarget() != null && cat.getTarget().getMobType() == net.minecraft.world.entity.MobType.UNDEAD) return 0.2f;
         if (cat.getTarget() != null && cat.distanceToSqr(cat.getTarget()) < 16.0D) {
             return 1.7f;
         }
@@ -38,7 +40,7 @@ public class VenomFangAbility extends CatAbility {
         if (target == null && player != null) {
             AABB reach = cat.getBoundingBox().inflate(3.5D);
             for (LivingEntity e : cat.level().getEntitiesOfClass(LivingEntity.class, reach,
-                    e -> e != cat && e != player && !cat.isAlliedTo(e))) {
+                    e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
                 target = e;
                 break;
             }

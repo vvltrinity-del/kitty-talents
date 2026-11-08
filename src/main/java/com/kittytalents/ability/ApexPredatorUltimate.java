@@ -30,7 +30,7 @@ public class ApexPredatorUltimate extends CatAbility {
     public float getAiPriority(TalentedCat cat) {
         AABB aoe = cat.getBoundingBox().inflate(8.0D);
         int enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != cat.getOwner() && !cat.isAlliedTo(e)).size();
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e)).size();
         return enemies >= 2 ? 3.2f : 0.5f;
     }
 
@@ -38,7 +38,7 @@ public class ApexPredatorUltimate extends CatAbility {
     protected boolean execute(TalentedCat cat, Player player) {
         AABB aoe = cat.getBoundingBox().inflate(10.0D);
         List<LivingEntity> enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != player && e != cat.getOwner() && !cat.isAlliedTo(e));
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e));
 
         if (enemies.isEmpty()) return false;
 

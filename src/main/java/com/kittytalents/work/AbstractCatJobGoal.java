@@ -290,6 +290,9 @@ public abstract class AbstractCatJobGoal extends Goal {
         JobData data = cat.getJobData();
         data.setLastWorkTick(cat.level().getGameTime());
         data.addJobXp(1);
+        com.kittytalents.core.progression.CatProgression.onWorkTask(cat);
+        // Work Ethic mastery "Tireless": working costs no hunger.
+        if (com.kittytalents.talent.effect.TalentEngine.isMastered(cat, Talents.WORK_ETHIC)) return;
         // Hunger drain every 8 completed tasks, reduced by HAPPY_EATER and WORK_ETHIC
         int interval = 8 + cat.getTalentLevel(Talents.HAPPY_EATER) * 2 + cat.getTalentLevel(Talents.WORK_ETHIC);
         if (data.getJobXp() % interval == 0) {

@@ -41,7 +41,7 @@ public class FortressGuardAbility extends CatAbility {
         }
 
         AABB tauntArea = cat.getBoundingBox().inflate(8.0D);
-        for (Mob mob : cat.level().getEntitiesOfClass(Mob.class, tauntArea, e -> e.getTarget() != cat && !cat.isAlliedTo(e))) {
+        for (Mob mob : cat.level().getEntitiesOfClass(Mob.class, tauntArea, e -> e.getTarget() != cat && com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
             mob.setTarget(cat);
         }
 

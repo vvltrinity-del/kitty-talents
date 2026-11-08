@@ -31,7 +31,7 @@ public class FelineHissAbility extends CatAbility {
     public float getAiPriority(TalentedCat cat) {
         AABB aoe = cat.getBoundingBox().inflate(6.0D);
         List<LivingEntity> enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != cat.getOwner() && !cat.isAlliedTo(e));
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e));
         return enemies.size() >= 2 ? 2.5f : 0.8f;
     }
 
@@ -41,7 +41,7 @@ public class FelineHissAbility extends CatAbility {
         AABB aoe = cat.getBoundingBox().inflate(6.5D);
 
         for (LivingEntity le : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
-                e -> e != cat && e != player && e != cat.getOwner() && !cat.isAlliedTo(e))) {
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
             le.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 160, 1));
             FelineStatusEffects.applyStatus(le, FelineStatusType.WEAKNESS, 1, 140);
 

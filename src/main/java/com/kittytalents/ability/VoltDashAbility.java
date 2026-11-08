@@ -42,7 +42,7 @@ public class VoltDashAbility extends CatAbility {
 
         AABB reach = cat.getBoundingBox().inflate(2.5D);
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, reach,
-                e -> e != cat && e != player && e != cat.getOwner() && !cat.isAlliedTo(e))) {
+                e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
             float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.35F;
             target.hurt(cat.damageSources().lightningBolt(), dmg);
             FelineStatusEffects.applyStatus(target, FelineStatusType.SHOCK, 1, 60);

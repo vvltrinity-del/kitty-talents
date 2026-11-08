@@ -12,7 +12,7 @@ public class Talents {
     private static final Map<String, Talent> TALENTS = new LinkedHashMap<>();
 
     // Standard RPG Feline Talents (NINE_LIVES, FISHER_CAT, MOUSER, PILLOW_CAT are standard built-in defaults)
-    public static final Talent NINE_LIVES = register(new Talent("nine_lives", 5, () -> new ItemStack(Items.TOTEM_OF_UNDYING), false, true, TalentCategory.DEFENSE));
+    public static final Talent NINE_LIVES = register(new Talent("nine_lives", 8, () -> new ItemStack(Items.TOTEM_OF_UNDYING), false, true, TalentCategory.DEFENSE));
     public static final Talent POUNCE = register(new Talent("pounce", 8, () -> new ItemStack(Items.IRON_SWORD), false, false, TalentCategory.COMBAT));
     public static final Talent NIGHT_PROWLER = register(new Talent("night_prowler", 8, () -> new ItemStack(Items.ENDER_EYE), false, false, TalentCategory.UTILITY));
     public static final Talent KITTY_PACK = register(new Talent("kitty_pack", 5, () -> new ItemStack(Items.CHEST), false, false, TalentCategory.UTILITY));

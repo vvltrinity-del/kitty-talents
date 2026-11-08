@@ -40,12 +40,24 @@ public class CatReturnHomeGoal extends Goal {
         return cat.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) > 2.5D;
     }
 
+    /** Home Whiskers: +8% travel speed per rank. */
+    private double speed() {
+        return 1.35D * (1.0D + 0.08D * cat.getTalentLevel(com.kittytalents.talent.Talents.HOME_WHISKERS));
+    }
+
     @Override
     public void start() {
         BlockPos home = cat.getHomeBedPos();
         if (home != null) {
             cat.setOrderedToSit(false);
-            cat.getNavigation().moveTo(home.getX() + 0.5D, home.getY() + 0.5D, home.getZ() + 0.5D, 1.35D);
+            // Home Whiskers rank 3+: a cat far from home (same dimension) finds its way back instantly.
+            boolean sameDim = cat.getHomeBedDimension() == null || cat.getHomeBedDimension().isEmpty()
+                    || cat.getHomeBedDimension().equals(cat.level().dimension().location().toString());
+            if (sameDim && cat.getTalentLevel(com.kittytalents.talent.Talents.HOME_WHISKERS) >= 3
+                    && cat.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) > 64.0D * 64.0D) {
+                cat.teleportTo(home.getX() + 0.5D, home.getY() + 1.0D, home.getZ() + 0.5D);
+            }
+            cat.getNavigation().moveTo(home.getX() + 0.5D, home.getY() + 0.5D, home.getZ() + 0.5D, speed());
             recalcPathTimer = 0;
         }
     }
@@ -59,7 +71,7 @@ public class CatReturnHomeGoal extends Goal {
 
         if (--recalcPathTimer <= 0) {
             recalcPathTimer = 20;
-            cat.getNavigation().moveTo(home.getX() + 0.5D, home.getY() + 0.5D, home.getZ() + 0.5D, 1.35D);
+            cat.getNavigation().moveTo(home.getX() + 0.5D, home.getY() + 0.5D, home.getZ() + 0.5D, speed());
         }
     }
 
@@ -69,6 +81,9 @@ public class CatReturnHomeGoal extends Goal {
         BlockPos home = cat.getHomeBedPos();
         if (home != null && cat.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) <= 3.0D) {
             cat.setOrderedToSit(true); // Rest at home
+            if (com.kittytalents.talent.effect.TalentEngine.isMastered(cat, com.kittytalents.talent.Talents.HOME_WHISKERS)) {
+                cat.setHealth(cat.getMaxHealth()); // mastery "Hearth": arrives home fully healed
+            }
         }
     }
 }

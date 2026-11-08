@@ -35,7 +35,7 @@ public class ShadowStrikeAbility extends CatAbility {
         if (target == null && player != null) {
             AABB reach = cat.getBoundingBox().inflate(6.0D);
             for (LivingEntity e : cat.level().getEntitiesOfClass(LivingEntity.class, reach,
-                    e -> e != cat && e != player && !cat.isAlliedTo(e))) {
+                    e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
                 target = e;
                 break;
             }
