@@ -87,6 +87,8 @@ minecraft {
         }
 
         server {
+            // Own folder so a dedicated-server check can run while a dev client holds run/ locks.
+            workingDirectory project.file('run-server')
             property 'forge.enabledGameTestNamespaces', mod_id
             args '--nogui'
         }
