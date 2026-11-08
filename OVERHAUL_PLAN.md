@@ -320,6 +320,16 @@ Phases 3 and 4 share `content/`, so coordinate there.
    automatically by the AI in fights as the mod's signature hook. It is not an unlockable ability. Phase 3/4: make Pounce
    part of the base combat behavior for all cats. The Pounce talent (if kept) only *upgrades* it (range, damage,
    cooldown), and the separate "pounce" ability slot default goes away.
+5. **Mastery perks (Phase 4):** ✅ REQUESTED (2026-11-07). When a talent reaches its max rank, the cat gains a passive
+   "mastery" perk that sums up the whole talent. Example: Cat Armor maxed gives **free Mending** on its equipped gear.
+   Implement as an `onMastered` hook in the talent-hook system, with one mastery per talent defined in data, shown in
+   the Talents tab, and covered by a GameTest each.
+6. **Visual bugs from playtest (Phase 5):** netherite armor looks deformed (floating carapace boxes, helmet block on
+   the head, loose side pouch); the axe/tool isn't seated in the mouth. Both come from per-item magic offsets, which
+   the anchor bones fix.
+7. **Gear screen (Phase 6):** a stopgap is in (click equips from inventory, click unequips to inventory). The rebuilt
+   screen needs real player-inventory slots so drag-and-drop works.
+8. **Co-owners:** done. Online real players only, plus owner-side removal (stopgap UI; Phase 6 gives it a proper panel).
 4. **UI:** user dislikes the current GUI. Full redesign in Phase 6 (playtest also showed overlapping text on Home,
    Combat and Twine tabs, and Gear slots drawn over the 3D cat preview).
 
