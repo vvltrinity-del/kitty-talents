@@ -34,6 +34,9 @@ public class ModItems {
             () -> new AmnesiaTreatItem(new Item.Properties().rarity(Rarity.RARE)));
 
     // Tools & Utility
+    public static final RegistryObject<Item> PRODUCER_STICK = ITEMS.register("producer_stick",
+            () -> new com.kittytalents.item.ProducerStickItem(new Item.Properties()));
+
     public static final RegistryObject<Item> KITTY_WHISTLE = ITEMS.register("kitty_whistle",
             () -> new KittyWhistleItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
 

@@ -1,6 +1,5 @@
 {
   "itemGroup.kittytalents": "Kitty Talents",
-
   "item.kittytalents.catnip": "Catnip Leaf",
   "item.kittytalents.catnip_treat": "Catnip Treat",
   "item.kittytalents.super_catnip_treat": "Super Catnip Treat",
@@ -31,7 +30,6 @@
   "item.kittytalents.catnip_bucket": "Catnip-Infused Bucket",
   "item.kittytalents.catnip_milk_bucket": "Bucket of Frenzy Cat Milk",
   "item.kittytalents.catnip_respec_elixir": "Catnip Respec Elixir",
-
   "block.kittytalents.cat_food_bowl": "Cat Food Bowl",
   "block.kittytalents.cat_scratcher": "Cat Scratching Post",
   "block.kittytalents.cat_bed": "Comfy Cat Bed",
@@ -42,7 +40,6 @@
   "block.kittytalents.kitten_incubator": "Kitten Incubator",
   "block.kittytalents.kitty_work_station": "Kitty Work Station",
   "block.kittytalents.treat_oven": "Treat Oven",
-
   "item.kittytalents.crown": "Royal Cat Crown",
   "item.kittytalents.halo": "Angelic Cat Halo",
   "item.kittytalents.angel_wings": "Celestial Angel Wings",
@@ -79,11 +76,9 @@
   "item.kittytalents.emerald_cat_treat": "Emerald Cat Treat",
   "item.kittytalents.diamond_cat_treat": "Diamond Cat Treat",
   "item.kittytalents.netherite_cat_treat": "Netherite Cat Treat",
-
   "entity.kittytalents.talented_cat": "Talented Cat",
   "entity.kittytalents.thrown_toy": "Thrown Pet Toy",
   "entity.kittytalents.feline_hiss_projectile": "Sonic Hiss",
-
   "talent.kittytalents.nine_lives": "Nine Lives",
   "talent.kittytalents.nine_lives.desc": "Every cat has 5 free ranks. Once per recharge, a fatal blow is survived instead; higher ranks restore more health and recharge faster.",
   "talent.kittytalents.pounce": "Pounce Training",
@@ -168,7 +163,6 @@
   "talent.kittytalents.alchemy_kitty.desc": "Dire alchemy: brews beneficial buffs and purges negative debuffs.",
   "talent.kittytalents.catnip_catastrophe": "Catnip Catastrophe",
   "talent.kittytalents.catnip_catastrophe.desc": "Supercharged dire explosive catnip burst dealing massive AoE damage.",
-
   "mode.kittytalents.docile": "Docile (Sitting)",
   "mode.kittytalents.follow": "Follow Owner",
   "mode.kittytalents.wander": "Wander",
@@ -190,7 +184,6 @@
   "mode.kittytalents.support": "Support Mode",
   "mode.kittytalents.return_home": "Return Home",
   "mode.kittytalents.retreat": "Retreat",
-
   "job.kittytalents.none": "Unemployed",
   "job.kittytalents.farmer": "Farmer",
   "job.kittytalents.lumberjack": "Lumberjack",
@@ -201,7 +194,6 @@
   "job.kittytalents.fisher": "Fisher",
   "job.kittytalents.collector": "Collector",
   "job.kittytalents.gunsmith": "Gunsmith (Ammo & Attachments)",
-
   "talent.kittytalents.farmer_cat": "Farmer Cat",
   "talent.kittytalents.farmer_cat.desc": "Harvests mature crops, replants seeds, and accelerates crop growth in its work area.",
   "talent.kittytalents.lumber_cat": "Lumber Cat",
@@ -230,14 +222,12 @@
   "talent.kittytalents.gunsmith_paw.desc": "Allows crafting TacZ ammunition (Lv10+) and attachments (Lv25+) at a Gun Smith Table.",
   "talent.kittytalents.ballistic_vest": "Ballistic Vest",
   "talent.kittytalents.ballistic_vest.desc": "Reduces incoming projectile, explosion, and gunfire damage.",
-
   "jei.kittytalents.kitty_work_clipboard.info": "Right-click a Talented Cat to select it. Sneak + Right-click a cat to cycle its job. Right-click a Kitty Work Station to bind the cat. Right-click a Kitty Habitat to house the cat inside (Sneak + Right-click to release). Sneak + Right-click containers to set Input/Output chests, or blocks to set Work Area corners.",
   "jei.kittytalents.kitty_habitat.info": "Houses a Talented Cat inside (via Kitty Work Clipboard) to passively produce resources based on the cat's tier, level, and talents. Accepts food, catalysts, Productivity Upgrades, and optional Forge Energy (FE) for +100% speed.",
   "jei.kittytalents.kitty_work_station.info": "Automation hub for bound worker cats. Buffers harvested items (18 slots), supplies seeds/tools/food/ammo (4 slots), accepts up to 2 Productivity Upgrades, and supports hoppers/item pipes on all sides.",
   "jei.kittytalents.treat_oven.info": "Bakes Catnip Treats, Tiered Ore Treats, and Feline Feasts using furnace fuel. Optional Forge Energy (FE) doubles baking speed.",
   "jei.kittytalents.kitty_whistle.info": "Commands all owned cats within 64 blocks. Sneak + Right-click to cycle commands (Recall, Heel, Attack, Sit/Stand, Guard, Frenzy Rally, Clock In, Clock Out).",
   "jei.kittytalents.treats.info": "Feed treats to tamed cats to awaken them into Talented Cats and train them up to Level 100.",
-
   "tooltip.kittytalents.treat_levels": "Can train cats from level %d to %d",
   "message.kittytalents.cat_trained": "%s has awakened as a Talented Cat! Right-click them with a Stick to open the menu.",
   "message.kittytalents.must_tame_first": "You must tame this cat with raw fish before training it!",
@@ -347,7 +337,6 @@
   "message.kittytalents.level_up": "%s reached level %s!",
   "message.kittytalents.twine_leash": "Too far from your body - your cat can't go further.",
   "gui.kittytalents.mastery": "Mastery",
-
   "_comment.screen": "Generated by tools/gen_screen_lang.py",
   "gui.kittytalents.screen.bowl.cats": "Cats nearby: %s",
   "gui.kittytalents.screen.bowl.cooldown": "Refilling (%ss)",
@@ -578,5 +567,10 @@
   "gui.kittytalents.screen.whistle.search": "Search",
   "gui.kittytalents.screen.whistle.search.hint": "Search commands...",
   "gui.kittytalents.screen.whistle.subtitle": "Every one of your cats nearby hears it.",
-  "gui.kittytalents.screen.whistle.title": "KITTY WHISTLE"
+  "gui.kittytalents.screen.whistle.title": "KITTY WHISTLE",
+  "item.kittytalents.producer_stick": "Producer Stick",
+  "item.kittytalents.producer_stick.desc1": "Conduct cats from anywhere across the world.",
+  "item.kittytalents.producer_stick.desc2": "Fireproof. Right-click to conduct to self; Shift-Right-click to send to bed.",
+  "producer_stick.title": "PRODUCER STICK",
+  "gui.kittytalents.screen.producer_stick.title": "PRODUCER STICK"
 }

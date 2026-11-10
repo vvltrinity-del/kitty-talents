@@ -48,6 +48,9 @@ public class PacketHandler {
         toClient(PacketSyncTalents.class, PacketSyncTalents::new);
         toServer(PacketTeamCommand.class, PacketTeamCommand::new);
         toServer(PacketSetCatJob.class, PacketSetCatJob::new);
+        toServer(PacketRequestConductList.class, PacketRequestConductList::new);
+        toClient(PacketSyncConductList.class, PacketSyncConductList::new);
+        toServer(PacketConductCat.class, PacketConductCat::new);
     }
 
     private static <T extends PacketBase> void toServer(Class<T> type, Function<FriendlyByteBuf, T> decoder) {

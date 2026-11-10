@@ -100,4 +100,7 @@ public class ClientPacketHandlers {
     public static void openVariantChartScreen() {
         Minecraft.getInstance().setScreen(new VariantChartScreen());
     }
+    public static void handleOpenProducerStickScreen(java.util.List<com.kittytalents.network.PacketSyncConductList.ConductCatDto> cats, boolean defaultToBed) {
+        net.minecraft.client.Minecraft.getInstance().setScreen(new com.kittytalents.client.gui.ProducerStickScreen(cats, defaultToBed));
+    }
 }

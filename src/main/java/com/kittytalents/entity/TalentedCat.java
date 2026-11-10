@@ -1612,6 +1612,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     /** The cat's tick body; {@link #tick} wraps it with the optional stress-test timer. */
     private void tickCat() {
         super.tick();
+        if (!this.level().isClientSide && this.tickCount % 60 == 0 && this.level() instanceof net.minecraft.server.level.ServerLevel sl && this.getOwnerUUID() != null) {
+            com.kittytalents.core.CatDirectory.get(sl).updateCat(this);
+        }
 
         if (!this.level().isClientSide && this.isVehicle()) {
             LivingEntity passenger = this.getControllingPassenger();
