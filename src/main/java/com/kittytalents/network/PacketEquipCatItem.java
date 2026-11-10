@@ -2,16 +2,11 @@ package com.kittytalents.network;
 
 import com.kittytalents.core.perm.CatAction;
 import com.kittytalents.entity.TalentedCat;
-import com.kittytalents.talent.Talents;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.Tiers;
 
 public class PacketEquipCatItem extends PacketBase {
     private final int entityId;
@@ -66,14 +61,7 @@ public class PacketEquipCatItem extends PacketBase {
 
     /** Server-side slot click. Public for GameTests. */
     public static void handleSlotInteraction(ServerPlayer sender, TalentedCat cat, int slotId, boolean isShiftClick) {
-        ItemStack currentEquipped = switch (slotId) {
-            case 0 -> cat.getEquippedWeapon();
-            case 1, 2, 3, 4 -> cat.getArmorSlotItem(slotId);
-            case 5 -> cat.getEquippedAccessory();
-            case 6 -> cat.getEquippedTool();
-            case 7, 8, 9 -> cat.getCosmeticSlot(slotId - 7);
-            default -> ItemStack.EMPTY;
-        };
+        ItemStack currentEquipped = com.kittytalents.core.gear.CatGearRules.get(cat, slotId);
 
         ItemStack carried = sender.containerMenu.getCarried();
 
@@ -148,114 +136,22 @@ public class PacketEquipCatItem extends PacketBase {
 
     /** Item category check only (no talent-rank gating), used to find candidates. */
     private static boolean fitsSlotType(int slotId, ItemStack stack) {
-        net.minecraft.world.item.Item item = stack.getItem();
-        return switch (slotId) {
-            case 0 -> com.kittytalents.compat.tacz.TacZCompat.isGun(stack) || item instanceof SwordItem
-                    || item instanceof net.minecraft.world.item.TridentItem;
-            case 1, 2, 3, 4 -> item instanceof ArmorItem armor && armor.getType() == switch (slotId) {
-                case 1 -> ArmorItem.Type.HELMET;
-                case 2 -> ArmorItem.Type.CHESTPLATE;
-                case 3 -> ArmorItem.Type.LEGGINGS;
-                default -> ArmorItem.Type.BOOTS;
-            };
-            case 5 -> item instanceof com.kittytalents.item.CatAccessoryItem;
-            case 6 -> item instanceof net.minecraft.world.item.DiggerItem || item instanceof net.minecraft.world.item.ShearsItem
-                    || item instanceof net.minecraft.world.item.FishingRodItem;
-            case 7, 8, 9 -> item instanceof com.kittytalents.item.CatAccessoryItem || item instanceof com.kittytalents.item.CatCollarItem;
-            default -> false;
-        };
+        return com.kittytalents.core.gear.CatGearRules.fitsType(slotId, stack);
     }
 
     private static void setSlotItem(TalentedCat cat, int slotId, ItemStack stack) {
-        switch (slotId) {
-            case 0 -> cat.setEquippedWeapon(stack);
-            case 1, 2, 3, 4 -> cat.setArmorSlotItem(slotId, stack);
-            case 5 -> cat.setEquippedAccessory(stack);
-            case 6 -> cat.setEquippedTool(stack);
-            case 7, 8, 9 -> cat.setCosmeticSlot(slotId - 7, stack);
+        com.kittytalents.core.gear.CatGearRules.set(cat, slotId, stack);
+    }
+
+    /** Rules live in CatGearRules; a rank refusal is reported to {@code sender} (null = a quiet check). */
+    private static boolean isValidItemForSlot(TalentedCat cat, int slotId, ItemStack stack, @javax.annotation.Nullable ServerPlayer sender) {
+        if (stack.isEmpty() || !fitsSlotType(slotId, stack)) return false;
+        Component why = com.kittytalents.core.gear.CatGearRules.refusal(cat, slotId, stack);
+        if (why == null) return true;
+        if (sender != null) {
+            sender.sendSystemMessage(why);
+            sender.playSound(SoundEvents.VILLAGER_NO, 1.0F, 1.0F);
         }
-    }
-
-    private static boolean isValidItemForSlot(TalentedCat cat, int slotId, ItemStack stack, ServerPlayer sender) {
-        if (stack.isEmpty()) return false;
-        switch (slotId) {
-            case 0 -> {
-                if (com.kittytalents.compat.tacz.TacZCompat.isGun(stack)) {
-                    int armoryLvl = cat.getTalentLevel(Talents.CAT_ARMORY);
-                    if (armoryLvl < 1) {
-                        deny(sender, "message.kittytalents.need_higher_armory", 1, stack);
-                        return false;
-                    }
-                    return true;
-                }
-                if (stack.getItem() instanceof SwordItem sword) {
-                    int armoryLvl = cat.getTalentLevel(Talents.CAT_ARMORY);
-                    int req = getRequiredArmoryLevel(sword);
-                    if (armoryLvl < req) {
-                        deny(sender, "message.kittytalents.need_higher_armory", req, stack);
-                        return false;
-                    }
-                    return true;
-                }
-                return stack.getItem() instanceof net.minecraft.world.item.TridentItem;
-            }
-            case 1, 2, 3, 4 -> {
-                ArmorItem.Type expected = switch (slotId) {
-                    case 1 -> ArmorItem.Type.HELMET;
-                    case 2 -> ArmorItem.Type.CHESTPLATE;
-                    case 3 -> ArmorItem.Type.LEGGINGS;
-                    case 4 -> ArmorItem.Type.BOOTS;
-                    default -> null;
-                };
-                if (stack.getItem() instanceof ArmorItem armor && armor.getType() == expected) {
-                    int armorLvl = cat.getTalentLevel(Talents.CAT_ARMOR);
-                    int req = getRequiredArmorLevel(armor);
-                    if (armorLvl < req) {
-                        deny(sender, "message.kittytalents.need_higher_armor", req, stack);
-                        return false;
-                    }
-                    return true;
-                }
-                return false;
-            }
-            case 5 -> {
-                return stack.getItem() instanceof com.kittytalents.item.CatAccessoryItem;
-            }
-            case 6 -> {
-                return stack.getItem() instanceof net.minecraft.world.item.DiggerItem ||
-                       stack.getItem() instanceof net.minecraft.world.item.ShearsItem ||
-                       stack.getItem() instanceof net.minecraft.world.item.FishingRodItem;
-            }
-            case 7, 8, 9 -> {
-                return stack.getItem() instanceof com.kittytalents.item.CatAccessoryItem ||
-                       stack.getItem() instanceof com.kittytalents.item.CatCollarItem;
-            }
-            default -> {
-                return false;
-            }
-        }
-    }
-
-    /** Rank-requirement feedback; {@code sender == null} means a quiet check. */
-    private static void deny(@javax.annotation.Nullable ServerPlayer sender, String key, int rank, ItemStack stack) {
-        if (sender == null) return;
-        sender.sendSystemMessage(Component.translatable(key, rank, stack.getHoverName()));
-        sender.playSound(SoundEvents.VILLAGER_NO, 1.0F, 1.0F);
-    }
-
-    private static int getRequiredArmoryLevel(SwordItem sword) {
-        if (sword.getTier() == Tiers.WOOD || sword.getTier() == Tiers.STONE) return 1;
-        if (sword.getTier() == Tiers.IRON || sword.getTier() == Tiers.GOLD) return 2;
-        if (sword.getTier() == Tiers.DIAMOND) return 3;
-        if (sword.getTier() == Tiers.NETHERITE) return 4;
-        return 1;
-    }
-
-    private static int getRequiredArmorLevel(ArmorItem armor) {
-        if (armor.getMaterial() == ArmorMaterials.LEATHER || armor.getMaterial() == ArmorMaterials.GOLD) return 1;
-        if (armor.getMaterial() == ArmorMaterials.CHAIN || armor.getMaterial() == ArmorMaterials.IRON) return 2;
-        if (armor.getMaterial() == ArmorMaterials.DIAMOND) return 3;
-        if (armor.getMaterial() == ArmorMaterials.NETHERITE) return 4;
-        return 1;
+        return false;
     }
 }

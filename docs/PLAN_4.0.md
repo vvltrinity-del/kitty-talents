@@ -167,3 +167,19 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 - Tests: KittyTuningGameTests (10). Covers defaults matching 3.0; one JSON change altering behaviour and the tooltip, with clamping and unknown names; a lowered max rank capping and refunding; each new ability; and the AI casting Ice Lance on its own.
 - Example pack `docs/examples/tuning_pack/`; tuning section in EXTENDING.md.
 - Verification: build green, all 90 GameTests pass, Talents tab checked at GUI scales 2 and 3.
+
+### 2026-11-10: Phase 5: Drag-and-drop Gear
+- `CatTalentMenu` has real slots: the cat's 10 gear slots (indices 0..9, backed by the cat through a Container) and the player's 36 inventory slots.
+  - Vanilla container clicks now handle drag, shift-click, right-click and swapping, and sync to the client.
+  - The client places slots by replacing each Slot at the same index, because Slot x/y are final. Slots are active only on the Gear tab.
+- `core/gear/CatGearRules` holds the slot rules: the item type for each slot, the Cat Armory and Cat Armor rank gates, and the refusal reason. The slots and the old click packet both use them.
+  - Gear slots also require the EQUIP permission and hold one item.
+  - Shift-click moves one item per click (no filling all three cosmetic slots from one stack).
+- The Gear tab is redrawn as a gear block around a larger portrait, plus the player's inventory with a stats line and a hint.
+  - Hovering an empty slot names it.
+  - Hovering a slot while holding an item it refuses shows the reason in red: wrong slot, the rank needed, or owner only.
+- Fixes found along the way:
+  - Icon-only KTButtons drew a stray "…".
+  - 3D accessory item icons sat off-centre. The renderer now centres and sizes each model from its real box bounds.
+- Tests: KittyGearGameTests (4). Covers each slot accepting and rejecting by drag; rank gates by drag, shift-click and click; shift-click both ways with swaps; and strangers being refused.
+- Verification: build green, all 94 GameTests pass, Gear tab and item icons checked at GUI scales 2 and 3.

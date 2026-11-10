@@ -68,13 +68,15 @@ public class KTButton extends Button {
 
         int pad = style == Style.CHIP ? 2 : 4; // chips are narrow filter tabs: tighter padding fits "Defense"
         int textLeft = x + pad;
+        boolean iconOnly = getMessage().getString().isEmpty();
         if (!icon.isEmpty() || iconTexture != null) {
             int size = h >= 18 ? 16 : 12;
             int iy = textTop >= 0 ? y + 3 : y + (h - size) / 2;
+            int ix = iconOnly ? x + (w - size) / 2 : x + 3; // icon-only buttons centre the icon
             if (iconTexture != null) {
-                g.blit(iconTexture, x + 3, iy, 0, 0, size, size, size, size);
+                g.blit(iconTexture, ix, iy, 0, 0, size, size, size, size);
             } else if (size == 16) {
-                g.renderItem(icon, x + 3, iy);
+                g.renderItem(icon, ix, iy);
             } else {
                 g.pose().pushPose();
                 g.pose().translate(x + 3, iy, 0);
@@ -85,6 +87,7 @@ public class KTButton extends Button {
             textLeft = x + 3 + size + 3;
         }
 
+        if (iconOnly) return;
         Font font = Minecraft.getInstance().font;
         int color = textColor != -1 ? textColor : (style == Style.GOLD ? KTTheme.TEXT_DARK : (selected ? KTTheme.TEXT_GOLD : KTTheme.TEXT));
         if (!active) color = KTTheme.dim(color);

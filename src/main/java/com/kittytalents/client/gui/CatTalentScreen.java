@@ -79,9 +79,14 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
         clearWidgets();
         nameEditBox = null;
         trustEditBox = null;
+        menu.setSlotsShown(currentTab == GEAR);
         if (cat == null) return;
         tabs[currentTab].init(this);
     }
+
+    /** The menu slot under the mouse (only Gear-tab slots are active). */
+    @javax.annotation.Nullable
+    public net.minecraft.world.inventory.Slot hoveredSlot() { return hoveredSlot; }
 
     public void showTab(int index) {
         if (index == currentTab || index < 0 || index >= tabs.length) return;

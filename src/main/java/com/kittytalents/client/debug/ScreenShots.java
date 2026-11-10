@@ -136,6 +136,16 @@ public final class ScreenShots {
             mc.resizeDisplay();
         }
         if (!(mc.screen instanceof CatTalentScreen)) {
+            // A few items in the (client-side) inventory so the Gear tab's real slots have something to show.
+            var inv = mc.player.getInventory();
+            if (inv.isEmpty()) {
+                inv.setItem(0, new ItemStack(Items.DIAMOND_SWORD));
+                inv.setItem(1, new ItemStack(Items.IRON_HELMET));
+                inv.setItem(2, new ItemStack(Items.COOKED_SALMON, 12));
+                inv.setItem(9, new ItemStack(ModItems.TOP_HAT.get()));
+                inv.setItem(10, new ItemStack(ModItems.CAT_COLLAR.get(), 3));
+                inv.setItem(20, new ItemStack(Items.IRON_PICKAXE));
+            }
             CatTalentMenu menu = new CatTalentMenu(0, mc.player.getInventory(), cat);
             mc.setScreen(new CatTalentScreen(menu, mc.player.getInventory(), Component.literal("Talented Cat")));
         }

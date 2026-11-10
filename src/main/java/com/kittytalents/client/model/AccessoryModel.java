@@ -41,6 +41,8 @@ public final class AccessoryModel {
     public final Map<String, ModelPart> parts = new HashMap<>();
     private final Map<ModelPart, PartPose> rest = new HashMap<>();
     private final Map<ModelPart, Integer> depth = new HashMap<>();
+    /** Rest-pose bounds in blocks (model space, +Y down): minX, minY, minZ, maxX, maxY, maxZ. Used to centre item icons. */
+    public final float[] bounds = new float[6];
 
     private AccessoryModel(String id, Mount mount, ResourceLocation texture, boolean emissive, ModelPart root) {
         this.id = id;
@@ -70,6 +72,7 @@ public final class AccessoryModel {
                     new ResourceLocation(json.get("texture").getAsString()),
                     json.has("emissive") && json.get("emissive").getAsBoolean(), baked);
             model.index(baked, json.getAsJsonArray("parts"), 1);
+            model.measure();
             return model;
         } catch (Exception e) {
             KittyTalents.LOGGER.error("[Accessories] could not load {}", file, e);
@@ -107,6 +110,22 @@ public final class AccessoryModel {
             depth.put(child, d);
             index(child, p.getAsJsonArray("children"), d + 1);
         }
+    }
+
+    private void measure() {
+        float[] b = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+        org.joml.Vector4f v = new org.joml.Vector4f();
+        root.visit(new com.mojang.blaze3d.vertex.PoseStack(), (pose, path, index, cube) -> {
+            for (int i = 0; i < 8; i++) {
+                v.set(((i & 1) == 0 ? cube.minX : cube.maxX) / 16F, ((i & 2) == 0 ? cube.minY : cube.maxY) / 16F,
+                        ((i & 4) == 0 ? cube.minZ : cube.maxZ) / 16F, 1F);
+                pose.pose().transform(v);
+                b[0] = Math.min(b[0], v.x); b[1] = Math.min(b[1], v.y); b[2] = Math.min(b[2], v.z);
+                b[3] = Math.max(b[3], v.x); b[4] = Math.max(b[4], v.y); b[5] = Math.max(b[5], v.z);
+            }
+        });
+        if (b[0] > b[3]) java.util.Arrays.fill(b, 0F);
+        System.arraycopy(b, 0, bounds, 0, 6);
     }
 
     /** Puts every part back to its authored pose. */

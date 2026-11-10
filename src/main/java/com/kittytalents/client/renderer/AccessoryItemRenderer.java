@@ -46,27 +46,15 @@ public class AccessoryItemRenderer extends BlockEntityWithoutLevelRenderer {
         if (model.isEmpty()) return;
         AccessoryModel m = model.get();
         pose.pushPose();
-        // Entity models are authored upside down (+Y is down); flip into item space and centre in the 1x1x1 item box.
+        // Entity models are authored upside down (+Y is down): flip into item space, turn neck/back pieces to face
+        // the viewer, then centre the model's own bounds in the 1x1x1 item box and size its longest side to fit.
+        float[] b = m.bounds;
+        float dx = b[3] - b[0], dy = b[4] - b[1], dz = b[5] - b[2];
+        float s = Math.min(1.8F, 0.85F / Math.max(0.05F, Math.max(dx, Math.max(dy, dz))));
         pose.translate(0.5D, 0.5D, 0.5D);
-        float s = switch (m.mount) {
-            case HEAD_TOP -> 1.55F;
-            case HEAD -> 1.7F;
-            case NECK -> 1.8F;
-            case BACK -> 1.1F;
-        };
         pose.scale(s, -s, -s);
-        switch (m.mount) {
-            case HEAD_TOP -> pose.translate(0.0D, -0.14D, 0.0D);
-            case HEAD -> pose.translate(0.0D, 0.0D, 0.12D);
-            case NECK -> {
-                pose.mulPose(Axis.XP.rotationDegrees(-90));
-                pose.translate(0.0D, 0.06D, 0.05D);
-            }
-            case BACK -> {
-                pose.mulPose(Axis.XP.rotationDegrees(-90));
-                pose.translate(0.0D, -0.25D, 0.0D);
-            }
-        }
+        if (m.mount == AccessoryModel.Mount.NECK || m.mount == AccessoryModel.Mount.BACK) pose.mulPose(Axis.XP.rotationDegrees(-90));
+        pose.translate(-(b[0] + b[3]) / 2F, -(b[1] + b[4]) / 2F, -(b[2] + b[5]) / 2F);
         m.reset();
         RenderType type = m.emissive ? RenderType.entityTranslucentEmissive(m.texture) : RenderType.entityCutoutNoCull(m.texture);
         m.root.render(pose, buffers.getBuffer(type), m.emissive ? 0xF000F0 : light, overlay, 1.0F, 1.0F, 1.0F, 1.0F);

@@ -44,14 +44,13 @@ talents = sources["TalentsTab.java"]
 for k, n in zip(string_array(talents, "CATEGORY_KEYS"), string_array(talents, "CATEGORY_NAMES")):
     entries["talents.cat." + k] = n
 
-for k, n in re.findall(r"new SlotDef\(\d+, " + STR + ", " + STR, sources["GearTab.java"]):
-    entries["gear.slot." + unescape(k)] = unescape(n)
+gear = sources["GearTab.java"]
+for k, n in zip(string_array(gear, "KEYS"), string_array(gear, "NAMES")):
+    entries["gear.slot." + k] = n
 
 style = sources["StyleTab.java"]
 for k, n in zip(string_array(style, r"String\[\] keys"), string_array(style, r"String\[\] names")):
     entries["style." + k] = n
-for i, n in enumerate(string_array(style, "SKIN_NAMES")):
-    entries["style.skin." + str(i)] = n
 
 for k, n in re.findall(r"new Stat\(" + STR + ", " + STR, sources["StatsTab.java"]):
     entries["stats." + unescape(k)] = unescape(n)
