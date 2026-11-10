@@ -1,0 +1,5 @@
+{
+  "name": "skin.kittytalents.all_black",
+  "texture": "minecraft:textures/entity/cat/all_black.png",
+  "order": 100
+}

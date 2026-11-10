@@ -115,3 +115,36 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 - **Job Picker UI & Work Status:** Added qualification check, detailed requirements tooltip (level, talent, TacZ), and automatic skipping of unqualified jobs on regular click (shift-click enables viewing locked jobs). If an unqualified job is active, the button reflects (Unqualified) with muted styling. Added visual work status badge on the screen header displaying Unqualified, Too Hungry, or active work status (Working, Scanning, etc.).
 - **Verification:** All 31 JUnit tests pass, all 75 GameTests pass (including 30x stalk runs and zombie data cleanliness), and RenderMatrix produced 28 clean images with 0 missing texture errors.
 
+
+### 2026-11-10: Phase 1 review (Claude)
+- Removed double counting of kills and damage (doHurtTarget and ForgeEvents both recorded them); stats sync is now batched every 20 ticks.
+- Network protocol bumped to "3" for Gemini's four new packets. PacketConductCat checks the owner before loading a chunk, retries for 40 ticks, and uses CatPermissions.
+- `api/CatGoalBand` reads the CatBrain constants, so the API matches the new POUNCE band.
+- Test world turns off mob loot: FETCH cats were chasing stress-test zombie drops in the self-defense test.
+
+### 2026-11-10: Phase 2a: 3D blocks and the Cat Tree
+- `tools/asset_gen/blocks_3d.py` writes models, blockstates and textures for all 10 blocks. Blocks face the player, with shapes rotated to match.
+- The food bowl shows four fill levels. Seven blocks were missing loot tables; they now have them.
+- New two-block Cat Tree with a recipe. GUARD and WANDER cats perch on it and mark nearby hostiles with Glowing.
+- Four new GameTests.
+
+### 2026-11-10: Phase 2b: 3D accessories
+- `tools/asset_gen/accessories_3d.py` writes 11 accessory models in a JSON format that resource packs can replace.
+- `AccessoryModel` animates cloth sway, floating and wing flaps. Accessory items render in 3D in inventories and hands.
+- A real Elytra keeps the vanilla look. Before and after renders are in `docs/render-matrix/accessories-*`.
+
+### 2026-11-10: Phase 3: Skins from packs
+- Skins are datapack data: `data/<ns>/kittytalents/skins/*.json` with `name`, `texture`, `order` and `breed_default_for`.
+  The 17 built-in skins were moved there from `assets/kittytalents/skins`, and the client-only SkinRegistry was removed.
+- The server sends the skin list on join and after `/reload` (PacketSyncSkins). Network protocol is "4".
+- Cats save the skin by name (`Skin`). CatSchema 3 maps the old `SkinId` numbers, with 0 becoming Default.
+  Cats whose skin pack is missing show their default look and keep the id.
+- PacketChangeCatSkin sends a string (an explicit id, or next/previous) and the server refuses ids it hasn't loaded.
+- The Style tab lists Default plus every synced skin. The list pages, opens on the page with the current skin, and shows a page counter.
+- Tests:
+  - new GameTest testSkinsAreDatapackDrivenAndMigrate (legacy numbers, unknown id refused, pack skin applies and saves);
+  - the legacy-save test now also checks SkinId 12 → snow_leopard;
+  - SkinFilesTest checks the new folder and the lang names.
+- Example pack in `docs/examples/sunset_skin_pack/`. The skin section of EXTENDING.md was rewritten.
+- Also fixed: `gen_screen_lang.py` drops keys added after its generated block, which had removed the Producer Stick item names. Those names were restored above the block.
+- Verification: build green, all 80 GameTests pass, Style skin page checked at GUI scales 2 and 3.

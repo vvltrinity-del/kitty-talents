@@ -107,23 +107,32 @@ MinecraftForge.EVENT_BUS.addListener((RegisterCatGoalsEvent e) -> {
 });
 ```
 
-Bands, highest priority first: SAFETY, ORDERS, COMBAT, MELEE, COMMAND, WORK, NEEDS, IDLE. A goal only runs when
+Bands, highest priority first: SAFETY, ORDERS, POUNCE, COMBAT, MELEE, COMMAND, WORK, NEEDS, IDLE. A goal only runs when
 no higher band is using the same control flags (MOVE, LOOK, JUMP). Don't add goals in `EntityJoinLevelEvent`: it fires
 on every chunk reload and stacks duplicates.
 
 ## Adding a skin
 
-1. Put the texture (64×32, vanilla cat layout) in `assets/kittytalents/textures/entity/cat/`.
-2. Add `assets/kittytalents/skins/<name>.json`:
-   ```json
-   { "skin_id": 17, "texture": "kittytalents:textures/entity/cat/my_skin.png", "breed_default_for": ["tiger"] }
-   ```
-   `breed_default_for` is optional: those breeds use this texture when their skin is set to default (0).
-3. Add the skin's name to `StyleTab.SKIN_NAMES`, raise `PacketChangeCatSkin.SKIN_COUNT`, and run
-   `python tools/gen_screen_lang.py`.
+Skins are data. No code is needed, and a server can add skins with a datapack.
 
-Step 3 is still code: the server checks skin ids, and the server can't see client resource packs. Making skins fully
-data-driven (a datapack list the server sends to clients) is a 4.0 item.
+1. **Texture (resource pack):** a 64×32 PNG in the vanilla cat layout, e.g.
+   `assets/mypack/textures/entity/cat/sunset.png`.
+2. **Skin entry (datapack):** `data/mypack/kittytalents/skins/sunset.json`:
+   ```json
+   { "name": "skin.mypack.sunset", "texture": "mypack:textures/entity/cat/sunset.png", "order": 500,
+     "breed_default_for": ["tiger"] }
+   ```
+   - The skin's id is the file name with its namespace: `mypack:sunset`.
+   - `name` is a lang key (add it to your resource pack's lang file) or plain text.
+   - `order` sorts the Style tab list. The built-in skins use 0–160.
+   - `breed_default_for` is optional. Those breeds use this texture when the cat's skin is "Default".
+
+The server sends its skin list to every player on join and after `/reload`, and it refuses skin ids it hasn't
+loaded. Cats save the skin by id. If a pack is removed, its cats show their default look, and they get the skin
+back when the pack returns. A pack can override a built-in skin by shipping a file at the same path
+(`data/kittytalents/kittytalents/skins/tiger.json`).
+
+There's a complete example in `docs/examples/sunset_skin_pack/`.
 
 ## Adding a mode
 

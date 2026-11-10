@@ -1,0 +1,5 @@
+{
+  "name": "skin.kittytalents.calico",
+  "texture": "minecraft:textures/entity/cat/calico.png",
+  "order": 50
+}

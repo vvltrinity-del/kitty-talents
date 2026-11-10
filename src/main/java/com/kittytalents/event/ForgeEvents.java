@@ -32,6 +32,19 @@ import java.util.List;
 public class ForgeEvents {
 
     @SubscribeEvent
+    public static void onAddReloadListeners(net.minecraftforge.event.AddReloadListenerEvent event) {
+        event.addListener(new com.kittytalents.skin.CatSkins.Loader());
+    }
+
+    /** Sends the datapack skin list on join (player set) and to everyone after /reload (player null). */
+    @SubscribeEvent
+    public static void onDatapackSync(net.minecraftforge.event.OnDatapackSyncEvent event) {
+        var packet = new com.kittytalents.network.PacketSyncSkins();
+        if (event.getPlayer() != null) com.kittytalents.network.PacketHandler.sendToPlayer(packet, event.getPlayer());
+        else event.getPlayerList().getPlayers().forEach(p -> com.kittytalents.network.PacketHandler.sendToPlayer(packet, p));
+    }
+
+    @SubscribeEvent
     public static void onCommandsRegister(net.minecraftforge.event.RegisterCommandsEvent event) {
         com.kittytalents.command.KittyTalentsCommand.register(event.getDispatcher());
     }

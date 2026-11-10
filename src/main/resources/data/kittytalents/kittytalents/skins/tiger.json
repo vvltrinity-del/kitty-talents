@@ -1,6 +1,7 @@
 {
-  "skin_id": 11,
+  "name": "skin.kittytalents.tiger",
   "texture": "kittytalents:textures/entity/cat/skin_11.png",
+  "order": 110,
   "breed_default_for": [
     "tiger"
   ]

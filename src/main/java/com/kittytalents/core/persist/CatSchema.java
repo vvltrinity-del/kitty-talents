@@ -22,13 +22,15 @@ import java.util.List;
  *   <li><b>2</b>: Pounce is every cat's built-in move, no longer an equippable ability: a saved "pounce" in an
  *       ability slot is cleared so the slot falls back to its default. Mode names may be legacy (mapped by
  *       CatMode#fromSavedName after the 21 -> 12 mode merge).</li>
+ *   <li><b>3</b> (4.0): the skin is saved by name ({@value #KEY_SKIN}, e.g. "kittytalents:tiger"; empty = the breed's
+ *       default) instead of the number {@value #KEY_LEGACY_SKIN_ID}, so packs can add skins.</li>
  * </ul>
  *
  * <p>This class is pure NBT logic (no world / entity access) so it can be unit-tested without a Minecraft bootstrap.</p>
  */
 public final class CatSchema {
 
-    public static final int CURRENT = 2;
+    public static final int CURRENT = 3;
 
     public static final String KEY_SCHEMA = "KTSchema";
     public static final String KEY_MODE_NAME = "CatModeName";
@@ -36,6 +38,20 @@ public final class CatSchema {
     public static final String KEY_ABILITY_COOLDOWNS = "AbilityCooldowns";
     public static final String KEY_SPIRIT_PRIMED = "SpiritCatnipPrimed";
     public static final String KEY_MUTATION = "MutationType";
+    public static final String KEY_SKIN = "Skin";
+    public static final String KEY_LEGACY_SKIN_ID = "SkinId";
+
+    /** The 3.0 skin numbers in order. FROZEN: decodes old saves. 0 meant "the breed's default look". */
+    public static final List<String> LEGACY_SKINS = List.of(
+            "", "kittytalents:black", "kittytalents:red", "kittytalents:siamese", "kittytalents:british_shorthair",
+            "kittytalents:calico", "kittytalents:persian", "kittytalents:ragdoll", "kittytalents:white", "kittytalents:jellie",
+            "kittytalents:all_black", "kittytalents:tiger", "kittytalents:snow_leopard", "kittytalents:void_ender",
+            "kittytalents:golden_maneki", "kittytalents:ghost_phantom", "kittytalents:panther");
+
+    /** A 3.0 skin number as a skin name ("" = breed default for 0 or anything unknown). */
+    public static String legacySkin(int id) {
+        return id > 0 && id < LEGACY_SKINS.size() ? LEGACY_SKINS.get(id) : "";
+    }
 
     /**
      * The CatMode enum order as it was in every pre-schema save. FROZEN: never edit, it decodes old ordinals.
@@ -68,11 +84,19 @@ public final class CatSchema {
         int from = versionOf(root);
         if (from < 1) migrate0to1(root, forgeData);
         if (from < 2) migrate1to2(root);
+        if (from < 3) migrate2to3(root);
         root.putInt(KEY_SCHEMA, CURRENT);
         return from;
     }
 
     static final List<String> ABILITY_SLOT_KEYS = List.of("AbilitySlot1", "AbilitySlot2", "AbilitySlot3", "AbilityUltimate");
+
+    private static void migrate2to3(CompoundTag root) {
+        if (!root.contains(KEY_SKIN) && root.contains(KEY_LEGACY_SKIN_ID)) {
+            root.putString(KEY_SKIN, legacySkin(root.getInt(KEY_LEGACY_SKIN_ID)));
+        }
+        root.remove(KEY_LEGACY_SKIN_ID);
+    }
 
     private static void migrate1to2(CompoundTag root) {
         for (String key : ABILITY_SLOT_KEYS) {

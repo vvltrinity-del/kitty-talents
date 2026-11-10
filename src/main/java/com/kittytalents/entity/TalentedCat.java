@@ -98,8 +98,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_INCAPACITATED =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.BOOLEAN);
-    private static final EntityDataAccessor<Integer> DATA_SKIN_ID =
-            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<String> DATA_SKIN =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> DATA_DIRE_AWAKENED =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> DATA_FEMALE =
@@ -290,7 +290,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.define(DATA_HUNGER, 100);
         this.entityData.define(DATA_MODE, CatMode.DOCILE.ordinal());
         this.entityData.define(DATA_INCAPACITATED, false);
-        this.entityData.define(DATA_SKIN_ID, 0);
+        this.entityData.define(DATA_SKIN, "");
         this.entityData.define(DATA_DIRE_AWAKENED, false);
         this.entityData.define(DATA_FEMALE, false);
         this.entityData.define(DATA_COSMETICS_VISIBLE, true);
@@ -408,12 +408,14 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         }
     }
 
-    public int getSkinId() {
-        return this.entityData.get(DATA_SKIN_ID);
+    /** The skin id ("kittytalents:tiger"), or "" for the breed's default look. See {@link com.kittytalents.skin.CatSkins}. */
+    public String getSkin() {
+        return this.entityData.get(DATA_SKIN);
     }
 
-    public void setSkinId(int id) {
-        this.entityData.set(DATA_SKIN_ID, Math.max(0, Math.min(16, id)));
+    /** Stores the id as given (an id from a removed pack is kept and drawn as the default look until it comes back). */
+    public void setSkin(String id) {
+        this.entityData.set(DATA_SKIN, id == null ? "" : id);
     }
 
     public CatVariant getCatVariant() {
@@ -1871,7 +1873,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (modeAnchor != null) tag.put("ModeAnchor", NbtUtils.writeBlockPos(modeAnchor));
         if (spiritCatnipPrimed) tag.putBoolean(CatSchema.KEY_SPIRIT_PRIMED, true);
         tag.putBoolean("Incapacitated", isIncapacitated());
-        tag.putInt("SkinId", getSkinId());
+        tag.putString(com.kittytalents.core.persist.CatSchema.KEY_SKIN, getSkin());
         tag.putBoolean("DireAwakened", isDireAwakened());
         tag.putBoolean("Female", isFemale());
         tag.putBoolean("CosmeticsVisible", isCosmeticsVisible());
@@ -1913,7 +1915,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (tag.contains("ModeAnchor")) this.modeAnchor = NbtUtils.readBlockPos(tag.getCompound("ModeAnchor"));
         this.spiritCatnipPrimed = tag.getBoolean(CatSchema.KEY_SPIRIT_PRIMED);
         if (tag.contains("Incapacitated")) setIncapacitated(tag.getBoolean("Incapacitated"));
-        if (tag.contains("SkinId")) setSkinId(tag.getInt("SkinId"));
+        if (tag.contains(com.kittytalents.core.persist.CatSchema.KEY_SKIN)) setSkin(tag.getString(com.kittytalents.core.persist.CatSchema.KEY_SKIN));
         if (tag.contains("DireAwakened")) setDireAwakened(tag.getBoolean("DireAwakened"));
         if (tag.contains("Female")) setFemale(tag.getBoolean("Female"));
         if (tag.contains("CosmeticsVisible")) setCosmeticsVisible(tag.getBoolean("CosmeticsVisible"));
@@ -2019,7 +2021,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 CatVariant childVariant = CatBreedingManager.getChildVariant(this.getCatVariant(), otherCat.getCatVariant(), childTier);
                 child.setCatVariant(childVariant);
                 child.setProductionTier(childTier);
-                child.setSkinId(this.random.nextBoolean() ? this.getSkinId() : otherCat.getSkinId());
+                child.setSkin(this.random.nextBoolean() ? this.getSkin() : otherCat.getSkin());
                 child.setFemale(this.random.nextBoolean());
                 if (spiritUsed) {
                     child.setMutation(CatBreedingManager.MutationType.NEKOMATA);
@@ -2030,7 +2032,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             } else {
                 child.setCatVariant(this.getCatVariant());
                 child.setProductionTier(this.getProductionTier());
-                child.setSkinId(this.getSkinId());
+                child.setSkin(this.getSkin());
                 if (spiritUsed) child.setMutation(CatBreedingManager.MutationType.NEKOMATA);
             }
         }
@@ -2048,11 +2050,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         // Randomize appearance: pick from CatVariant or custom skins
         if (this.random.nextFloat() < 0.70F) {
             int vanillaSkin = this.random.nextInt(11);
-            this.setSkinId(vanillaSkin);
+            this.setSkin(com.kittytalents.core.persist.CatSchema.legacySkin(vanillaSkin));
             this.setCatVariant(CatVariant.values()[vanillaSkin]);
         } else if (this.random.nextFloat() < 0.85F) {
             int specialSkin = 11 + this.random.nextInt(6); // 11..16
-            this.setSkinId(specialSkin);
+            this.setSkin(com.kittytalents.core.persist.CatSchema.legacySkin(specialSkin));
             if (specialSkin == 11) this.setCatVariant(CatVariant.TIGER);
             else if (specialSkin == 12) this.setCatVariant(CatVariant.SNOW_LEOPARD);
             else if (specialSkin == 13) this.setCatVariant(CatVariant.VOID_ENDER);

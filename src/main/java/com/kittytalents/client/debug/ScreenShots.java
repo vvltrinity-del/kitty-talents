@@ -35,7 +35,7 @@ public final class ScreenShots {
     /** After the tab shots: one frame with the Twine HUD and companion cards drawn over the world. */
     private static final int HUD_STEP = GUI_SCALES.length * TABS;
     /** After the HUD: the other themed screens, each at both GUI scales. */
-    private static final String[] EXTRAS = { "habitat", "codex", "whistle", "pack", "bowl", "station", "oven", "blocks", "blocks_back", "items" };
+    private static final String[] EXTRAS = { "habitat", "codex", "whistle", "pack", "bowl", "station", "oven", "blocks", "blocks_back", "items", "style_skins" };
     private static final int LAST_STEP = HUD_STEP + EXTRAS.length * GUI_SCALES.length;
 
     private static int ticksInWorld;
@@ -110,6 +110,7 @@ public final class ScreenShots {
                 mc.resizeDisplay();
             }
             mc.setScreen(extraScreen(mc, EXTRAS[e % EXTRAS.length]));
+            if (mc.screen instanceof CatTalentScreen screen) screen.showTab(3);
             return;
         }
         if (step == HUD_STEP) {
@@ -168,6 +169,21 @@ public final class ScreenShots {
             case "blocks" -> { return new BlockGallery(false); }
             case "blocks_back" -> { return new BlockGallery(true); }
             case "items" -> { return new ItemGallery(); }
+            case "style_skins" -> {
+                // The skin page with a few extra "pack" skins, so the list pages.
+                if (com.kittytalents.skin.CatSkins.get("shotpack:skin_0") == null) {
+                    var list = new java.util.ArrayList<>(com.kittytalents.skin.CatSkins.all());
+                    for (int i = 0; i < 8; i++) {
+                        list.add(new com.kittytalents.skin.CatSkins.Skin(new net.minecraft.resources.ResourceLocation("shotpack", "skin_" + i),
+                                "Pack Skin " + i, com.kittytalents.skin.CatSkins.FALLBACK_TEXTURE, 900 + i, java.util.List.of()));
+                    }
+                    com.kittytalents.skin.CatSkins.set(list);
+                }
+                cat.setSkin("kittytalents:tiger");
+                com.kittytalents.client.gui.tab.StyleTab.debugSub = 1;
+                CatTalentMenu menu = new CatTalentMenu(0, inv, cat);
+                return new CatTalentScreen(menu, inv, Component.literal("Talented Cat"));
+            }
             case "whistle" -> { return new com.kittytalents.client.gui.KittyWhistleScreen(); }
             case "pack" -> {
                 cat.setTalentLevel(Talents.KITTY_PACK, 5);

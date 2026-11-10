@@ -1,0 +1,5 @@
+{
+  "name": "skin.kittytalents.persian",
+  "texture": "minecraft:textures/entity/cat/persian.png",
+  "order": 60
+}

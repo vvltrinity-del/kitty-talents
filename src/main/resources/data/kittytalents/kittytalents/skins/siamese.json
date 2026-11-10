@@ -1,0 +1,5 @@
+{
+  "name": "skin.kittytalents.siamese",
+  "texture": "minecraft:textures/entity/cat/siamese.png",
+  "order": 30
+}

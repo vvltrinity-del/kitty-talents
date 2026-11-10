@@ -120,7 +120,7 @@ public class CatTalentScreen extends AbstractContainerScreen<CatTalentMenu> {
     /** Everything the tabs draw as widgets that the server syncs through entity data. */
     private int syncedState() {
         return java.util.Objects.hash(cat.getCatMode(), cat.getCatJob(), cat.isClockedIn(), cat.isOrderedToSit(),
-                cat.getSkinId(), cat.getCollarColor(), cat.isCosmeticsVisible(), cat.getName().getString(),
+                cat.getSkin(), cat.getCollarColor(), cat.isCosmeticsVisible(), cat.getName().getString(),
                 cat.getSkillPoints(), cat.getCatLevel(), cat.isDireAwakened(), cat.getProductionTier(),
                 cat.getTrustedPlayers().keySet());
     }

@@ -130,6 +130,8 @@ public class KittyTalentsGameTests {
         tag.remove(com.kittytalents.core.persist.CatSchema.KEY_MODE_NAME);
         tag.remove(com.kittytalents.core.persist.CatSchema.KEY_ABILITY_COOLDOWNS);
         tag.putInt("CatMode", 8); // PATROL in the historic enum order
+        tag.remove(com.kittytalents.core.persist.CatSchema.KEY_SKIN);
+        tag.putInt("SkinId", 12); // 3.0 skin number: Snow Leopard
         net.minecraft.nbt.CompoundTag forge = tag.getCompound("ForgeData");
         forge.putLong("cooldown_pounce", 4321L);
         forge.putBoolean("SpiritCatnipUsed", true);
@@ -142,6 +144,7 @@ public class KittyTalentsGameTests {
 
         helper.assertTrue(loaded.getCatMode() == CatMode.GUARD, "Legacy ordinal 8 (PATROL) should load as GUARD after the mode merge, got " + loaded.getCatMode());
         helper.assertTrue(loaded.getCatLevel() == 37, "Level must survive migration");
+        helper.assertTrue("kittytalents:snow_leopard".equals(loaded.getSkin()), "Legacy SkinId 12 should load as snow_leopard, got " + loaded.getSkin());
         helper.assertTrue(loaded.getTalentLevel(Talents.POUNCE) == 3, "Talents must survive migration");
         helper.assertTrue(loaded.getAbilityCooldown("pounce") == 4321L, "Ability cooldown should move out of ForgeData");
         helper.assertTrue(loaded.isSpiritCatnipPrimed(), "Spirit Catnip flag should move out of ForgeData");

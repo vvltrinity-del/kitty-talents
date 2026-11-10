@@ -1,6 +1,7 @@
 {
-  "skin_id": 14,
+  "name": "skin.kittytalents.golden_maneki",
   "texture": "kittytalents:textures/entity/cat/skin_14.png",
+  "order": 140,
   "breed_default_for": [
     "golden_maneki"
   ]

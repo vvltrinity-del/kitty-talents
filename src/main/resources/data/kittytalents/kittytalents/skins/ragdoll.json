@@ -1,0 +1,5 @@
+{
+  "name": "skin.kittytalents.ragdoll",
+  "texture": "minecraft:textures/entity/cat/ragdoll.png",
+  "order": 70
+}

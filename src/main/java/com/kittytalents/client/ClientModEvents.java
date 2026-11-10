@@ -48,7 +48,6 @@ public class ClientModEvents {
 
     @SubscribeEvent
     public static void registerReloadListeners(net.minecraftforge.client.event.RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener(com.kittytalents.client.skin.SkinRegistry.INSTANCE);
     }
 
     public static void openWhistleScreen() {

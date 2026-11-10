@@ -1,0 +1,5 @@
+{
+  "name": "skin.mypack.sunset",
+  "texture": "mypack:textures/entity/cat/sunset.png",
+  "order": 500
+}

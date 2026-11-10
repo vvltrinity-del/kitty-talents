@@ -105,7 +105,7 @@ public final class RenderMatrix {
         }));
         list.add(new Combo("40_skin_panther", c -> c.setCatVariant(CatVariant.PANTHER)));
         list.add(new Combo("41_skin_snow_leopard", c -> c.setCatVariant(CatVariant.SNOW_LEOPARD)));
-        list.add(new Combo("42_skin_id_13", c -> c.setSkinId(13)));
+        list.add(new Combo("42_skin_void_ender", c -> c.setSkin("kittytalents:void_ender")));
         list.add(new Combo("50_nekomata_stand", c -> c.setMutation(CatBreedingManager.MutationType.NEKOMATA)));
         list.add(new Combo("51_nekomata_sit", c -> {
             c.setMutation(CatBreedingManager.MutationType.NEKOMATA);

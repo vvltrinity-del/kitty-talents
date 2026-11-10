@@ -23,7 +23,7 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, KTCatModel> {
 
     @Override
     public ResourceLocation getTextureLocation(TalentedCat cat) {
-        return com.kittytalents.client.skin.SkinRegistry.INSTANCE.resolve(cat);
+        return com.kittytalents.skin.CatSkins.texture(cat.getSkin(), cat.getCatVariant().getId());
     }
 
     @Override

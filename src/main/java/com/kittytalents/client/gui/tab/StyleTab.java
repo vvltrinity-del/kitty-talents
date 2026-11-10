@@ -21,22 +21,28 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import com.kittytalents.skin.CatSkins;
 import java.util.List;
 
 /** Style: sub-page buttons on the left, a round portrait with appearance info, and the collar / skin / variant pages. */
 public class StyleTab implements CatTab {
-    public static final String[] SKIN_NAMES = {
-            "Tabby", "Tuxedo", "Red", "Siamese", "British Shorthair",
-            "Calico", "Persian", "Ragdoll", "White", "Jellie",
-            "All Black", "Tiger", "Snow Leopard", "Void Ender", "Golden Maneki", "Ghost Phantom", "Panther"
-    };
     private static final String[] RANDOM_CAT_NAMES = {
             "Luna", "Milo", "Oliver", "Leo", "Bella", "Charlie", "Chloe", "Lucy", "Simba", "Lily",
             "Loki", "Shadow", "Cleo", "Jack", "Felix", "Nala", "Jasper", "Smokey", "Willow", "Boots"
     };
     private static final int LEFT_W = 104, TOP_H = 80;
 
-    private int sub; // 0 accessories, 1 skins, 2 variants
+    /** ScreenShots harness: the sub-page a new Style tab opens on. */
+    public static int debugSub = 0;
+    private int sub = debugSub; // 0 accessories, 1 skins, 2 variants
+    private int skinPage = -1; // -1: open on the page holding the cat's skin
+
+    /** The display name of a skin id ("" = Default; unknown ids, e.g. from a removed pack, show the raw id). */
+    static String skinName(String id) {
+        if (id.isEmpty()) return KTText.s("style.skin.default", "Default");
+        CatSkins.Skin skin = CatSkins.get(id);
+        return skin != null ? skin.displayName().getString() : id;
+    }
 
     @Override
     public Component title(CatTalentScreen s) {
@@ -63,6 +69,7 @@ public class StyleTab implements CatTab {
             final int idx = i;
             s.add(new KTButton(x, y + i * 24, w, 20, KTText.t("style." + keys[i], names[i]), b -> {
                 sub = idx;
+                skinPage = -1;
                 s.rebuild();
             }).icon(icons[i]).left().selected(sub == i));
         }
@@ -91,13 +98,32 @@ public class StyleTab implements CatTab {
                 }, () -> PacketHandler.sendToServer(new PacketChangeCollarColor(cat.getId(), dye.getId()))).hoverTip(() -> List.<FormattedCharSequence>of(Component.translatable("color.minecraft." + dye.getName()).getVisualOrderText())));
             }
         } else if (sub == 1) {
+            // "Default" plus every skin the server sent (datapacks can add more), paged when they do not fit.
+            List<String> ids = new java.util.ArrayList<>();
+            ids.add(CatSkins.DEFAULT);
+            CatSkins.all().forEach(sk -> ids.add(sk.id().toString()));
             int cols = 3, bw = (pw - (cols - 1) * 3) / cols;
-            for (int i = 0; i < SKIN_NAMES.length; i++) {
-                final int id = i;
-                s.add(new KTButton(px + (i % cols) * (bw + 3), pageY(s) + 6 + (i / cols) * 18, bw, 16,
-                        KTText.t("style.skin." + i, SKIN_NAMES[i]), b -> {
+            int rows = Math.max(1, (pageH(s) - 6 - 20) / 18), perPage = rows * cols;
+            if (ids.size() <= (pageH(s) - 8) / 18 * cols) perPage = ids.size(); // fits without the arrow row
+            int pages = Math.max(1, (ids.size() + perPage - 1) / perPage);
+            if (skinPage < 0) skinPage = Math.max(0, ids.indexOf(cat.getSkin())) / perPage;
+            skinPage = Math.max(0, Math.min(skinPage, pages - 1));
+            for (int n = 0; n < perPage && skinPage * perPage + n < ids.size(); n++) {
+                final String id = ids.get(skinPage * perPage + n);
+                s.add(new KTButton(px + (n % cols) * (bw + 3), pageY(s) + 6 + (n / cols) * 18, bw, 16,
+                        Component.literal(skinName(id)), b -> {
                     PacketHandler.sendToServer(new PacketChangeCatSkin(cat.getId(), id));
-                }).style(KTButton.Style.CHIP).selected(cat.getSkinId() == i));
+                }).style(KTButton.Style.CHIP).selected(cat.getSkin().equals(id)));
+            }
+            if (pages > 1) {
+                int by = pageY(s) + pageH(s) - 20;
+                String label = (skinPage + 1) + " / " + pages;
+                s.add(new KTWidget(px + 24, by, pw - 48, 16, Component.literal(label), (g, wx, wy, ww, wh, hover) ->
+                        g.drawCenteredString(s.font(), label, wx + ww / 2, wy + 4, KTTheme.TEXT), () -> { }));
+                s.add(new KTButton(px, by, 20, 16, Component.literal("<"), b -> { skinPage--; s.rebuild(); })
+                        .style(KTButton.Style.CHIP).enabled(skinPage > 0));
+                s.add(new KTButton(px + pw - 20, by, 20, 16, Component.literal(">"), b -> { skinPage++; s.rebuild(); })
+                        .style(KTButton.Style.CHIP).enabled(skinPage < pages - 1));
             }
         } else {
             s.add(new KTButton(px, pageY(s) + pageH(s) - 28, pw, 20, KTText.t("style.codex", "Open Breeding Codex"),
@@ -128,7 +154,7 @@ public class StyleTab implements CatTab {
                 cat.getCatVariant().getRarity().getColor() | 0xFF000000, maxW);
         line(g, font, ix, iy + 24, KTText.s("style.tier", "Tier"), cat.getProductionTier().getDisplayName(), tierColor, maxW);
         line(g, font, ix, iy + 35, KTText.s("style.skin", "Skin"),
-                cat.getSkinId() < SKIN_NAMES.length ? KTText.s("style.skin." + cat.getSkinId(), SKIN_NAMES[cat.getSkinId()]) : "Custom",
+                skinName(cat.getSkin()),
                 KTTheme.TEXT, maxW);
         line(g, font, ix, iy + 46, KTText.s("style.gender", "Gender"), cat.isFemale() ? "♀ Female" : "♂ Male",
                 cat.isFemale() ? 0xFFF472B6 : 0xFF60A5FA, maxW);

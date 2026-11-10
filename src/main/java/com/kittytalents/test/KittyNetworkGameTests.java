@@ -81,7 +81,7 @@ public class KittyNetworkGameTests {
             c.setCustomName(Component.literal("Mittens"));
             int id = c.getId();
             CatMode mode = c.getCatMode();
-            int skin = c.getSkinId();
+            String skin = c.getSkin();
             DyeColor collar = c.getCollarColor();
             boolean female = c.isFemale();
             boolean cosmetics = c.isCosmeticsVisible();
@@ -90,7 +90,7 @@ public class KittyNetworkGameTests {
 
             h.assertFalse(PacketChangeCatMode.apply(stranger, id, CatMode.AGGRESSIVE.ordinal()), "mode");
             h.assertFalse(PacketChangeCatMode.apply(stranger, id, PacketChangeCatMode.NEXT), "mode next");
-            h.assertFalse(PacketChangeCatSkin.apply(stranger, id, (skin + 3) % PacketChangeCatSkin.SKIN_COUNT), "skin");
+            h.assertFalse(PacketChangeCatSkin.apply(stranger, id, "kittytalents:siamese"), "skin");
             h.assertFalse(PacketChangeCollarColor.apply(stranger, id, (collar.getId() + 1) % 16), "collar");
             h.assertFalse(PacketChangeCatGender.apply(stranger, id, !female), "gender");
             h.assertFalse(PacketRenameCat.apply(stranger, id, "Stolen"), "rename");
@@ -110,7 +110,7 @@ public class KittyNetworkGameTests {
             h.assertTrue(PacketTeamCommand.apply(stranger, PacketTeamCommand.CommandType.COME_TO_ME).isEmpty(),
                     "A stranger's team command must not reach someone else's cat");
 
-            h.assertTrue(c.getCatMode() == mode && c.getSkinId() == skin && c.getCollarColor() == collar
+            h.assertTrue(c.getCatMode() == mode && c.getSkin().equals(skin) && c.getCollarColor() == collar
                     && c.isFemale() == female && c.isCosmeticsVisible() == cosmetics && c.getSkillPoints() == points
                     && c.getCatJob() == CatJob.NONE && "Mittens".equals(c.getCustomName().getString())
                     && java.util.Objects.equals(slot1, c.getAbilitySlot1()) && !c.isTwined() && c.getTrustedPlayers().isEmpty(),
@@ -141,7 +141,7 @@ public class KittyNetworkGameTests {
             int points = c.getSkillPoints();
 
             h.assertTrue(PacketChangeCatMode.apply(trusted, id, CatMode.FOLLOW.ordinal()) && c.getCatMode() == CatMode.FOLLOW, "co-owner mode");
-            h.assertTrue(PacketChangeCatSkin.apply(trusted, id, 3) && c.getSkinId() == 3, "co-owner skin");
+            h.assertTrue(PacketChangeCatSkin.apply(trusted, id, "kittytalents:siamese") && c.getSkin().equals("kittytalents:siamese"), "co-owner skin");
             h.assertTrue(PacketSetCatJob.apply(trusted, id, CatJob.FARMER.ordinal(), false) && c.getCatJob() == CatJob.FARMER, "co-owner job");
 
             h.assertFalse(PacketRenameCat.apply(trusted, id, "Mine now"), "co-owner rename");
@@ -174,14 +174,14 @@ public class KittyNetworkGameTests {
             TalentedCat c = cat(h, new BlockPos(2, 2, 2), owner);
             int id = c.getId();
             CatMode mode = c.getCatMode();
-            int skin = c.getSkinId();
+            String skin = c.getSkin();
             DyeColor collar = c.getCollarColor();
             int points = c.getSkillPoints();
 
             for (int bad : new int[]{-2, CatMode.values().length, 999, Integer.MIN_VALUE, Integer.MAX_VALUE}) {
                 h.assertFalse(PacketChangeCatMode.apply(owner, id, bad), "mode " + bad);
             }
-            for (int bad : new int[]{-3, PacketChangeCatSkin.SKIN_COUNT, 999, Integer.MIN_VALUE}) {
+            for (String bad : new String[]{"kittytalents:not_a_skin", "3", "minecraft:tabby", "Bad Id!", "<up>"}) {
                 h.assertFalse(PacketChangeCatSkin.apply(owner, id, bad), "skin " + bad);
             }
             for (int bad : new int[]{-1, 16, 255}) h.assertFalse(PacketChangeCollarColor.apply(owner, id, bad), "collar " + bad);
@@ -196,7 +196,7 @@ public class KittyNetworkGameTests {
             h.assertFalse(PacketRenameCat.apply(owner, id, ""), "empty name");
             h.assertFalse(PacketRenameCat.apply(owner, id, "§§  \u0007"), "name of only codes");
 
-            h.assertTrue(c.getCatMode() == mode && c.getSkinId() == skin && c.getCollarColor() == collar
+            h.assertTrue(c.getCatMode() == mode && c.getSkin().equals(skin) && c.getCollarColor() == collar
                     && c.getSkillPoints() == points && c.getCatJob() == CatJob.NONE, "A refused value changed the cat");
 
             // Cleaned, not refused: formatting codes and control characters are stripped, length is capped.
@@ -225,7 +225,7 @@ public class KittyNetworkGameTests {
             h.assertTrue(CatPermissions.check(owner, id, CatAction.STYLE).denial() == CatPermissions.Denial.TOO_FAR, "expected TOO_FAR");
             h.assertFalse(PacketChangeCatMode.apply(owner, id, CatMode.GUARD.ordinal()), "mode from 100 blocks");
             h.assertFalse(PacketRenameCat.apply(owner, id, "Far"), "rename from 100 blocks");
-            h.assertFalse(PacketChangeCatSkin.apply(owner, id, 2), "skin from 100 blocks");
+            h.assertFalse(PacketChangeCatSkin.apply(owner, id, "kittytalents:red"), "skin from 100 blocks");
             h.assertFalse(PacketEquipCatItem.apply(owner, id, PacketEquipCatItem.TOGGLE_COSMETICS, false), "equip from 100 blocks");
             h.assertFalse(PacketTwineAction.apply(owner, id, PacketTwineAction.ActionType.TWINE_START, 0), "twine from 100 blocks");
             var loadout = new CatLoadout(c.getCatRole(), c.getPrimaryElement(), "feline_dash", "feline_hiss", "healing_purr", "catnip_frenzy");
@@ -234,7 +234,7 @@ public class KittyNetworkGameTests {
             h.assertTrue(c.getCatMode() == mode && !c.isTwined(), "A far-away request changed the cat");
 
             owner.moveTo(c.getX() + 20.0D, c.getY(), c.getZ()); // inside the 32-block screen range, outside Twine's 16
-            h.assertTrue(PacketChangeCatSkin.apply(owner, id, 2), "skin from 20 blocks should work");
+            h.assertTrue(PacketChangeCatSkin.apply(owner, id, "kittytalents:red"), "skin from 20 blocks should work");
             h.assertFalse(PacketTwineAction.apply(owner, id, PacketTwineAction.ActionType.TWINE_START, 0), "twine from 20 blocks");
             h.succeed();
         } finally {

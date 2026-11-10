@@ -66,6 +66,46 @@ public class KittyRegressionGameTests {
         }
     }
 
+    /** 4.0 Phase 3: skins come from data/<ns>/kittytalents/skins; a pack skin can be picked; old numbers map to names. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testSkinsAreDatapackDrivenAndMigrate(GameTestHelper h) {
+        h.assertTrue(com.kittytalents.skin.CatSkins.all().size() >= 17, "The 17 built-in skins should load from the datapack, got "
+                + com.kittytalents.skin.CatSkins.all().size());
+        var tiger = com.kittytalents.skin.CatSkins.get("kittytalents:tiger");
+        h.assertTrue(tiger != null && tiger.texture().getPath().endsWith("skin_11.png") && tiger.breeds().contains("tiger"), "Tiger skin entry");
+        h.assertTrue(com.kittytalents.skin.CatSkins.texture("", "tiger").equals(tiger.texture()), "Default skin should draw the breed's texture");
+        h.assertTrue(com.kittytalents.skin.CatSkins.texture("gone:skin", "tabby").equals(com.kittytalents.skin.CatSkins.FALLBACK_TEXTURE),
+                "A skin from a removed pack should draw the default look");
+
+        // Schema 2 (3.0) saves: SkinId number -> Skin name; 0 meant "default".
+        for (int[] pair : new int[][]{{0, -1}, {1, 1}, {16, 16}, {99, -1}}) {
+            var tag = new net.minecraft.nbt.CompoundTag();
+            tag.putInt(com.kittytalents.core.persist.CatSchema.KEY_SCHEMA, 2);
+            tag.putInt("SkinId", pair[0]);
+            com.kittytalents.core.persist.CatSchema.migrate(tag, new net.minecraft.nbt.CompoundTag());
+            String want = pair[1] < 0 ? "" : com.kittytalents.core.persist.CatSchema.LEGACY_SKINS.get(pair[1]);
+            h.assertTrue(want.equals(tag.getString("Skin")) && !tag.contains("SkinId"), "SkinId " + pair[0] + " -> '" + tag.getString("Skin") + "'");
+        }
+
+        var fp = joinFakeOwner(h, new BlockPos(3, 2, 2));
+        var before = com.kittytalents.skin.CatSkins.all();
+        try {
+            TalentedCat c = ownedCat(h, fp, new BlockPos(2, 2, 2));
+            h.assertFalse(PacketChangeCatSkin.apply(fp, c.getId(), "testpack:sunset"), "Unknown skin must be refused");
+            var list = new java.util.ArrayList<>(before);
+            list.add(new com.kittytalents.skin.CatSkins.Skin(new net.minecraft.resources.ResourceLocation("testpack", "sunset"), "Sunset",
+                    new net.minecraft.resources.ResourceLocation("testpack", "textures/sunset.png"), 5, java.util.List.of()));
+            com.kittytalents.skin.CatSkins.set(list);
+            h.assertTrue(PacketChangeCatSkin.apply(fp, c.getId(), "testpack:sunset") && "testpack:sunset".equals(c.getSkin()), "Pack skin should apply");
+            var saved = c.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+            h.assertTrue("testpack:sunset".equals(saved.getString("Skin")), "Skin should save by name");
+            h.succeed();
+        } finally {
+            com.kittytalents.skin.CatSkins.set(before);
+            leave(h, fp);
+        }
+    }
+
     @GameTest(template = "empty", timeoutTicks = 20)
     public static void testNamingCollarAndSkinFromScreenAndDye(GameTestHelper h) {
         var fp = joinFakeOwner(h, new BlockPos(3, 2, 2));
@@ -81,8 +121,13 @@ public class KittyRegressionGameTests {
             CatInteractions.handle(c, fp, InteractionHand.MAIN_HAND);
             h.assertTrue(c.getCollarColor() == DyeColor.BLUE && fp.getMainHandItem().isEmpty(), "Dye should recolor the collar and be used");
 
-            h.assertTrue(PacketChangeCatSkin.apply(fp, c.getId(), 3), "Skin packet should apply");
-            h.assertTrue(c.getSkinId() == 3, "Skin should be 3, got " + c.getSkinId());
+            h.assertTrue(PacketChangeCatSkin.apply(fp, c.getId(), "kittytalents:siamese"), "Skin packet should apply");
+            h.assertTrue(c.getSkin().equals("kittytalents:siamese"), "Skin should be siamese, got " + c.getSkin());
+            h.assertTrue(PacketChangeCatSkin.apply(fp, c.getId(), PacketChangeCatSkin.NEXT)
+                    && c.getSkin().equals("kittytalents:british_shorthair"), "Next should step to the following skin, got " + c.getSkin());
+            h.assertTrue(PacketChangeCatSkin.apply(fp, c.getId(), "") && c.getSkin().isEmpty(), "Default skin should apply");
+            h.assertTrue(PacketChangeCatSkin.apply(fp, c.getId(), PacketChangeCatSkin.PREV) && c.getSkin().equals("kittytalents:panther"),
+                    "Prev from Default should wrap to the last skin, got " + c.getSkin());
             h.succeed();
         } finally {
             leave(h, fp);

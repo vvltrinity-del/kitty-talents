@@ -1,0 +1,5 @@
+{
+  "name": "skin.kittytalents.british_shorthair",
+  "texture": "minecraft:textures/entity/cat/british_shorthair.png",
+  "order": 40
+}
