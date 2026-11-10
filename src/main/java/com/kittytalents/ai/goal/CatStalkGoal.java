@@ -35,12 +35,16 @@ public class CatStalkGoal extends Goal {
     }
 
     /** The target hasn't noticed the cat (isn't hunting it). */
-    private boolean unaware(LivingEntity t) {
+    public static boolean isUnaware(TalentedCat cat, LivingEntity t) {
         return !(t instanceof Mob m && m.getTarget() == cat) && cat.getLastHurtByMob() != t;
     }
 
+    private boolean unaware(LivingEntity t) {
+        return isUnaware(cat, t);
+    }
+
     private double stalkStopDistance() {
-        return CatPounceGoal.maxRange(cat) - 1.0D; // stop a little inside pounce range so the pounce can start
+        return 2.5D; // stalk right up to minimum pounce range; CatPounceGoal (priority POUNCE) preempts when in range
     }
 
     @Override

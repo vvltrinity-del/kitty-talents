@@ -46,6 +46,10 @@ public class CatPounceGoal extends Goal {
         return 8.0D + 0.75D * cat.getTalentLevel(Talents.POUNCE);
     }
 
+    public static boolean isGrounded(TalentedCat cat) {
+        return cat.onGround() || cat.verticalCollision || (cat.fallDistance < 0.2F && Math.abs(cat.getDeltaMovement().y) < 0.08D);
+    }
+
     private boolean blocked() {
         CatMode mode = cat.getCatMode();
         return cat.isTwined() || cat.isIncapacitated() || cat.isOrderedToSit() || cat.isSleeping() || cat.isVehicle()
@@ -54,7 +58,7 @@ public class CatPounceGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (blocked() || cat.level().getGameTime() < readyAt || !cat.onGround()) return false;
+        if (blocked() || cat.level().getGameTime() < readyAt || !isGrounded(cat)) return false;
         LivingEntity t = cat.getTarget();
         if (t == null || !t.isAlive()) return false;
         double dist = Math.sqrt(cat.distanceToSqr(t));
@@ -68,7 +72,7 @@ public class CatPounceGoal extends Goal {
         if (blocked()) return "blocked(mode=" + cat.getCatMode() + ",gun=" + cat.hasEquippedGun() + ",sleep=" + cat.isSleeping()
                 + ",vehicle=" + cat.isVehicle() + ",retreat=" + cat.isRetreating() + ")";
         if (cat.level().getGameTime() < readyAt) return "cooldown";
-        if (!cat.onGround()) return "airborne";
+        if (!isGrounded(cat)) return "airborne";
         LivingEntity t = cat.getTarget();
         if (t == null || !t.isAlive()) return "no target";
         double dist = Math.sqrt(cat.distanceToSqr(t));

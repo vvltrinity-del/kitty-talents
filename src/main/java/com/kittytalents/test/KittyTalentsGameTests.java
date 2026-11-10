@@ -246,6 +246,37 @@ public class KittyTalentsGameTests {
         });
     }
 
+    /** 4.0 Phase 1: Status effects moved to capability; a zombie with a status saves no Kitty Talents data once expired. */
+    @GameTest(template = "empty", timeoutTicks = 60)
+    public static void testZombieSavesNoDataAfterStatusExpires(GameTestHelper helper) {
+        var zombie = helper.spawn(net.minecraft.world.entity.EntityType.ZOMBIE, new BlockPos(2, 2, 2));
+        zombie.setNoAi(true);
+        zombie.setInvulnerable(true);
+        com.kittytalents.combat.FelineStatusEffects.applyStatus(zombie, com.kittytalents.combat.FelineStatusType.WEAKNESS, 1, 20);
+        helper.assertTrue(com.kittytalents.combat.FelineStatusEffects.hasStatus(zombie, com.kittytalents.combat.FelineStatusType.WEAKNESS),
+                "Zombie should have Weakness status");
+        helper.runAfterDelay(30, () -> {
+            helper.assertFalse(com.kittytalents.combat.FelineStatusEffects.hasStatus(zombie, com.kittytalents.combat.FelineStatusType.WEAKNESS),
+                    "Weakness should have expired");
+            helper.assertFalse(zombie.getPersistentData().contains("FelineStatuses"),
+                    "Zombie persistent data should not contain FelineStatuses");
+            net.minecraft.nbt.CompoundTag nbt = new net.minecraft.nbt.CompoundTag();
+            zombie.saveWithoutId(nbt);
+            if (nbt.contains("ForgeData")) {
+                helper.assertFalse(nbt.getCompound("ForgeData").contains("FelineStatuses"),
+                        "ForgeData should not have FelineStatuses");
+            }
+            if (nbt.contains("ForgeCaps")) {
+                net.minecraft.nbt.CompoundTag caps = nbt.getCompound("ForgeCaps");
+                if (caps.contains("kittytalents:feline_statuses")) {
+                    helper.assertTrue(caps.getCompound("kittytalents:feline_statuses").isEmpty(),
+                            "Status capability tag must be empty");
+                }
+            }
+            helper.succeed();
+        });
+    }
+
     /** Twine: with no player input, the AI must not move, turn-to-target or attack on its own. */
     // 240 ticks: 60 twined + up to ~100 for the AI to re-scan after untwine (it scans every 30 ticks with no player nearby).
     @GameTest(template = "empty", timeoutTicks = 240)

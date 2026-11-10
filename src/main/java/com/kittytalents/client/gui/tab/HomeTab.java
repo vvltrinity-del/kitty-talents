@@ -57,8 +57,13 @@ public class HomeTab implements CatTab {
         y += 20;
         CatJob job = cat.getCatJob();
         int clockW = 70;
-        s.add(new KTButton(x, y, w - clockW - 2, 16, KTText.t("home.job", "Job: %s", job.getDisplayName()), b -> cycleJob(s))
-                .icon(job.getIcon()).color(KTTheme.TEXT_GOLD).tip(Component.literal(job.getDescription())));
+        boolean qualified = job.canCatPerform(cat);
+        Component jobLabel = qualified
+                ? KTText.t("home.job", "Job: %s", job.getDisplayName())
+                : KTText.t("home.job_unqualified", "Job: %s (Unqualified)", job.getDisplayName());
+        int jobColor = qualified ? KTTheme.TEXT_GOLD : 0xFF9CA3AF;
+        s.add(new KTButton(x, y, w - clockW - 2, 16, jobLabel, b -> cycleJob(s))
+                .icon(job.getIcon()).color(jobColor).tip(buildJobTooltip(cat, job)));
         boolean clockedIn = cat.isClockedIn();
         s.add(new KTButton(x + w - clockW, y, clockW, 16,
                 clockedIn ? KTText.t("home.clocked_in", "Clocked In") : KTText.t("home.clocked_out", "Clocked Out"),
@@ -140,9 +145,52 @@ public class HomeTab implements CatTab {
     private static void cycleJob(CatTalentScreen s) {
         TalentedCat cat = s.cat();
         CatJob[] jobs = CatJob.values();
-        CatJob next = jobs[(cat.getCatJob().ordinal() + 1) % jobs.length];
+        CatJob cur = cat.getCatJob();
+        boolean shift = net.minecraft.client.gui.screens.Screen.hasShiftDown();
+        CatJob next = cur;
+        for (int i = 1; i <= jobs.length; i++) {
+            CatJob candidate = jobs[(cur.ordinal() + i) % jobs.length];
+            if (shift || candidate.canCatPerform(cat)) {
+                next = candidate;
+                break;
+            }
+        }
         // Picking a job clocks the cat in (and so puts it in WORK mode, server side).
         PacketHandler.sendToServer(new PacketSetCatJob(cat.getId(), next, next != CatJob.NONE || cat.isClockedIn()));
+    }
+
+    private static Component buildJobTooltip(TalentedCat cat, CatJob job) {
+        if (job == CatJob.NONE) {
+            return Component.literal(job.getDescription() + "\n§7Click to cycle qualified jobs.");
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("§6").append(job.getDisplayName()).append("§r\n");
+        sb.append(job.getDescription()).append("\n\n");
+        sb.append("§eRequirements:§r\n");
+        if (job.getMinCatLevel() > 1) {
+            boolean ok = cat.getCatLevel() >= job.getMinCatLevel();
+            sb.append(ok ? " §a✔ " : " §c✕ ").append("Cat Level ").append(job.getMinCatLevel()).append("§r\n");
+        }
+        if (job.getRequiredTalent() != null) {
+            boolean ok = cat.getTalentLevel(job.getRequiredTalent()) >= job.getMinTalentRank();
+            sb.append(ok ? " §a✔ " : " §c✕ ").append(job.getRequiredTalent().getDisplayName())
+              .append(" Rank ").append(job.getMinTalentRank()).append("§r\n");
+        }
+        if (job.requiresTacZ()) {
+            boolean ok = job.isAvailable();
+            sb.append(ok ? " §a✔ " : " §c✕ ").append("TACZ Gun Mod§r\n");
+        }
+        boolean ok = job.canCatPerform(cat);
+        sb.append("\n");
+        if (!ok) {
+            sb.append("§c✕ Unqualified for this job§r\n");
+        } else if (cat.getHunger() <= 20) {
+            sb.append("§6⚠ Too hungry to work (Hunger ≤ 20)§r\n");
+        } else {
+            sb.append("§a✔ Qualified to work§r\n");
+        }
+        sb.append("§7Click to cycle qualified jobs (Shift-click: all)");
+        return Component.literal(sb.toString());
     }
 
     @Override
@@ -209,6 +257,7 @@ public class HomeTab implements CatTab {
         int cy = y + ih + 6;
         KTTheme.inset(g, rx, cy, rw, h - ih - 6);
         KTTheme.header(g, font, rx + 6, cy + 4, rw - 12, KTText.t("home.behaviour", "Behaviour & Actions"));
+        renderWorkStatusBadge(g, font, rx + rw - 6, cy + 4, cat);
         // Section label above the name/trust rows
         int labelY = cy + 78;
         if (!compact(s)) KTTheme.header(g, font, rx + 6, labelY, rw - 12, KTText.t("home.identity", "Name & Co-owners"));
@@ -229,6 +278,44 @@ public class HomeTab implements CatTab {
         g.drawString(font, l, x, y, KTTheme.TEXT_DIM, false);
         int lw = font.width(l);
         g.drawString(font, font.plainSubstrByWidth(value, Math.max(10, maxW - lw)), x + lw, y, color, false);
+    }
+
+    private static void renderWorkStatusBadge(GuiGraphics g, Font font, int rightX, int y, TalentedCat cat) {
+        CatJob job = cat.getCatJob();
+        if (job == CatJob.NONE && !cat.isClockedIn() && cat.getCatMode() != CatMode.WORK) return;
+
+        String text;
+        int fg;
+        int bg;
+        int border;
+
+        if (job != CatJob.NONE && !job.canCatPerform(cat)) {
+            text = KTText.s("home.work_status.unqualified", "Unqualified");
+            fg = 0xFFFCA5A5;
+            bg = 0x44EF4444;
+            border = 0xFFEF4444;
+        } else if (cat.getHunger() <= 20) {
+            text = KTText.s("home.work_status.too_hungry", "Too Hungry");
+            fg = 0xFFFCD34D;
+            bg = 0x44F59E0B;
+            border = 0xFFF59E0B;
+        } else if (cat.isClockedIn() || cat.getCatMode() == CatMode.WORK) {
+            String raw = cat.getWorkStatus();
+            text = (raw == null || raw.isBlank()) ? KTText.s("home.work_status.working", "Working") : raw;
+            if (text.contains(" (")) text = text.substring(0, text.indexOf(" ("));
+            fg = 0xFF86EFAC;
+            bg = 0x4422C55E;
+            border = 0xFF22C55E;
+        } else {
+            return;
+        }
+
+        int textW = font.width(text);
+        int bw = textW + 8;
+        int bx = rightX - bw;
+        g.fill(bx, y, bx + bw, y + 12, bg);
+        g.renderOutline(bx, y, bw, 12, border);
+        g.drawString(font, text, bx + 4, y + 2, fg, false);
     }
 
     static net.minecraft.resources.ResourceLocation icon(String name) {

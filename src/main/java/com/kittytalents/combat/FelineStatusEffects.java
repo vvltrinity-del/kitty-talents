@@ -1,5 +1,7 @@
 package com.kittytalents.combat;
 
+import com.kittytalents.combat.status.FelineStatusProvider;
+import com.kittytalents.combat.status.IFelineStatusCapability;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -17,14 +19,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Real-time status effect and elemental affliction engine for Kitty Talents 3.0 (R7).
- * Handles Burn, Poison, Bleed, Freeze, Shock, Mark, Vulnerable, Weakness,
- * Haste, Regeneration, and Fortified with full anti-stacking safety and immunities.
+ * Real-time status effect and elemental affliction engine for Kitty Talents.
+ * Statuses are backed by the Forge capability {@link FelineStatusProvider#CAPABILITY}
+ * rather than persistent mob NBT, avoiding leftover data on saved mobs.
  */
 @Mod.EventBusSubscriber(modid = "kittytalents")
 public class FelineStatusEffects {
     private static final Set<UUID> TRACKED_ENTITIES = ConcurrentHashMap.newKeySet();
-    private static final String NBT_STATUSES = "FelineStatuses";
+    private static final String LEGACY_NBT_STATUSES = "FelineStatuses";
 
     /**
      * Applies a structured FelineStatusType with duration and intensity caps and immunity checks.
@@ -38,29 +40,19 @@ public class FelineStatusEffects {
         } else if (status == FelineStatusType.POISON || status == FelineStatusType.BLEED) {
             if (target.getMobType() == MobType.UNDEAD) return; // Undead do not bleed or suffer organic poison
         } else if (status == FelineStatusType.FREEZE) {
-            if (target.canFreeze() == false) return;
+            if (!target.canFreeze()) return;
         }
 
-        CompoundTag data = target.getPersistentData();
-        CompoundTag statuses = data.contains(NBT_STATUSES) ? data.getCompound(NBT_STATUSES) : new CompoundTag();
-
-        int cappedDuration = Math.min(status.getMaxDurationTicks(), Math.max(20, durationTicks));
-        int cappedPower = Math.min(status.getMaxPower(), Math.max(1, power));
-
-        String key = status.name();
-        CompoundTag effectData = new CompoundTag();
-        effectData.putInt("Ticks", cappedDuration);
-        effectData.putInt("Power", cappedPower);
-
-        statuses.put(key, effectData);
-        data.put(NBT_STATUSES, statuses);
-        TRACKED_ENTITIES.add(target.getUUID());
-        syncToClient(target, statuses);
+        target.getCapability(FelineStatusProvider.CAPABILITY).ifPresent(cap -> {
+            cap.apply(status, power, durationTicks);
+            TRACKED_ENTITIES.add(target.getUUID());
+            syncToClient(target, cap.getActiveStatuses());
+        });
     }
 
     /**
-     * Talented cats mirror their statuses into synced entity data so the HUDs can show them (persistent data never
-     * reaches the client). Each entry is {@code End}: game time it runs out, Power}; that stays constant while a status
+     * Talented cats mirror their statuses into synced entity data so the HUDs can show them.
+     * Each entry is {@code End}: game time it runs out, Power}; that stays constant while a status
      * counts down, so the data only resyncs when a status is applied, refreshed or removed.
      */
     private static void syncToClient(LivingEntity entity, CompoundTag statuses) {
@@ -104,38 +96,36 @@ public class FelineStatusEffects {
 
     public static boolean hasStatus(LivingEntity entity, FelineStatusType status) {
         if (entity == null || status == null) return false;
-        CompoundTag data = entity.getPersistentData();
-        if (!data.contains(NBT_STATUSES)) return false;
-        CompoundTag statuses = data.getCompound(NBT_STATUSES);
-        return statuses.contains(status.name()) && statuses.getCompound(status.name()).getInt("Ticks") > 0;
+        return entity.getCapability(FelineStatusProvider.CAPABILITY)
+                .map(cap -> cap.has(status))
+                .orElse(false);
     }
 
     public static int getStatusPower(LivingEntity entity, FelineStatusType status) {
-        if (!hasStatus(entity, status)) return 0;
-        return entity.getPersistentData().getCompound(NBT_STATUSES).getCompound(status.name()).getInt("Power");
+        if (entity == null || status == null) return 0;
+        return entity.getCapability(FelineStatusProvider.CAPABILITY)
+                .map(cap -> cap.getPower(status))
+                .orElse(0);
     }
 
     public static void removeStatus(LivingEntity entity, FelineStatusType status) {
         if (entity == null || status == null) return;
-        CompoundTag data = entity.getPersistentData();
-        if (data.contains(NBT_STATUSES)) {
-            CompoundTag statuses = data.getCompound(NBT_STATUSES);
-            statuses.remove(status.name());
-            if (statuses.isEmpty()) {
-                data.remove(NBT_STATUSES);
+        entity.getCapability(FelineStatusProvider.CAPABILITY).ifPresent(cap -> {
+            cap.remove(status);
+            if (cap.isEmpty()) {
                 TRACKED_ENTITIES.remove(entity.getUUID());
-            } else {
-                data.put(NBT_STATUSES, statuses);
             }
-            syncToClient(entity, statuses);
-        }
+            syncToClient(entity, cap.getActiveStatuses());
+        });
     }
 
     public static void clearAllStatuses(LivingEntity entity) {
         if (entity == null) return;
-        entity.getPersistentData().remove(NBT_STATUSES);
-        TRACKED_ENTITIES.remove(entity.getUUID());
-        syncToClient(entity, null);
+        entity.getCapability(FelineStatusProvider.CAPABILITY).ifPresent(cap -> {
+            cap.clear();
+            TRACKED_ENTITIES.remove(entity.getUUID());
+            syncToClient(entity, null);
+        });
     }
 
     @SubscribeEvent
@@ -152,46 +142,15 @@ public class FelineStatusEffects {
             return;
         }
 
-        CompoundTag data = entity.getPersistentData();
-        if (!data.contains(NBT_STATUSES)) {
-            TRACKED_ENTITIES.remove(entity.getUUID());
-            return;
-        }
-
-        CompoundTag statuses = data.getCompound(NBT_STATUSES);
-        boolean changed = false;
-
-        // Iterate a snapshot: expired entries are removed below, and executeStatusTick may remove statuses too.
-        // Iterating the live key set threw ConcurrentModificationException (a server crash) whenever an entity had
-        // 2+ statuses and one expired, e.g. Venom Fang's Poison + Bleed.
-        for (String key : new java.util.ArrayList<>(statuses.getAllKeys())) {
-            if (!statuses.contains(key)) continue;
-            CompoundTag effectData = statuses.getCompound(key);
-            int ticks = effectData.getInt("Ticks");
-            int power = Math.max(1, effectData.getInt("Power"));
-
-            if (ticks <= 0) {
-                statuses.remove(key);
-                changed = true;
-                continue;
+        entity.getCapability(FelineStatusProvider.CAPABILITY).ifPresent(cap -> {
+            cap.tick(entity, FelineStatusEffects::executeStatusTick);
+            if (cap.isEmpty()) {
+                TRACKED_ENTITIES.remove(entity.getUUID());
+                syncToClient(entity, null);
+            } else {
+                syncToClient(entity, cap.getActiveStatuses());
             }
-
-            FelineStatusType status = FelineStatusType.fromString(key);
-            if (status != null) {
-                executeStatusTick(entity, status, power, ticks);
-            }
-
-            effectData.putInt("Ticks", ticks - 1);
-            changed = true;
-        }
-
-        if (statuses.isEmpty()) {
-            data.remove(NBT_STATUSES);
-            TRACKED_ENTITIES.remove(entity.getUUID());
-        } else if (changed) {
-            data.put(NBT_STATUSES, statuses);
-        }
-        syncToClient(entity, statuses);
+        });
     }
 
     private static void executeStatusTick(LivingEntity entity, FelineStatusType status, int power, int ticksRemaining) {
@@ -282,10 +241,18 @@ public class FelineStatusEffects {
     @SubscribeEvent
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (!event.getLevel().isClientSide() && event.getEntity() instanceof LivingEntity living) {
+            // Clean legacy 3.0 persistent NBT and migrate if present
             CompoundTag data = living.getPersistentData();
-            if (data.contains(NBT_STATUSES)) {
-                TRACKED_ENTITIES.add(living.getUUID());
+            if (data.contains(LEGACY_NBT_STATUSES)) {
+                CompoundTag legacy = data.getCompound(LEGACY_NBT_STATUSES);
+                living.getCapability(FelineStatusProvider.CAPABILITY).ifPresent(cap -> cap.deserializeNBT(legacy));
+                data.remove(LEGACY_NBT_STATUSES);
             }
+            living.getCapability(FelineStatusProvider.CAPABILITY).ifPresent(cap -> {
+                if (!cap.isEmpty()) {
+                    TRACKED_ENTITIES.add(living.getUUID());
+                }
+            });
         }
     }
 

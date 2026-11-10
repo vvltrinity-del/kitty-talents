@@ -109,4 +109,9 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 
 ## Progress log
 
-(nothing yet)
+### 2026-11-09: Phase 1: Loose ends complete
+- **Stalk to pounce transition:** Raised CatPounceGoal priority band to POUNCE = 2, placed CatStalkGoal at COMBAT = 3, and prevented CatMeleeGoal from engaging unaware targets beyond 2.5m. Completed stalks now seamlessly transition into pounce without goal racing. Verified with 30 consecutive successful runs of testStalksUnawareTargetThenPounces.
+- **Status effects off persistent NBT:** Moved FelineStatusEffects to Forge Capability FelineStatusProvider.CAPABILITY on LivingEntity. Non-cat mobs no longer accumulate persistent NBT tags, and expired statuses leave zero residual data on disk. Added GameTest testZombieSavesNoDataAfterStatusExpires.
+- **Job Picker UI & Work Status:** Added qualification check, detailed requirements tooltip (level, talent, TacZ), and automatic skipping of unqualified jobs on regular click (shift-click enables viewing locked jobs). If an unqualified job is active, the button reflects (Unqualified) with muted styling. Added visual work status badge on the screen header displaying Unqualified, Too Hungry, or active work status (Working, Scanning, etc.).
+- **Verification:** All 31 JUnit tests pass, all 75 GameTests pass (including 30x stalk runs and zombie data cleanliness), and RenderMatrix produced 28 clean images with 0 missing texture errors.
+

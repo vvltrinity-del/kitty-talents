@@ -27,12 +27,13 @@ import net.minecraft.world.entity.player.Player;
 public final class CatBrain {
     public static final int SAFETY = 0;
     public static final int ORDERS = 1;
-    public static final int COMBAT = 2;
-    public static final int MELEE = 3;
-    public static final int COMMAND = 4;
-    public static final int WORK = 5;
-    public static final int NEEDS = 6;
-    public static final int IDLE = 7;
+    public static final int POUNCE = 2;
+    public static final int COMBAT = 3;
+    public static final int MELEE = 4;
+    public static final int COMMAND = 5;
+    public static final int WORK = 6;
+    public static final int NEEDS = 7;
+    public static final int IDLE = 8;
 
     private CatBrain() {}
 
@@ -48,7 +49,7 @@ public final class CatBrain {
         });
         g.addGoal(ORDERS, new CatRetreatGoal(cat));
 
-        g.addGoal(COMBAT, new CatPounceGoal(cat));
+        g.addGoal(POUNCE, new CatPounceGoal(cat));
         g.addGoal(COMBAT, new CatStalkGoal(cat));   // creep up on unaware targets until in pounce range
         g.addGoal(COMBAT, new CatDodgeGoal(cat));   // no control flags: instant dodge impulse
         g.addGoal(COMBAT, new CatGunAttackGoal(cat, 1.25D, 8.0F, 22.0F));
