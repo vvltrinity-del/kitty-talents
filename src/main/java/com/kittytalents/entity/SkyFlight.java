@@ -37,8 +37,22 @@ public final class SkyFlight {
             cat.hasImpulse = true;
             cat.resetFallDistance();
         } else if (!cat.onGround()) {
-            double sink = 0.10D - 0.01D * rank; // rank 5: 0.05 blocks/tick
-            if (m.y < -sink) cat.setDeltaMovement(m.x, -sink, m.z);
+            float pitch = cat.getXRot();
+            double sink = 0.10D - 0.01D * rank;
+            if (pitch > 10.0F) {
+                // Pitching down allows diving: up to 0.75D sink speed at 90 degrees down
+                double divePitch = Math.sin(Math.toRadians(pitch));
+                double diveSink = sink + (0.65D * divePitch);
+                if (m.y < -diveSink) {
+                    cat.setDeltaMovement(m.x, -diveSink, m.z);
+                }
+                // Forward momentum boost when diving
+                Vec3 look = cat.getLookAngle();
+                double diveForward = 0.04D * divePitch;
+                cat.setDeltaMovement(cat.getDeltaMovement().add(look.x * diveForward, 0, look.z * diveForward));
+            } else {
+                if (m.y < -sink) cat.setDeltaMovement(m.x, -sink, m.z);
+            }
             cat.resetFallDistance();
         }
     }

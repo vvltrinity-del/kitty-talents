@@ -270,7 +270,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 .add(Attributes.ATTACK_DAMAGE, 4.0D)
                 .add(Attributes.ARMOR, 2.0D)
                 .add(Attributes.ARMOR_TOUGHNESS, 0.0D)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 0.0D);
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.0D)
+                .add(Attributes.FOLLOW_RANGE, 32.0D);
         com.kittytalents.compat.apotheosis.ApotheosisCompat.registerAttributes(builder);
         return builder;
     }
@@ -329,7 +330,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     public void setHunger(int hunger) {
-        this.entityData.set(DATA_HUNGER, Math.max(0, Math.min(120, hunger)));
+        int clamped = Math.max(0, Math.min(120, hunger));
+        this.entityData.set(DATA_HUNGER, clamped);
+        if (clamped > 20 && getWorkStatus().contains("Too Hungry")) {
+            setWorkStatus("Idle");
+        }
     }
 
     public void increaseHunger(int amount) {
@@ -1487,8 +1492,23 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                         this.setDeltaMovement(this.getDeltaMovement().x, (0.25D + (skyLvl * 0.08D)) * flightMult, this.getDeltaMovement().z);
                         this.hasImpulse = true;
                         this.resetFallDistance();
+                    } else if (player.getXRot() > 10.0F && forward > 0) {
+                        // Looking down: dive with forward momentum
+                        double divePitch = Math.sin(Math.toRadians(player.getXRot()));
+                        double diveSink = - (0.20D + 0.40D * divePitch);
+                        Vec3 look = player.getLookAngle();
+                        this.setDeltaMovement(
+                                this.getDeltaMovement().x + look.x * 0.08D * divePitch,
+                                diveSink,
+                                this.getDeltaMovement().z + look.z * 0.08D * divePitch
+                        );
+                        this.hasImpulse = true;
+                        this.resetFallDistance();
                     } else if (!this.onGround()) {
-                        this.setDeltaMovement(this.getDeltaMovement().multiply(1.0D, 0.65D, 1.0D));
+                        double sink = 0.12D - 0.015D * skyLvl;
+                        if (this.getDeltaMovement().y < -sink) {
+                            this.setDeltaMovement(this.getDeltaMovement().x, -sink, this.getDeltaMovement().z);
+                        }
                         this.resetFallDistance();
                     }
                 }

@@ -39,15 +39,39 @@ public class FarmerJobGoal extends AbstractCatJobGoal {
 
     @Override
     protected Predicate<ItemStack> getKeepInPackPredicate() {
-        return FarmerJobGoal::isSeedOrBonemeal;
+        return stack -> {
+            if (stack.isEmpty()) return false;
+            if (stack.is(Items.BONE_MEAL)) return true;
+            if (stack.is(Items.WHEAT_SEEDS) || stack.is(Items.BEETROOT_SEEDS) || stack.is(Items.MELON_SEEDS)
+                    || stack.is(Items.PUMPKIN_SEEDS) || stack.is(Items.TORCHFLOWER_SEEDS) || stack.is(Items.PITCHER_POD)
+                    || stack.is(Items.COCOA_BEANS) || stack.is(Items.NETHER_WART)) {
+                return true;
+            }
+            // For planting crops (carrots/potatoes), reserve a seed stack of up to 16
+            if (stack.is(Items.CARROT) || stack.is(Items.POTATO)) {
+                return stack.getCount() <= 16;
+            }
+            return false;
+        };
     }
 
-    public static boolean isSeedOrBonemeal(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        if (stack.is(Items.BONE_MEAL)) return true;
-        if (stack.getItem() instanceof BlockItem bi) {
-            Block b = bi.getBlock();
-            return b instanceof CropBlock || b instanceof NetherWartBlock || b instanceof StemBlock || b instanceof CocoaBlock;
+    @Override
+    protected boolean shouldDeposit() {
+        if (super.shouldDeposit()) return true;
+        com.kittytalents.work.JobData data = cat.getJobData();
+        if (data.getStationPos() == null && data.getLinkedOutputs().isEmpty()) return false;
+        net.minecraft.world.SimpleContainer pack = cat.getCatPack();
+        for (int i = 0; i < pack.getContainerSize(); i++) {
+            ItemStack s = pack.getItem(i);
+            if (s.isEmpty()) continue;
+            if (s.is(Items.WHEAT) || s.is(Items.BEETROOT) || s.is(Items.MELON_SLICE)
+                    || s.is(Items.MELON) || s.is(Items.PUMPKIN) || s.is(Items.SUGAR_CANE)
+                    || s.is(Items.CACTUS) || s.is(Items.SWEET_BERRIES)) {
+                return true;
+            }
+            if ((s.is(Items.CARROT) || s.is(Items.POTATO)) && s.getCount() > 16) {
+                return true;
+            }
         }
         return false;
     }
@@ -188,6 +212,7 @@ public class FarmerJobGoal extends AbstractCatJobGoal {
                     WorkInventoryHelper.storeProducedItem(cat, d);
                 }
             }
+            splitExcessPlantables();
             cat.playSound(SoundEvents.CROP_BREAK, 0.8F, 1.1F);
             return true;
         }
@@ -308,5 +333,21 @@ public class FarmerJobGoal extends AbstractCatJobGoal {
         }
 
         return false;
+    }
+
+    private void splitExcessPlantables() {
+        net.minecraft.world.SimpleContainer pack = cat.getCatPack();
+        for (int i = 0; i < pack.getContainerSize(); i++) {
+            ItemStack s = pack.getItem(i);
+            if (!s.isEmpty() && (s.is(Items.CARROT) || s.is(Items.POTATO)) && s.getCount() > 16) {
+                int excess = s.getCount() - 16;
+                s.setCount(16);
+                ItemStack extra = s.copyWithCount(excess);
+                ItemStack rem = pack.addItem(extra);
+                if (!rem.isEmpty()) {
+                    WorkInventoryHelper.storeProducedItem(cat, rem);
+                }
+            }
+        }
     }
 }

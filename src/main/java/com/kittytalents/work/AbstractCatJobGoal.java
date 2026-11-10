@@ -71,6 +71,12 @@ public abstract class AbstractCatJobGoal extends Goal {
         return null;
     }
 
+    protected boolean shouldDeposit() {
+        JobData data = cat.getJobData();
+        if (data.getStationPos() == null && data.getLinkedOutputs().isEmpty()) return false;
+        return WorkInventoryHelper.isCatPackNearlyFull(cat);
+    }
+
     public BoundingBox getWorkArea() {
         int defaultRadius = 8;
         return cat.getJobData().getEffectiveWorkArea(cat.blockPosition(), defaultRadius);
@@ -123,6 +129,8 @@ public abstract class AbstractCatJobGoal extends Goal {
         if (cat.getHunger() <= 20) {
             cat.setWorkStatus("Too Hungry (<20)");
             return false;
+        } else if (cat.getWorkStatus().contains("Too Hungry")) {
+            cat.setWorkStatus("Idle");
         }
         if (idleBackoffTicks > 0) {
             idleBackoffTicks--;
@@ -171,7 +179,7 @@ public abstract class AbstractCatJobGoal extends Goal {
                 state = WorkState.FIND_TASK;
             }
             case FIND_TASK -> {
-                if (WorkInventoryHelper.isCatPackNearlyFull(cat) && (data.getStationPos() != null || !data.getLinkedOutputs().isEmpty())) {
+                if (shouldDeposit()) {
                     state = WorkState.DEPOSIT;
                     return;
                 }
@@ -209,6 +217,17 @@ public abstract class AbstractCatJobGoal extends Goal {
                     return;
                 }
 
+                if (cat.getNavigation().isDone() && distSqr > getInteractReachSqr()) {
+                    pathFailCount++;
+                    if (pathFailCount >= 3) {
+                        blacklistPosition(currentTargetPos, 600);
+                        currentTargetPos = null;
+                        state = WorkState.FIND_TASK;
+                        cat.setWorkStatus("Cannot reach target");
+                        return;
+                    }
+                }
+
                 if (--navCooldown <= 0) {
                     navCooldown = 10;
                     boolean started = cat.getNavigation().moveTo(
@@ -217,12 +236,15 @@ public abstract class AbstractCatJobGoal extends Goal {
                             currentTargetPos.getZ() + 0.5D,
                             1.15D
                     );
-                    if (!started) {
+                    net.minecraft.world.level.pathfinder.Path p = cat.getNavigation().getPath();
+                    if (!started || (p != null && !p.canReach() && p.getDistToTarget() > 3.0F)) {
                         pathFailCount++;
                         if (pathFailCount >= 3) {
                             blacklistPosition(currentTargetPos, 1200);
                             currentTargetPos = null;
                             state = WorkState.FIND_TASK;
+                            cat.setWorkStatus("Cannot reach target");
+                            return;
                         }
                     }
                 }
@@ -248,7 +270,7 @@ public abstract class AbstractCatJobGoal extends Goal {
                         blacklistPosition(currentTargetPos, 400);
                     }
                     currentTargetPos = null;
-                    if (WorkInventoryHelper.isCatPackNearlyFull(cat) && (data.getStationPos() != null || !data.getLinkedOutputs().isEmpty())) {
+                    if (shouldDeposit()) {
                         state = WorkState.DEPOSIT;
                     } else {
                         state = WorkState.FIND_TASK;
