@@ -6,21 +6,21 @@ package com.kittytalents.api;
  */
 public enum CatGoalBand {
     /** Never interrupted: floating, staying safe while downed. */
-    SAFETY(0),
+    SAFETY(com.kittytalents.ai.CatBrain.SAFETY),
     /** Explicit orders: sit, retreat at low health. */
-    ORDERS(1),
-    /** Ranged and opening moves: pounce, stalk, dodge, guns. */
-    COMBAT(2),
+    ORDERS(com.kittytalents.ai.CatBrain.ORDERS),
+    /** Ranged and opening moves: stalk, dodge, guns (the pounce itself sits just above this band). */
+    COMBAT(com.kittytalents.ai.CatBrain.COMBAT),
     /** Melee and ability use. */
-    MELEE(3),
+    MELEE(com.kittytalents.ai.CatBrain.MELEE),
     /** The current mode's movement: follow, hold position, return home, fetch. */
-    COMMAND(4),
+    COMMAND(com.kittytalents.ai.CatBrain.COMMAND),
     /** Job work while clocked in. */
-    WORK(5),
+    WORK(com.kittytalents.ai.CatBrain.WORK),
     /** Hunger, beds, scratchers, breeding. */
-    NEEDS(6),
+    NEEDS(com.kittytalents.ai.CatBrain.NEEDS),
     /** Idle life: wandering, grooming, looking around. */
-    IDLE(7);
+    IDLE(com.kittytalents.ai.CatBrain.IDLE);
 
     private final int priority;
 
