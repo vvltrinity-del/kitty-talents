@@ -78,9 +78,14 @@ final class SupportTalents {
         @Override public int tickInterval() { return 10; }
         @Override public void onTick(TalentContext ctx) {
             Player o = ctx.ownerWithin(32.0D);
-            if (o == null || o.getHealth() > o.getMaxHealth() * 0.3F || !ctx.ready("rescue")) return;
+            if (o == null) return;
+            boolean bleeding = com.kittytalents.compat.playerrevive.PlayerReviveCompat.isBleeding(o);
+            if (!bleeding && (o.getHealth() > o.getMaxHealth() * 0.3F || !ctx.ready("rescue"))) return;
             ctx.cooldown("rescue", 600 - ctx.rank * 60);
             ctx.cat.teleportTo(o.getX(), o.getY(), o.getZ());
+            if (bleeding) {
+                com.kittytalents.compat.playerrevive.PlayerReviveCompat.revive(o);
+            }
             o.heal(4.0F + ctx.rank * 2.0F);
             o.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 1));
             o.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 200, 1));

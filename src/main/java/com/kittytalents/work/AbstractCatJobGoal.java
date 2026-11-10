@@ -63,7 +63,7 @@ public abstract class AbstractCatJobGoal extends Goal {
     }
 
     protected double getInteractReachSqr() {
-        return 6.25D; // 2.5 blocks
+        return 12.25D; // 3.5 blocks reach
     }
 
     @Nullable
@@ -77,9 +77,25 @@ public abstract class AbstractCatJobGoal extends Goal {
         return WorkInventoryHelper.isCatPackNearlyFull(cat);
     }
 
+    @Nullable
+    private BlockPos anchoredWorkOrigin = null;
+
     public BoundingBox getWorkArea() {
         int defaultRadius = 8;
-        return cat.getJobData().getEffectiveWorkArea(cat.blockPosition(), defaultRadius);
+        if (cat.getJobData().getStationPos() != null) {
+            return cat.getJobData().getEffectiveWorkArea(cat.getJobData().getStationPos(), defaultRadius);
+        }
+        if (cat.getJobData().getCustomWorkArea() != null) {
+            BoundingBox custom = cat.getJobData().getCustomWorkArea();
+            if (custom.maxY() - custom.minY() <= 1) {
+                return new BoundingBox(custom.minX(), custom.minY() - 2, custom.minZ(), custom.maxX(), custom.maxY() + 4, custom.maxZ());
+            }
+            return custom;
+        }
+        if (anchoredWorkOrigin == null || cat.distanceToSqr(anchoredWorkOrigin.getX(), anchoredWorkOrigin.getY(), anchoredWorkOrigin.getZ()) > 1024.0D) {
+            anchoredWorkOrigin = cat.blockPosition();
+        }
+        return cat.getJobData().getEffectiveWorkArea(anchoredWorkOrigin, defaultRadius);
     }
 
     protected AreaCursor getCursor() {
@@ -183,7 +199,7 @@ public abstract class AbstractCatJobGoal extends Goal {
                     state = WorkState.DEPOSIT;
                     return;
                 }
-                int budget = KittyTalentsConfig.COMMON.workScanBlocksPerTick.get();
+                int budget = Math.max(256, KittyTalentsConfig.COMMON.workScanBlocksPerTick.get() * 4);
                 BlockPos found = findNextTask(budget);
                 if (found != null) {
                     currentTargetPos = found.immutable();
@@ -191,10 +207,12 @@ public abstract class AbstractCatJobGoal extends Goal {
                     navCooldown = 0;
                     state = WorkState.PATHING;
                     cat.setWorkStatus("Moving to task (" + targetJob.getDisplayName() + ")");
-                } else {
+                } else if (getCursor().checkAndResetWrapped()) {
                     cat.setWorkStatus("Idle - No task found");
-                    idleBackoffTicks = 40;
+                    idleBackoffTicks = 60;
                     state = WorkState.IDLE;
+                } else {
+                    cat.setWorkStatus("Scanning (" + targetJob.getDisplayName() + ")");
                 }
             }
             case PATHING -> {

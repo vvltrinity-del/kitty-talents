@@ -103,4 +103,12 @@ public class ClientPacketHandlers {
     public static void handleOpenProducerStickScreen(java.util.List<com.kittytalents.network.PacketSyncConductList.ConductCatDto> cats, boolean defaultToBed) {
         net.minecraft.client.Minecraft.getInstance().setScreen(new com.kittytalents.client.gui.ProducerStickScreen(cats, defaultToBed));
     }
+    public static void handleSyncCatStats(int entityId, net.minecraft.nbt.CompoundTag tag) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        Entity e = mc.level.getEntity(entityId);
+        if (e instanceof TalentedCat cat) {
+            cat.stats().load(tag);
+        }
+    }
 }

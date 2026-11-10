@@ -48,22 +48,41 @@ public class PacketConductCat extends PacketBase {
         CatDirectory dir = CatDirectory.get(serverLevel);
         CatDirectory.Entry entry = dir.getEntry(catUUID);
 
-        // Find or load cat
         Entity targetEntity = serverLevel.getEntity(catUUID);
-        if (targetEntity == null && entry != null && entry.pos != null) {
-            // Load chunk where cat was last recorded
-            ChunkPos cp = new ChunkPos(entry.pos);
-            serverLevel.getChunkSource().addRegionTicket(TicketType.PORTAL, cp, 2, entry.pos);
-            targetEntity = serverLevel.getEntity(catUUID);
+        if (targetEntity == null) {
+            // Only the owner may wake up an unloaded cat's area (a co-owner can't be verified until it loads),
+            // and the check happens BEFORE any chunk is loaded.
+            if (entry == null || entry.pos == null || !player.getUUID().equals(entry.ownerUUID)) {
+                player.sendSystemMessage(Component.literal("§c[Producer Stick] Conduct rejected: Cat not found or loaded in current dimension! (Code: ERR_CAT_NOT_FOUND)"));
+                return;
+            }
+            if (!serverLevel.dimension().location().toString().equals(entry.dimension)) {
+                player.sendSystemMessage(Component.literal("§c[Producer Stick] Conduct rejected: Cat is in another dimension (" + entry.dimension + ")! (Code: ERR_DIFF_DIM)"));
+                return;
+            }
+            // Entities load a few ticks after their chunk: load the area and retry for up to 2 seconds.
+            serverLevel.getChunkSource().addRegionTicket(TicketType.PORTAL, new ChunkPos(entry.pos), 2, entry.pos);
+            Pending.add(player, catUUID, action, serverLevel.getGameTime() + 40);
+            player.sendSystemMessage(Component.literal("§7[Producer Stick] Calling " + entry.name + " from afar..."));
+            return;
         }
-
         if (!(targetEntity instanceof TalentedCat cat)) {
             player.sendSystemMessage(Component.literal("§c[Producer Stick] Conduct rejected: Cat not found or loaded in current dimension! (Code: ERR_CAT_NOT_FOUND)"));
             return;
         }
+        conduct(player, cat, action);
+    }
 
-        if (!cat.isOwnedBy(player) && !cat.isTrusted(player.getUUID())) {
+    /** Teleports a loaded cat after the permission and safety checks. */
+    static void conduct(ServerPlayer player, TalentedCat cat, Action action) {
+        ServerLevel serverLevel = player.serverLevel();
+        CatDirectory dir = CatDirectory.get(serverLevel);
+        if (!com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.COMMAND)) {
             player.sendSystemMessage(Component.literal("§c[Producer Stick] Conduct rejected: You do not own or have trust with this cat! (Code: ERR_UNAUTHORIZED)"));
+            return;
+        }
+        if (cat.isTwined() || cat.isPassenger() || cat.isVehicle()) {
+            player.sendSystemMessage(Component.literal("§c[Producer Stick] Conduct rejected: " + cat.getName().getString() + " is being twined or ridden! (Code: ERR_BUSY)"));
             return;
         }
 
@@ -154,5 +173,37 @@ public class PacketConductCat extends PacketBase {
             }
         }
         return best;
+    }
+
+    /** Conduct requests waiting for a far-away cat's area to finish loading. */
+    @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = com.kittytalents.KittyTalents.MODID)
+    static final class Pending {
+        private record Req(UUID player, UUID cat, Action action, long deadline) {}
+        private static final java.util.List<Req> QUEUE = new java.util.ArrayList<>();
+
+        static void add(ServerPlayer player, UUID cat, Action action, long deadline) {
+            QUEUE.removeIf(r -> r.player().equals(player.getUUID()) && r.cat().equals(cat));
+            QUEUE.add(new Req(player.getUUID(), cat, action, deadline));
+        }
+
+        @net.minecraftforge.eventbus.api.SubscribeEvent
+        public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+            if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || QUEUE.isEmpty()) return;
+            var server = event.getServer();
+            java.util.Iterator<Req> it = QUEUE.iterator();
+            while (it.hasNext()) {
+                Req r = it.next();
+                ServerPlayer player = server.getPlayerList().getPlayer(r.player());
+                if (player == null) { it.remove(); continue; }
+                ServerLevel level = player.serverLevel();
+                if (level.getEntity(r.cat()) instanceof TalentedCat cat) {
+                    it.remove();
+                    conduct(player, cat, r.action());
+                } else if (level.getGameTime() > r.deadline()) {
+                    it.remove();
+                    player.sendSystemMessage(Component.literal("§c[Producer Stick] Conduct rejected: Cat not found or loaded in current dimension! (Code: ERR_CAT_NOT_FOUND)"));
+                }
+            }
+        }
     }
 }

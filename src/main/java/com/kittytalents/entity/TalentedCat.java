@@ -205,7 +205,13 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     private int energy = 100;
 
     public com.kittytalents.combat.CatRole getCatRole() { return combat.getRole(); }
-    public void setCatRole(com.kittytalents.combat.CatRole role) { combat.setRole(role); }
+    public void setCatRole(com.kittytalents.combat.CatRole role) {
+        combat.setRole(role);
+        updateAttributes();
+        if (getHealth() > getMaxHealth()) {
+            setHealth(getMaxHealth());
+        }
+    }
     public com.kittytalents.combat.FelineElement getPrimaryElement() { return combat.getPrimaryElement(); }
     public void setPrimaryElement(com.kittytalents.combat.FelineElement element) { combat.setPrimaryElement(element); }
     public com.kittytalents.combat.FelineElement getSecondaryElement() { return combat.getSecondaryElement(); }
@@ -1016,6 +1022,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         syncEquipment(player);
         syncTalents(player);
         syncLoadout(player);
+        syncStats(player);
     }
 
     /** Send the authoritative combat loadout to everyone tracking this cat. */
@@ -1150,6 +1157,35 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             );
         }
     }
+
+    /** Marks the statistics as changed; they are sent at most once a second (see tick), not on every hit. */
+    public void syncStats() {
+        statsDirty = true;
+    }
+    private boolean statsDirty;
+
+    private void flushStats() {
+        if (!this.level().isClientSide) {
+            statsDirty = false;
+            CompoundTag tag = new CompoundTag();
+            stats.save(tag);
+            PacketHandler.INSTANCE.send(
+                    PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> this),
+                    new com.kittytalents.network.PacketSyncCatStats(this.getId(), tag)
+            );
+        }
+    }
+
+    public void syncStats(ServerPlayer player) {
+        if (!this.level().isClientSide && player != null) {
+            CompoundTag tag = new CompoundTag();
+            stats.save(tag);
+            PacketHandler.sendToPlayer(
+                    new com.kittytalents.network.PacketSyncCatStats(this.getId(), tag),
+                    player
+            );
+        }
+    }
     public boolean isPrimaryOwner(Player player) {
         return player != null && player.getUUID().equals(this.getOwnerUUID());
     }
@@ -1160,7 +1196,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         return super.isOwnedBy(entity) || (entity instanceof Player p && isTrusted(p));
     }
 
-    public void resetStatistics() { stats.reset(); }
+    public void resetStatistics() {
+        stats.reset();
+        syncStats();
+    }
 
     public SimpleContainer getCatPack() { return equipment.pack(); }
     public SimpleContainer getAmmoPouch() { return equipment.ammoPouch(); }
@@ -1284,6 +1323,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         t.armorToughness += tier.bonusToughness();
         t.attackDamage += tier.bonusDamage();
         com.kittytalents.talent.effect.TalentEngine.applyAttributes(this, t);
+        com.kittytalents.combat.CatRole role = getCatRole();
+        if (role != null && role != com.kittytalents.combat.CatRole.NONE) {
+            t.maxHealth *= role.getHpMultiplier();
+            t.movementSpeed *= role.getSpeedMultiplier();
+        }
         setBase(Attributes.MAX_HEALTH, t.maxHealth);
         setBase(Attributes.MOVEMENT_SPEED, t.movementSpeed);
         setBase(Attributes.ATTACK_DAMAGE, t.attackDamage);
@@ -1339,10 +1383,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         boolean hurt = entity.hurt(this.damageSources().mobAttack(this), damage);
         if (hurt) {
-            stats.addDamageDealt(damage);
-            if (!entity.isAlive()) {
-                stats.recordKill(entity instanceof Monster);
-            }
+            // Damage dealt and kills are counted in ForgeEvents (LivingHurtEvent / LivingDeathEvent) so gun, ability
+            // and pounce hits count too; counting here as well recorded every melee kill twice.
             if (entity instanceof LivingEntity livingHit) {
                 // On-hit talents (Armory fire, Inferno, Venom, Charm, Alchemy, Catnip...) and role/tier attack effects.
                 com.kittytalents.talent.effect.TalentEngine.onHitDealt(this, livingHit, damage);
@@ -1398,6 +1440,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (amount <= 0.0F) return false;
         // Counted after talent dodges so dodged hits are not recorded as damage taken.
         stats.addDamageTaken(amount);
+        syncStats();
 
         // Damage armor durability
         if (!this.level().isClientSide && amount > 2.0F) {
@@ -1616,6 +1659,30 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             com.kittytalents.core.CatDirectory.get(sl).updateCat(this);
         }
 
+        if (statsDirty && !this.level().isClientSide && this.tickCount % 20 == 0) flushStats();
+
+        // Automatic player revival companion capability
+        if (!this.level().isClientSide && this.tickCount % 10 == 0 && this.isTame() && !this.isIncapacitated() && this.getOwner() instanceof Player owner) {
+            if (com.kittytalents.compat.playerrevive.PlayerReviveCompat.isBleeding(owner)) {
+                if (this.distanceToSqr(owner) > 16.0D) {
+                    this.getNavigation().moveTo(owner, 1.5D);
+                    if (this.distanceToSqr(owner) > 144.0D) {
+                        this.teleportTo(owner.getX(), owner.getY(), owner.getZ());
+                    }
+                } else {
+                    com.kittytalents.compat.playerrevive.PlayerReviveCompat.revive(owner);
+                    owner.heal(10.0F);
+                    owner.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.REGENERATION, 120, 1));
+                    owner.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE, 100, 1));
+                    this.playSound(net.minecraft.sounds.SoundEvents.BEACON_ACTIVATE, 1.0F, 1.6F);
+                    if (this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                        sl.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING, owner.getX(), owner.getY() + 1.0D, owner.getZ(), 20, 0.5D, 0.5D, 0.5D, 0.1D);
+                    }
+                    owner.sendSystemMessage(net.minecraft.network.chat.Component.literal("§6" + this.getName().getString() + " rushed to your side and revived you!"));
+                }
+            }
+        }
+
         if (!this.level().isClientSide && this.isVehicle()) {
             LivingEntity passenger = this.getControllingPassenger();
             if (passenger instanceof Player player) {
@@ -1734,6 +1801,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void triggerFrenzy(int durationTicks) {
         this.frenzyTimer = durationTicks;
         this.frenzyCooldown = durationTicks + 2400;
+        this.incrementFrenzyActivations();
+        syncStats();
     }
 
     @Override

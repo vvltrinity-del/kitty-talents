@@ -219,6 +219,8 @@ public final class CatInteractions {
             } else {
                 cat.heal(2.0F);
                 cat.increaseHunger(5);
+                cat.incrementTimesPet();
+                cat.syncStats();
                 String[] petStyles = {"Head Scratch", "Chin Scratch", "Belly Rub", "Back Scratch"};
                 String style = petStyles[cat.getRandom().nextInt(petStyles.length)];
                 player.displayClientMessage(Component.literal("You gave " + cat.getName().getString() + " a loving " + style + "! ❤").withStyle(ChatFormatting.LIGHT_PURPLE), true);
@@ -248,6 +250,8 @@ public final class CatInteractions {
                         held.shrink(1);
                     }
                     cat.setDireAwakened(true);
+                    cat.increaseHunger(20);
+                    cat.syncStats();
                     cat.playSound(SoundEvents.TOTEM_USE, 1.0F, 1.0F);
                     cat.playSound(SoundEvents.ENDER_DRAGON_GROWL, 0.5F, 1.8F);
                     if (cat.level() instanceof ServerLevel serverLevel) {
@@ -300,6 +304,7 @@ public final class CatInteractions {
                 cat.setSkillPoints(cat.getSkillPoints() + 1);
                 cat.increaseHunger(20);
                 cat.heal(4.0F);
+                cat.syncStats();
                 cat.playSound(SoundEvents.PLAYER_LEVELUP, 0.7F, 1.3F);
                 return InteractionResult.sidedSuccess(cat.level().isClientSide);
             } else {
@@ -319,6 +324,7 @@ public final class CatInteractions {
                 }
                 cat.increaseHunger(25);
                 cat.heal(6.0F);
+                cat.syncStats();
                 cat.playSound(SoundEvents.CAT_EAT, 0.8F, 1.0F);
                 return InteractionResult.sidedSuccess(cat.level().isClientSide);
             }

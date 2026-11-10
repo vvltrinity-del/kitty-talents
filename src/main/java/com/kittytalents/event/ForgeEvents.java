@@ -209,6 +209,20 @@ public class ForgeEvents {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
             com.kittytalents.entity.TwineManager.endForPlayer(sp, null);
         }
+        if (!event.getEntity().level().isClientSide()) {
+            net.minecraft.world.damagesource.DamageSource src = event.getSource();
+            TalentedCat cat = null;
+            if (src.getEntity() instanceof TalentedCat c) {
+                cat = c;
+            } else if (src.getDirectEntity() instanceof TalentedCat c) {
+                cat = c;
+            }
+            if (cat != null) {
+                boolean hostile = event.getEntity() instanceof net.minecraft.world.entity.monster.Monster;
+                cat.stats().recordKill(hostile);
+                cat.syncStats();
+            }
+        }
     }
 
     @SubscribeEvent
@@ -260,6 +274,13 @@ public class ForgeEvents {
                 com.kittytalents.entity.TwineManager.endForPlayer(sp, "Emergency Untwine! Player health critically low (< 25%)!");
             }
         }
+        if (!event.getEntity().level().isClientSide()) {
+            if (event.getSource().getEntity() instanceof TalentedCat cat) {
+                cat.stats().addDamageDealt(event.getAmount());
+                cat.syncStats();
+            }
+            // Damage taken is counted in TalentedCat#hurt, after armor and talent reductions.
+        }
     }
 
     @SubscribeEvent
@@ -283,6 +304,7 @@ public class ForgeEvents {
         if (event.getTarget() instanceof TalentedCat cat && event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
             cat.syncTalents(player);
             cat.syncEquipment(player);
+            cat.syncStats(player);
             com.kittytalents.network.PacketHandler.sendToPlayer(
                     new com.kittytalents.network.PacketSyncTrustedPlayers(cat.getId(), cat.getTrustedPlayers()),
                     player

@@ -16,7 +16,7 @@ import java.util.function.Function;
  */
 public class PacketHandler {
     /** 2: Phase 7 (PacketBase port; PacketTwineAction always sends type + data). */
-    private static final String PROTOCOL_VERSION = "2";
+    private static final String PROTOCOL_VERSION = "3"; // 3: 4.0 (Producer Stick conduct packets, stats sync)
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(KittyTalents.MODID, "main"),
             () -> PROTOCOL_VERSION,
@@ -51,6 +51,7 @@ public class PacketHandler {
         toServer(PacketRequestConductList.class, PacketRequestConductList::new);
         toClient(PacketSyncConductList.class, PacketSyncConductList::new);
         toServer(PacketConductCat.class, PacketConductCat::new);
+        toClient(PacketSyncCatStats.class, PacketSyncCatStats::new);
     }
 
     private static <T extends PacketBase> void toServer(Class<T> type, Function<FriendlyByteBuf, T> decoder) {

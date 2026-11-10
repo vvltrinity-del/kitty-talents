@@ -80,7 +80,6 @@ public class FarmerJobGoal extends AbstractCatJobGoal {
     @Nullable
     protected BlockPos findNextTask(int scanBudget) {
         Level level = cat.level();
-        // Guard against crop-eating rabbits in the work area
         AABB box = AABB.of(getWorkArea());
         List<Rabbit> rabbits = level.getEntitiesOfClass(Rabbit.class, box);
         if (!rabbits.isEmpty() && cat.getTarget() == null) {
@@ -91,35 +90,41 @@ public class FarmerJobGoal extends AbstractCatJobGoal {
         AreaCursor cursor = getCursor();
         for (int i = 0; i < scanBudget; i++) {
             BlockPos pos = cursor.next();
-            if (isBlacklisted(pos) || !level.isLoaded(pos)) continue;
-            if (isActionableFarmPos(level, pos, greenPaw)) {
+            if (!level.isLoaded(pos)) continue;
+
+            if (!isBlacklisted(pos) && isActionableFarmPos(level, pos, greenPaw)) {
                 return pos;
+            }
+            BlockPos above = pos.above();
+            if (!isBlacklisted(above) && isActionableFarmPos(level, above, greenPaw)) {
+                return above;
             }
         }
         return null;
     }
 
+    private boolean isMatureCrop(Level level, BlockPos pos, BlockState state) {
+        Block block = state.getBlock();
+        if (block instanceof CropBlock crop) return crop.isMaxAge(state);
+        if (block instanceof NetherWartBlock) return state.getValue(NetherWartBlock.AGE) >= 3;
+        if (block instanceof CocoaBlock) return state.getValue(CocoaBlock.AGE) >= 2;
+        if (block instanceof SweetBerryBushBlock) return state.getValue(SweetBerryBushBlock.AGE) >= 2;
+        if (block instanceof StemGrownBlock) return true;
+
+        for (net.minecraft.world.level.block.state.properties.Property<?> prop : state.getProperties()) {
+            if (prop.getName().toLowerCase().contains("age") && prop instanceof net.minecraft.world.level.block.state.properties.IntegerProperty intProp) {
+                int maxAge = intProp.getPossibleValues().stream().mapToInt(v -> v).max().orElse(7);
+                if (state.getValue(intProp) >= maxAge) return true;
+            }
+        }
+        return false;
+    }
+
     private boolean isActionableFarmPos(Level level, BlockPos pos, int greenPaw) {
         BlockState state = level.getBlockState(pos);
-        Block block = state.getBlock();
+        if (isMatureCrop(level, pos, state)) return true;
 
-        // 1. Mature CropBlock
-        if (block instanceof CropBlock crop && crop.isMaxAge(state)) {
-            return true;
-        }
-        // 2. Mature NetherWart
-        if (block instanceof NetherWartBlock && state.getValue(NetherWartBlock.AGE) >= 3) {
-            return true;
-        }
-        // 3. Mature Cocoa
-        if (block instanceof CocoaBlock && state.getValue(CocoaBlock.AGE) >= 2) {
-            return true;
-        }
-        // 4. Mature Sweet Berry Bush
-        if (block instanceof SweetBerryBushBlock && state.getValue(SweetBerryBushBlock.AGE) >= 2) {
-            return true;
-        }
-        // 5. Sugar Cane / Cactus upper segments (keep bottom block intact)
+        Block block = state.getBlock();
         if (block instanceof SugarCaneBlock || block instanceof CactusBlock) {
             BlockState below = level.getBlockState(pos.below());
             BlockState twoBelow = level.getBlockState(pos.below(2));
@@ -127,19 +132,12 @@ public class FarmerJobGoal extends AbstractCatJobGoal {
                 return true;
             }
         }
-        // 6. Melon / Pumpkin
-        if (block instanceof StemGrownBlock) {
-            return true;
-        }
-        // 7. Empty farmland with air above -> plant seed if available
         if (state.is(Blocks.FARMLAND) && level.getBlockState(pos.above()).isAir()) {
             return hasSeedsAvailable(false);
         }
-        // 8. Bonemeal immature crop at GREEN_PAW >= 3
         if (greenPaw >= 3 && block instanceof CropBlock crop && !crop.isMaxAge(state)) {
             return hasBonemealAvailable();
         }
-        // 9. Till dirt/grass near water at GREEN_PAW >= 5
         if (greenPaw >= 5 && (state.is(Blocks.DIRT) || state.is(Blocks.GRASS_BLOCK)) && level.getBlockState(pos.above()).isAir()) {
             return isNearWater(level, pos);
         }
@@ -154,12 +152,7 @@ public class FarmerJobGoal extends AbstractCatJobGoal {
     }
 
     private boolean hasSeedsAvailable(boolean netherWart) {
-        Predicate<ItemStack> pred = s -> {
-            if (s.getItem() instanceof BlockItem bi) {
-                return netherWart ? bi.getBlock() instanceof NetherWartBlock : bi.getBlock() instanceof CropBlock;
-            }
-            return false;
-        };
+        Predicate<ItemStack> pred = s -> isSeedItem(s, netherWart);
         for (int i = 0; i < cat.getCatPack().getContainerSize(); i++) {
             if (pred.test(cat.getCatPack().getItem(i))) return true;
         }
@@ -171,6 +164,34 @@ public class FarmerJobGoal extends AbstractCatJobGoal {
             if (cat.getCatPack().getItem(i).is(Items.BONE_MEAL)) return true;
         }
         return false;
+    }
+
+    private boolean isSeedItem(ItemStack s, boolean netherWart) {
+        if (s.isEmpty()) return false;
+        if (netherWart) return s.is(Items.NETHER_WART);
+        if (s.getItem() instanceof BlockItem bi && bi.getBlock() instanceof CropBlock) return true;
+        if (s.getItem() instanceof IPlantable) return true;
+        if (s.is(Items.WHEAT_SEEDS) || s.is(Items.BEETROOT_SEEDS) || s.is(Items.CARROT) || s.is(Items.POTATO)
+                || s.is(Items.MELON_SEEDS) || s.is(Items.PUMPKIN_SEEDS) || s.is(Items.TORCHFLOWER_SEEDS) || s.is(Items.PITCHER_POD)) {
+            return true;
+        }
+        String key = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(s.getItem()).getPath();
+        return key.contains("seed");
+    }
+
+    private void replantCrop(ServerLevel sl, BlockPos pos, Block block) {
+        if (block instanceof CropBlock cb) {
+            WorkerFakePlayer.placeBlock(sl, pos, cb.getStateForAge(0), cat.getOwnerUUID());
+        } else {
+            BlockState defaultState = block.defaultBlockState();
+            for (net.minecraft.world.level.block.state.properties.Property<?> prop : defaultState.getProperties()) {
+                if (prop.getName().toLowerCase().contains("age") && prop instanceof net.minecraft.world.level.block.state.properties.IntegerProperty intProp) {
+                    int minAge = intProp.getPossibleValues().stream().mapToInt(v -> v).min().orElse(0);
+                    defaultState = defaultState.setValue(intProp, minAge);
+                }
+            }
+            WorkerFakePlayer.placeBlock(sl, pos, defaultState, cat.getOwnerUUID());
+        }
     }
 
     @Override
@@ -186,25 +207,35 @@ public class FarmerJobGoal extends AbstractCatJobGoal {
         Block block = state.getBlock();
         int greenPaw = cat.getTalentLevel(Talents.GREEN_PAW);
 
-        // Case A: Mature CropBlock
-        if (block instanceof CropBlock crop && crop.isMaxAge(state)) {
-            List<ItemStack> drops = WorkerFakePlayer.breakBlockAndCollectDrops(sl, pos, cat.getOwnerUUID(), new ItemStack(Items.IRON_HOE));
-            if (drops.isEmpty()) return false;
+        // Case A: Mature CropBlock, tagged crops, or any age-based mature crop
+        if (isMatureCrop(sl, pos, state) && !(block instanceof NetherWartBlock) && !(block instanceof CocoaBlock) && !(block instanceof SweetBerryBushBlock) && !(block instanceof StemGrownBlock)) {
+            cat.incrementBlocksMined();
+            cat.syncStats();
+
+            List<ItemStack> drops = new java.util.ArrayList<>(WorkerFakePlayer.breakBlockAndCollectDrops(sl, pos, cat.getOwnerUUID(), new ItemStack(Items.IRON_HOE)));
+            List<net.minecraft.world.entity.item.ItemEntity> groundItems = sl.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new AABB(pos).inflate(2.5D));
+            for (net.minecraft.world.entity.item.ItemEntity ie : groundItems) {
+                if (ie.isAlive()) {
+                    drops.add(ie.getItem().copy());
+                    ie.discard();
+                }
+            }
+
             boolean replanted = false;
             Iterator<ItemStack> it = drops.iterator();
             while (it.hasNext()) {
                 ItemStack drop = it.next();
-                if (!replanted && drop.getItem() instanceof BlockItem bi && bi.getBlock() == block) {
+                if (!replanted && isSeedItem(drop, false)) {
                     drop.shrink(1);
                     if (drop.isEmpty()) it.remove();
-                    WorkerFakePlayer.placeBlock(sl, pos, crop.getStateForAge(0), cat.getOwnerUUID());
+                    replantCrop(sl, pos, block);
                     replanted = true;
                 }
             }
             if (!replanted) {
-                ItemStack seed = WorkInventoryHelper.extractMatchingSupply(cat, s -> s.getItem() instanceof BlockItem bi && bi.getBlock() instanceof CropBlock, 1);
-                if (!seed.isEmpty() && seed.getItem() instanceof BlockItem bi && bi.getBlock() instanceof CropBlock newCrop) {
-                    WorkerFakePlayer.placeBlock(sl, pos, newCrop.getStateForAge(0), cat.getOwnerUUID());
+                ItemStack seed = WorkInventoryHelper.extractMatchingSupply(cat, s -> isSeedItem(s, false), 1);
+                if (!seed.isEmpty()) {
+                    replantCrop(sl, pos, block);
                 }
             }
             for (ItemStack d : drops) {

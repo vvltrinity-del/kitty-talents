@@ -58,7 +58,16 @@ public class JobData {
     }
 
     public void setWorkAreaCorners(BlockPos a, BlockPos b) {
-        this.workArea = BoundingBox.fromCorners(a, b);
+        int minY = Math.min(a.getY(), b.getY());
+        int maxY = Math.max(a.getY(), b.getY());
+        if (maxY - minY <= 1) {
+            minY -= 2;
+            maxY += 4;
+        }
+        this.workArea = new BoundingBox(
+                Math.min(a.getX(), b.getX()), minY, Math.min(a.getZ(), b.getZ()),
+                Math.max(a.getX(), b.getX()), maxY, Math.max(a.getZ(), b.getZ())
+        );
     }
 
     public List<BlockPos> getLinkedInputs() { return linkedInputs; }

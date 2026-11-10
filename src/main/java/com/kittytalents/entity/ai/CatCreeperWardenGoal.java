@@ -66,6 +66,12 @@ public class CatCreeperWardenGoal extends Goal {
         if ((!creepers.isEmpty() || !phantoms.isEmpty()) && hissTimer <= 0) {
             cat.playSound(SoundEvents.CAT_HISS, 1.0F, 1.0F);
             hissTimer = 60;
+            if (!creepers.isEmpty()) {
+                for (int i = 0; i < creepers.size(); i++) {
+                    cat.incrementCreepersScared();
+                }
+                cat.syncStats();
+            }
         }
 
         // Night vision to owner at night

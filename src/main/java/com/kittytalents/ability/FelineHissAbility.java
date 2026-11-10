@@ -48,6 +48,8 @@ public class FelineHissAbility extends CatAbility {
             if (le instanceof Creeper creeper) {
                 Vec3 repel = creeper.position().subtract(cat.position()).normalize();
                 creeper.setDeltaMovement(repel.x * 0.95D, 0.3D, repel.z * 0.95D);
+                cat.incrementCreepersScared();
+                cat.syncStats();
             }
         }
 

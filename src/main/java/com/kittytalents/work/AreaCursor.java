@@ -13,6 +13,7 @@ public class AreaCursor {
     private int curX, curY, curZ;
     private boolean topDown = false;
     private boolean wrappedLastStep = false;
+    private boolean wrappedThisPass = false;
 
     public AreaCursor(BoundingBox box, boolean topDown) {
         setBounds(box, topDown);
@@ -34,10 +35,17 @@ public class AreaCursor {
         this.curZ = minZ;
         this.curY = topDown ? maxY : minY;
         this.wrappedLastStep = false;
+        this.wrappedThisPass = false;
     }
 
     public boolean didWrap() {
         return wrappedLastStep;
+    }
+
+    public boolean checkAndResetWrapped() {
+        boolean w = wrappedThisPass;
+        wrappedThisPass = false;
+        return w;
     }
 
     public BlockPos next() {
@@ -54,12 +62,14 @@ public class AreaCursor {
                     if (curY < minY) {
                         curY = maxY;
                         wrappedLastStep = true;
+                        wrappedThisPass = true;
                     }
                 } else {
                     curY++;
                     if (curY > maxY) {
                         curY = minY;
                         wrappedLastStep = true;
+                        wrappedThisPass = true;
                     }
                 }
             }
