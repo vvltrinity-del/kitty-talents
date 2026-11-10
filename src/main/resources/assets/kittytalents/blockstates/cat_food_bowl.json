@@ -1,7 +1,64 @@
 {
   "variants": {
-    "": {
+    "facing=north,food=0": {
       "model": "kittytalents:block/cat_food_bowl"
+    },
+    "facing=east,food=0": {
+      "model": "kittytalents:block/cat_food_bowl",
+      "y": 90
+    },
+    "facing=south,food=0": {
+      "model": "kittytalents:block/cat_food_bowl",
+      "y": 180
+    },
+    "facing=west,food=0": {
+      "model": "kittytalents:block/cat_food_bowl",
+      "y": 270
+    },
+    "facing=north,food=1": {
+      "model": "kittytalents:block/cat_food_bowl_food1"
+    },
+    "facing=east,food=1": {
+      "model": "kittytalents:block/cat_food_bowl_food1",
+      "y": 90
+    },
+    "facing=south,food=1": {
+      "model": "kittytalents:block/cat_food_bowl_food1",
+      "y": 180
+    },
+    "facing=west,food=1": {
+      "model": "kittytalents:block/cat_food_bowl_food1",
+      "y": 270
+    },
+    "facing=north,food=2": {
+      "model": "kittytalents:block/cat_food_bowl_food2"
+    },
+    "facing=east,food=2": {
+      "model": "kittytalents:block/cat_food_bowl_food2",
+      "y": 90
+    },
+    "facing=south,food=2": {
+      "model": "kittytalents:block/cat_food_bowl_food2",
+      "y": 180
+    },
+    "facing=west,food=2": {
+      "model": "kittytalents:block/cat_food_bowl_food2",
+      "y": 270
+    },
+    "facing=north,food=3": {
+      "model": "kittytalents:block/cat_food_bowl_food3"
+    },
+    "facing=east,food=3": {
+      "model": "kittytalents:block/cat_food_bowl_food3",
+      "y": 90
+    },
+    "facing=south,food=3": {
+      "model": "kittytalents:block/cat_food_bowl_food3",
+      "y": 180
+    },
+    "facing=west,food=3": {
+      "model": "kittytalents:block/cat_food_bowl_food3",
+      "y": 270
     }
   }
 }

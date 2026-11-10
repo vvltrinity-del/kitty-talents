@@ -1,7 +1,19 @@
 {
   "variants": {
-    "": {
+    "facing=north": {
       "model": "kittytalents:block/feeding_station"
+    },
+    "facing=east": {
+      "model": "kittytalents:block/feeding_station",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "kittytalents:block/feeding_station",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "kittytalents:block/feeding_station",
+      "y": 270
     }
   }
 }

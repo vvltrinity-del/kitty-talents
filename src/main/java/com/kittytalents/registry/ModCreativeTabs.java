@@ -101,6 +101,7 @@ public class ModCreativeTabs {
                         // Furniture & Blocks
                         output.accept(ModItems.CAT_BED.get());
                         output.accept(ModItems.CAT_FOOD_BOWL.get());
+                        output.accept(ModItems.CAT_TREE.get());
                         output.accept(ModItems.CAT_SCRATCHER.get());
                         output.accept(ModItems.CAT_BATH.get());
                         output.accept(ModItems.CAT_RICE_MILL.get());

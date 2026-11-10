@@ -8,7 +8,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Keeps the GameTest world deterministic: no natural mob spawns (a stray witch or zombie walking into an AI test made
+ * Keeps the GameTest world deterministic: no natural mob spawns or mob loot (a stray witch or zombie walking into an AI test made
  * target assertions flaky) and a fixed daytime. Only applies to the GameTest server, never to real worlds.
  */
 @Mod.EventBusSubscriber(modid = KittyTalents.MODID)
@@ -21,6 +21,8 @@ public final class GameTestWorldSetup {
         GameRules rules = server.getGameRules();
         rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, server);
         rules.getRule(GameRules.RULE_DAYLIGHT).set(false, server);
+        // Mobs killed in one test (e.g. the stress test) must not leave loot that FETCH cats in other tests chase.
+        rules.getRule(GameRules.RULE_DOMOBLOOT).set(false, server);
         server.overworld().setDayTime(6000L);
         KittyTalents.LOGGER.info("[GameTest] mob spawning off, time fixed at noon");
     }

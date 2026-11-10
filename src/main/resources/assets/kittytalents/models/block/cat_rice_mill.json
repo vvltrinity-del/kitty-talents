@@ -1,9 +1,328 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
+  "parent": "block/block",
   "textures": {
-    "particle": "minecraft:block/andesite",
-    "top": "minecraft:block/smooth_stone",
-    "bottom": "minecraft:block/andesite",
-    "side": "minecraft:block/stone_bricks"
-  }
+    "particle": "kittytalents:block/mill_base",
+    "mill_base": "kittytalents:block/mill_base",
+    "mill_stone": "kittytalents:block/mill_stone",
+    "wood_light": "kittytalents:block/wood_light",
+    "rice": "kittytalents:block/rice",
+    "ceramic": "kittytalents:block/ceramic",
+    "wood_dark": "kittytalents:block/wood_dark"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        15,
+        3,
+        15
+      ],
+      "faces": {
+        "down": {
+          "texture": "#mill_base"
+        },
+        "up": {
+          "texture": "#mill_base"
+        },
+        "north": {
+          "texture": "#mill_base"
+        },
+        "south": {
+          "texture": "#mill_base"
+        },
+        "west": {
+          "texture": "#mill_base"
+        },
+        "east": {
+          "texture": "#mill_base"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        3,
+        4
+      ],
+      "to": [
+        12,
+        6,
+        12
+      ],
+      "faces": {
+        "down": {
+          "texture": "#mill_stone"
+        },
+        "up": {
+          "texture": "#mill_stone"
+        },
+        "north": {
+          "texture": "#mill_stone"
+        },
+        "south": {
+          "texture": "#mill_stone"
+        },
+        "west": {
+          "texture": "#mill_stone"
+        },
+        "east": {
+          "texture": "#mill_stone"
+        }
+      }
+    },
+    {
+      "from": [
+        4.5,
+        6,
+        4.5
+      ],
+      "to": [
+        11.5,
+        9,
+        11.5
+      ],
+      "faces": {
+        "down": {
+          "texture": "#mill_stone"
+        },
+        "up": {
+          "texture": "#mill_stone"
+        },
+        "north": {
+          "texture": "#mill_stone"
+        },
+        "south": {
+          "texture": "#mill_stone"
+        },
+        "west": {
+          "texture": "#mill_stone"
+        },
+        "east": {
+          "texture": "#mill_stone"
+        }
+      }
+    },
+    {
+      "from": [
+        6.5,
+        9,
+        6.5
+      ],
+      "to": [
+        9.5,
+        11,
+        9.5
+      ],
+      "faces": {
+        "down": {
+          "texture": "#wood_light"
+        },
+        "up": {
+          "texture": "#wood_light"
+        },
+        "north": {
+          "texture": "#wood_light"
+        },
+        "south": {
+          "texture": "#wood_light"
+        },
+        "west": {
+          "texture": "#wood_light"
+        },
+        "east": {
+          "texture": "#wood_light"
+        }
+      }
+    },
+    {
+      "from": [
+        7,
+        10.8,
+        7
+      ],
+      "to": [
+        9,
+        11.1,
+        9
+      ],
+      "faces": {
+        "up": {
+          "texture": "#rice"
+        },
+        "north": {
+          "texture": "#rice"
+        },
+        "south": {
+          "texture": "#rice"
+        },
+        "west": {
+          "texture": "#rice"
+        },
+        "east": {
+          "texture": "#rice"
+        }
+      }
+    },
+    {
+      "from": [
+        7,
+        4.5,
+        3
+      ],
+      "to": [
+        9,
+        5.5,
+        4
+      ],
+      "faces": {
+        "down": {
+          "texture": "#wood_light"
+        },
+        "up": {
+          "texture": "#wood_light"
+        },
+        "north": {
+          "texture": "#wood_light"
+        },
+        "south": {
+          "texture": "#wood_light"
+        },
+        "west": {
+          "texture": "#wood_light"
+        },
+        "east": {
+          "texture": "#wood_light"
+        }
+      }
+    },
+    {
+      "from": [
+        5.5,
+        3,
+        1.5
+      ],
+      "to": [
+        10.5,
+        4.5,
+        3.5
+      ],
+      "faces": {
+        "down": {
+          "texture": "#ceramic"
+        },
+        "up": {
+          "texture": "#ceramic"
+        },
+        "north": {
+          "texture": "#ceramic"
+        },
+        "south": {
+          "texture": "#ceramic"
+        },
+        "west": {
+          "texture": "#ceramic"
+        },
+        "east": {
+          "texture": "#ceramic"
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        4.3,
+        2
+      ],
+      "to": [
+        10,
+        4.6,
+        3
+      ],
+      "faces": {
+        "up": {
+          "texture": "#rice"
+        },
+        "north": {
+          "texture": "#rice"
+        },
+        "south": {
+          "texture": "#rice"
+        },
+        "west": {
+          "texture": "#rice"
+        },
+        "east": {
+          "texture": "#rice"
+        }
+      }
+    },
+    {
+      "from": [
+        11.5,
+        7,
+        7.5
+      ],
+      "to": [
+        14.5,
+        8,
+        8.5
+      ],
+      "faces": {
+        "down": {
+          "texture": "#wood_dark"
+        },
+        "up": {
+          "texture": "#wood_dark"
+        },
+        "north": {
+          "texture": "#wood_dark"
+        },
+        "south": {
+          "texture": "#wood_dark"
+        },
+        "west": {
+          "texture": "#wood_dark"
+        },
+        "east": {
+          "texture": "#wood_dark"
+        }
+      }
+    },
+    {
+      "from": [
+        13.5,
+        8,
+        7.5
+      ],
+      "to": [
+        14.5,
+        10.5,
+        8.5
+      ],
+      "faces": {
+        "down": {
+          "texture": "#wood_dark"
+        },
+        "up": {
+          "texture": "#wood_dark"
+        },
+        "north": {
+          "texture": "#wood_dark"
+        },
+        "south": {
+          "texture": "#wood_dark"
+        },
+        "west": {
+          "texture": "#wood_dark"
+        },
+        "east": {
+          "texture": "#wood_dark"
+        }
+      }
+    }
+  ]
 }

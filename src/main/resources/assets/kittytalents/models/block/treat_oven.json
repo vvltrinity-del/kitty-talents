@@ -1,9 +1,237 @@
 {
-  "parent": "minecraft:block/orientable",
+  "parent": "block/block",
   "textures": {
-    "particle": "minecraft:block/smoker_side",
-    "top": "minecraft:block/smoker_top",
-    "front": "minecraft:block/smoker_front",
-    "side": "minecraft:block/smoker_side"
-  }
+    "particle": "kittytalents:block/oven_stone",
+    "oven_stone": "kittytalents:block/oven_stone",
+    "brick": "kittytalents:block/brick",
+    "oven_front": "kittytalents:block/oven_front",
+    "plaque_fish": "kittytalents:block/plaque_fish",
+    "metal_band": "kittytalents:block/metal_band"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        15,
+        3,
+        15
+      ],
+      "faces": {
+        "down": {
+          "texture": "#oven_stone"
+        },
+        "up": {
+          "texture": "#oven_stone"
+        },
+        "north": {
+          "texture": "#oven_stone"
+        },
+        "south": {
+          "texture": "#oven_stone"
+        },
+        "west": {
+          "texture": "#oven_stone"
+        },
+        "east": {
+          "texture": "#oven_stone"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        3,
+        2
+      ],
+      "to": [
+        14,
+        11,
+        14
+      ],
+      "faces": {
+        "down": {
+          "texture": "#brick"
+        },
+        "up": {
+          "texture": "#brick"
+        },
+        "north": {
+          "texture": "#oven_front"
+        },
+        "south": {
+          "texture": "#brick"
+        },
+        "west": {
+          "texture": "#brick"
+        },
+        "east": {
+          "texture": "#brick"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        11,
+        3
+      ],
+      "to": [
+        13,
+        13,
+        13
+      ],
+      "faces": {
+        "down": {
+          "texture": "#brick"
+        },
+        "up": {
+          "texture": "#brick"
+        },
+        "north": {
+          "texture": "#brick"
+        },
+        "south": {
+          "texture": "#brick"
+        },
+        "west": {
+          "texture": "#brick"
+        },
+        "east": {
+          "texture": "#brick"
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        13,
+        5
+      ],
+      "to": [
+        11,
+        14,
+        11
+      ],
+      "faces": {
+        "down": {
+          "texture": "#brick"
+        },
+        "up": {
+          "texture": "#brick"
+        },
+        "north": {
+          "texture": "#brick"
+        },
+        "south": {
+          "texture": "#brick"
+        },
+        "west": {
+          "texture": "#brick"
+        },
+        "east": {
+          "texture": "#brick"
+        }
+      }
+    },
+    {
+      "from": [
+        10,
+        13,
+        10
+      ],
+      "to": [
+        12,
+        16,
+        12
+      ],
+      "faces": {
+        "down": {
+          "texture": "#oven_stone"
+        },
+        "up": {
+          "texture": "#oven_stone"
+        },
+        "north": {
+          "texture": "#oven_stone"
+        },
+        "south": {
+          "texture": "#oven_stone"
+        },
+        "west": {
+          "texture": "#oven_stone"
+        },
+        "east": {
+          "texture": "#oven_stone"
+        }
+      }
+    },
+    {
+      "from": [
+        5.5,
+        11.3,
+        1.5
+      ],
+      "to": [
+        10.5,
+        12.9,
+        2
+      ],
+      "faces": {
+        "down": {
+          "texture": "#plaque_fish"
+        },
+        "up": {
+          "texture": "#plaque_fish"
+        },
+        "north": {
+          "texture": "#plaque_fish"
+        },
+        "south": {
+          "texture": "#plaque_fish"
+        },
+        "west": {
+          "texture": "#plaque_fish"
+        },
+        "east": {
+          "texture": "#plaque_fish"
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        2.5,
+        1.2
+      ],
+      "to": [
+        10,
+        3,
+        2
+      ],
+      "faces": {
+        "down": {
+          "texture": "#metal_band"
+        },
+        "up": {
+          "texture": "#metal_band"
+        },
+        "north": {
+          "texture": "#metal_band"
+        },
+        "south": {
+          "texture": "#metal_band"
+        },
+        "west": {
+          "texture": "#metal_band"
+        },
+        "east": {
+          "texture": "#metal_band"
+        }
+      }
+    }
+  ]
 }

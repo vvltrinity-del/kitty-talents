@@ -83,7 +83,7 @@ public class KittyAiGameTests {
             }
             h.succeedWhen(() -> {
                 for (int i = 0; i < cats.length; i++) {
-                    h.assertTrue(cats[i].getTarget() == zombies[i], modes.get(i) + " cat did not fight back");
+                    h.assertTrue(cats[i].getTarget() == zombies[i], modes.get(i) + " cat did not fight back (target=" + cats[i].getTarget() + ", lastHurtBy=" + cats[i].getLastHurtByMob() + ", sit=" + cats[i].isOrderedToSit() + ", goals=" + cats[i].goalSelector.getRunningGoals().map(w -> w.getGoal().getClass().getSimpleName()).toList() + ", items=" + cats[i].level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, cats[i].getBoundingBox().inflate(14)).stream().map(e -> e.getItem() + "@" + e.blockPosition()).toList() + ")");
                 }
             });
         });

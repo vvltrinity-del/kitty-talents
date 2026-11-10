@@ -73,4 +73,11 @@ public class ModBlocks {
                     .strength(2.0F)
                     .sound(SoundType.STONE)
                     .noOcclusion()));
+
+    /** 4.0: two-block perch cats rest on (see CatTreeBlock / CatPerchGoal). */
+    public static final RegistryObject<Block> CAT_TREE = BLOCKS.register("cat_tree",
+            () -> new com.kittytalents.block.CatTreeBlock(BlockBehaviour.Properties.of()
+                    .strength(1.2F)
+                    .sound(SoundType.WOOL)
+                    .noOcclusion()));
 }

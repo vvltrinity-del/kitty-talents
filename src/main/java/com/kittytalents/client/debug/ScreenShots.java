@@ -35,7 +35,7 @@ public final class ScreenShots {
     /** After the tab shots: one frame with the Twine HUD and companion cards drawn over the world. */
     private static final int HUD_STEP = GUI_SCALES.length * TABS;
     /** After the HUD: the other themed screens, each at both GUI scales. */
-    private static final String[] EXTRAS = { "habitat", "codex", "whistle", "pack", "bowl", "station", "oven" };
+    private static final String[] EXTRAS = { "habitat", "codex", "whistle", "pack", "bowl", "station", "oven", "blocks", "blocks_back" };
     private static final int LAST_STEP = HUD_STEP + EXTRAS.length * GUI_SCALES.length;
 
     private static int ticksInWorld;
@@ -165,6 +165,8 @@ public final class ScreenShots {
                 return new com.kittytalents.client.gui.KittyHabitatScreen(menu, inv, Component.literal("Habitat"));
             }
             case "codex" -> { return new com.kittytalents.client.gui.VariantChartScreen(); }
+            case "blocks" -> { return new BlockGallery(false); }
+            case "blocks_back" -> { return new BlockGallery(true); }
             case "whistle" -> { return new com.kittytalents.client.gui.KittyWhistleScreen(); }
             case "pack" -> {
                 cat.setTalentLevel(Talents.KITTY_PACK, 5);

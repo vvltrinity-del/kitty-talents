@@ -1,7 +1,19 @@
 {
   "variants": {
-    "": {
+    "facing=north": {
       "model": "kittytalents:block/cat_scratcher"
+    },
+    "facing=east": {
+      "model": "kittytalents:block/cat_scratcher",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "kittytalents:block/cat_scratcher",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "kittytalents:block/cat_scratcher",
+      "y": 270
     }
   }
 }

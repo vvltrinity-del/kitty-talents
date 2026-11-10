@@ -1,7 +1,19 @@
 {
   "variants": {
-    "": {
+    "facing=north": {
       "model": "kittytalents:block/cat_rice_mill"
+    },
+    "facing=east": {
+      "model": "kittytalents:block/cat_rice_mill",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "kittytalents:block/cat_rice_mill",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "kittytalents:block/cat_rice_mill",
+      "y": 270
     }
   }
 }

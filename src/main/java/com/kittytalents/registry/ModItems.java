@@ -230,6 +230,10 @@ public class ModItems {
             () -> new TierUpgradeTreatItem(new Item.Properties(), com.kittytalents.entity.ProductionTier.DIAMOND, com.kittytalents.entity.ProductionTier.NETHERITE, Rarity.EPIC));
 
     // Blocks
+    /** Placed as a pair (upper half too), like a door. */
+    public static final RegistryObject<Item> CAT_TREE = ITEMS.register("cat_tree",
+            () -> new net.minecraft.world.item.DoubleHighBlockItem(ModBlocks.CAT_TREE.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> CAT_FOOD_BOWL = ITEMS.register("cat_food_bowl",
             () -> new ItemFoodBowl(ModBlocks.CAT_FOOD_BOWL.get(), new Item.Properties()));
 

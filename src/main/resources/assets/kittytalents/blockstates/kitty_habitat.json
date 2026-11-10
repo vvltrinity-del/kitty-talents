@@ -1,7 +1,19 @@
 {
   "variants": {
-    "": {
+    "facing=north": {
       "model": "kittytalents:block/kitty_habitat"
+    },
+    "facing=east": {
+      "model": "kittytalents:block/kitty_habitat",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "kittytalents:block/kitty_habitat",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "kittytalents:block/kitty_habitat",
+      "y": 270
     }
   }
 }

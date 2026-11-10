@@ -1,7 +1,19 @@
 {
   "variants": {
-    "": {
+    "facing=north": {
       "model": "kittytalents:block/treat_oven"
+    },
+    "facing=east": {
+      "model": "kittytalents:block/treat_oven",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "kittytalents:block/treat_oven",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "kittytalents:block/treat_oven",
+      "y": 270
     }
   }
 }

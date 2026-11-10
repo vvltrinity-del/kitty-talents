@@ -48,6 +48,7 @@ public class CatFoodBowlBlockEntity extends BlockEntity implements MenuProvider 
         @Override
         protected void onContentsChanged(int slot) {
             bowl.setChanged();
+            bowl.updateFillState();
             if (bowl.level != null && !bowl.level.isClientSide) {
                 bowl.level.sendBlockUpdated(bowl.worldPosition, bowl.getBlockState(), bowl.getBlockState(), 3);
             }
@@ -118,6 +119,18 @@ public class CatFoodBowlBlockEntity extends BlockEntity implements MenuProvider 
         return ownerName;
     }
 
+    /** Shows the food level on the 3D model (blockstate FOOD 0..3). Server side; harmless if nothing changed. */
+    public void updateFillState() {
+        if (level == null || level.isClientSide) return;
+        BlockState state = getBlockState();
+        if (!state.hasProperty(CatFoodBowlBlock.FOOD)) return;
+        int total = getTotalFoodCount();
+        int fill = total <= 0 ? 0 : total <= 8 ? 1 : total <= 32 ? 2 : 3;
+        if (state.getValue(CatFoodBowlBlock.FOOD) != fill) {
+            level.setBlock(worldPosition, state.setValue(CatFoodBowlBlock.FOOD, fill), 3);
+        }
+    }
+
     public int getTotalFoodCount() {
         int count = 0;
         for (int i = 0; i < inventory.getSlots(); i++) {
@@ -160,6 +173,8 @@ public class CatFoodBowlBlockEntity extends BlockEntity implements MenuProvider 
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, CatFoodBowlBlockEntity bowl) {
+        // Bowls placed before 4.0 (no FOOD state yet) catch up within two seconds.
+        if (!level.isClientSide && (level.getGameTime() + pos.asLong()) % 40 == 0) bowl.updateFillState();
         if (level.isClientSide) return;
 
         if (bowl.feedCooldown > 0) {

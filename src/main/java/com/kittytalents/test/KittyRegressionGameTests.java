@@ -442,4 +442,84 @@ public class KittyRegressionGameTests {
             h.succeed();
         });
     }
+
+    // ---- 4.0 Phase 2: 3D blocks ----
+
+    /** Every block keeps a solid hitbox in every facing (shapes are rotated from the north model). */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testBlockFacingAndShapes(GameTestHelper h) {
+        var blocks = java.util.List.of(ModBlocks.CAT_FOOD_BOWL.get(), ModBlocks.CAT_BED.get(), ModBlocks.CAT_SCRATCHER.get(),
+                ModBlocks.CAT_BATH.get(), ModBlocks.CAT_RICE_MILL.get(), ModBlocks.KITTY_HABITAT.get(), ModBlocks.FEEDING_STATION.get(),
+                ModBlocks.KITTEN_INCUBATOR.get(), ModBlocks.KITTY_WORK_STATION.get(), ModBlocks.TREAT_OVEN.get());
+        BlockPos pos = new BlockPos(3, 2, 3);
+        for (var block : blocks) {
+            for (var dir : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+                var state = block.defaultBlockState().setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING, dir);
+                h.setBlock(pos, state);
+                var shape = h.getLevel().getBlockState(h.absolutePos(pos)).getShape(h.getLevel(), h.absolutePos(pos));
+                h.assertTrue(!shape.isEmpty(), block + " facing " + dir + " has no hitbox");
+            }
+        }
+        h.succeed();
+    }
+
+    /** The bowl's model shows how full it is. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testFoodBowlShowsFillLevel(GameTestHelper h) {
+        BlockPos pos = new BlockPos(3, 2, 3);
+        h.setBlock(pos, ModBlocks.CAT_FOOD_BOWL.get());
+        CatFoodBowlBlockEntity bowl = (CatFoodBowlBlockEntity) h.getBlockEntity(pos);
+        java.util.function.IntSupplier fill = () -> h.getLevel().getBlockState(h.absolutePos(pos)).getValue(com.kittytalents.block.CatFoodBowlBlock.FOOD);
+        h.assertTrue(fill.getAsInt() == 0, "Empty bowl shows empty");
+        bowl.getInventory().insertItem(0, new ItemStack(Items.COOKED_COD, 4), false);
+        h.assertTrue(fill.getAsInt() == 1, "A little food shows level 1, got " + fill.getAsInt());
+        bowl.getInventory().insertItem(1, new ItemStack(Items.COOKED_SALMON, 60), false);
+        h.assertTrue(fill.getAsInt() == 3, "A lot of food shows level 3, got " + fill.getAsInt());
+        bowl.getInventory().extractItem(0, 64, false);
+        bowl.getInventory().extractItem(1, 64, false);
+        h.assertTrue(fill.getAsInt() == 0, "Emptied bowl shows empty again");
+        h.succeed();
+    }
+
+    /** Cat Tree: placed and broken as a pair, drops one item. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testCatTreeIsTwoBlocksTall(GameTestHelper h) {
+        BlockPos lower = new BlockPos(3, 2, 3);
+        var tree = ModBlocks.CAT_TREE.get().defaultBlockState();
+        var HALF = com.kittytalents.block.CatTreeBlock.HALF;
+        h.setBlock(lower, tree);
+        h.setBlock(lower.above(), tree.setValue(HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+        h.assertBlockPresent(ModBlocks.CAT_TREE.get(), lower.above());
+        h.getLevel().destroyBlock(h.absolutePos(lower), true);
+        h.assertBlockNotPresent(ModBlocks.CAT_TREE.get(), lower.above());
+        var dropped = h.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                new net.minecraft.world.phys.AABB(h.absolutePos(lower)).inflate(3), e -> e.getItem().is(ModItems.CAT_TREE.get()));
+        int drops = dropped.stream().mapToInt(e -> e.getItem().getCount()).sum();
+        dropped.forEach(net.minecraft.world.entity.Entity::discard); // FETCH cats in neighbouring tests chase loose items
+        h.assertTrue(drops == 1, "Breaking the tree should drop exactly one item, dropped " + drops);
+        h.succeed();
+    }
+
+    /** A wandering cat finds a Cat Tree, hops onto the perch and keeps watch (hostiles glow). */
+    @GameTest(template = "arena", timeoutTicks = 400)
+    public static void testCatPerchesOnCatTreeAndKeepsWatch(GameTestHelper h) {
+        com.kittytalents.ai.goal.CatPerchGoal.setSearchChanceForTests(1);
+        var fp = joinFakeOwner(h, new BlockPos(20, 2, 20));
+        BlockPos lower = new BlockPos(16, 2, 16);
+        var tree = ModBlocks.CAT_TREE.get().defaultBlockState();
+        h.setBlock(lower, tree);
+        h.setBlock(lower.above(), tree.setValue(com.kittytalents.block.CatTreeBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+        TalentedCat c = ownedCat(h, fp, new BlockPos(10, 2, 16));
+        c.setOrderedToSit(false);
+        c.setCatMode(CatMode.WANDER);
+        Zombie z = h.spawn(EntityType.ZOMBIE, new BlockPos(24, 2, 8));
+        z.setNoAi(true);
+        net.minecraft.world.phys.Vec3 perch = com.kittytalents.block.CatTreeBlock.perchOf(tree, h.absolutePos(lower));
+        h.succeedWhen(() -> {
+            h.assertTrue(c.distanceToSqr(perch) < 0.5D, "Cat should be on the perch, distance " + Math.sqrt(c.distanceToSqr(perch)));
+            h.assertTrue(z.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING), "A perched cat makes nearby hostiles glow");
+            com.kittytalents.ai.goal.CatPerchGoal.setSearchChanceForTests(240);
+            leave(h, fp);
+        });
+    }
 }
