@@ -21,9 +21,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public class TalentedCatWingLayer extends RenderLayer<TalentedCat, KTCatModel> {
-    /** Sky Feline wings (Phase 5): celestial blue/white, derived from the angel-wing shape; was the grey vanilla elytra. */
-    private static final ResourceLocation ELYTRA_LOCATION = new ResourceLocation("kittytalents", "textures/models/accessories/sky_feline_wings.png");
-    private static final ResourceLocation ANGEL_WINGS_LOCATION = new ResourceLocation("kittytalents", "textures/models/accessories/angel_wings.png");
     private final ElytraModel<TalentedCat> elytraModel;
 
     public TalentedCatWingLayer(RenderLayerParent<TalentedCat, KTCatModel> parent, EntityModelSet modelSet) {
@@ -48,34 +45,38 @@ public class TalentedCatWingLayer extends RenderLayer<TalentedCat, KTCatModel> {
         return isAngelWings(cat);
     }
 
+    /** Feathered wing models (4.0 Phase 2b); loaded on first use, rebuilt with the layer on resource reload. */
+    private com.kittytalents.client.model.AccessoryModel angelWings, skyWings;
+    private boolean loaded;
+
     @Override
     public void render(PoseStack poseStack, MultiBufferSource buffer, int packedLight, TalentedCat cat, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getCameraEntity() == cat && mc.options.getCameraType().isFirstPerson()) return;
-
         if (!shouldRender(cat)) return;
-
-        poseStack.pushPose();
-
-        // Elytra space matches the BACK anchor: +Y runs down the spine, +Z points out of the back.
-        this.getParentModel().translateToAnchor(KTCatModel.Anchor.BACK, poseStack);
-        poseStack.scale(0.38F, 0.38F, 0.38F);
-
-        this.getParentModel().copyPropertiesTo(this.elytraModel);
-        this.elytraModel.setupAnim(cat, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
-
-        boolean isAirborne = !cat.onGround() || cat.isFallFlying() || (cat.getDeltaMovement().y > 0.05D);
-        if (isAirborne) {
-            poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(15.0F));
+        if (!loaded) {
+            loaded = true;
+            angelWings = com.kittytalents.client.model.AccessoryModel.load("angel_wings");
+            skyWings = com.kittytalents.client.model.AccessoryModel.load("sky_feline_wings");
         }
 
-        ResourceLocation tex = isAngelWings(cat) ? ANGEL_WINGS_LOCATION : ELYTRA_LOCATION;
-        ItemStack chestItem = cat.getArmorSlotItem(2);
-        boolean hasGlint = chestItem.is(Items.ELYTRA) && chestItem.hasFoil();
-
-        VertexConsumer vertexConsumer = ItemRenderer.getArmorFoilBuffer(buffer, RenderType.armorCutoutNoCull(tex), false, hasGlint);
-        this.elytraModel.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-
+        poseStack.pushPose();
+        this.getParentModel().translateToAnchor(KTCatModel.Anchor.BACK, poseStack);
+        com.kittytalents.client.model.AccessoryModel wings = isAngelWings(cat) ? angelWings
+                : cat.getTalentLevel(Talents.SKY_FELINE) > 0 ? skyWings : null;
+        if (wings != null) {
+            wings.render(poseStack, buffer, packedLight, cat, limbSwingAmount, ageInTicks);
+        } else {
+            // A real Elytra in the chest slot keeps the vanilla elytra look.
+            poseStack.scale(0.38F, 0.38F, 0.38F);
+            this.getParentModel().copyPropertiesTo(this.elytraModel);
+            this.elytraModel.setupAnim(cat, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+            ItemStack chestItem = cat.getArmorSlotItem(2);
+            VertexConsumer vc = ItemRenderer.getArmorFoilBuffer(buffer, RenderType.armorCutoutNoCull(VANILLA_ELYTRA), false, chestItem.hasFoil());
+            this.elytraModel.renderToBuffer(poseStack, vc, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        }
         poseStack.popPose();
     }
+
+    private static final ResourceLocation VANILLA_ELYTRA = new ResourceLocation("textures/entity/elytra.png");
 }

@@ -81,6 +81,28 @@ public final class RenderMatrix {
             c.setCosmeticSlotClient(1, new ItemStack(ModItems.CAT_SCARF.get()));
             c.setCosmeticSlotClient(2, new ItemStack(ModItems.BOWTIE.get()));
         }));
+        // 4.0 Phase 2b: every accessory on its own, standing and sitting.
+        String[][] acc = {{"top_hat"}, {"witch_hat"}, {"crown"}, {"halo"}, {"feline_goggles"}, {"phantom_mask"},
+                {"bowtie"}, {"cat_scarf"}, {"hero_cape"}, {"angel_wings"}};
+        for (int i = 0; i < acc.length; i++) {
+            String id = acc[i][0];
+            String num = String.format("%02d", 90 + i);
+            list.add(new Combo("acc_" + num + "_" + id, c -> c.setCosmeticSlotClient(0,
+                    new ItemStack(net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation("kittytalents", id))))));
+            list.add(new Combo("acc_" + num + "_" + id + "_sit", c -> {
+                c.setCosmeticSlotClient(0, new ItemStack(net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation("kittytalents", id))));
+                c.setInSittingPose(true);
+            }));
+        }
+        list.add(new Combo("acc_99f_angel_wings_flying", c -> {
+            c.setCosmeticSlotClient(0, new ItemStack(ModItems.ANGEL_WINGS.get()));
+            c.setOnGround(false);
+            c.tickCount = 7;
+        }));
+        list.add(new Combo("61_sky_wings_flying", c -> {
+            c.setTalentLevel(Talents.SKY_FELINE, 1);
+            c.setOnGround(false);
+        }));
         list.add(new Combo("40_skin_panther", c -> c.setCatVariant(CatVariant.PANTHER)));
         list.add(new Combo("41_skin_snow_leopard", c -> c.setCatVariant(CatVariant.SNOW_LEOPARD)));
         list.add(new Combo("42_skin_id_13", c -> c.setSkinId(13)));
@@ -150,6 +172,7 @@ public final class RenderMatrix {
                 cat.setTame(true);
                 cat.setVariant(net.minecraft.core.registries.BuiltInRegistries.CAT_VARIANT
                         .getOrThrow(net.minecraft.world.entity.animal.CatVariant.TABBY));
+                cat.setOnGround(true); // offscreen cats never tick; without this they render as airborne
                 combo.setup().accept(cat);
                 renderStrip(mc, cat, new File(dir, combo.name() + ".png"));
                 written++;
