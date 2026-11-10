@@ -139,6 +139,13 @@ public class FelineEnergyEngine {
             regenAmount += 1;
         }
 
+        // 4.0 Phase 6: Playful cats recover Energy faster (an extra point on a share of the regen ticks).
+        if (cat.getTrait() == com.kittytalents.core.living.CatTrait.PLAYFUL) {
+            double extra = (com.kittytalents.core.living.CatTrait.PLAYFUL_ENERGY.get() - 1.0) * regenAmount;
+            int every = extra > 0 ? (int) Math.max(1, Math.round(1.0 / Math.min(1.0, extra))) : 0;
+            if (every > 0 && (cat.tickCount / regenInterval) % every == 0) regenAmount += (int) Math.max(1, Math.floor(extra));
+        }
+
         if (cat.tickCount % regenInterval == 0) {
             cat.setEnergy(Math.min(max, current + regenAmount));
         }

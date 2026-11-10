@@ -78,6 +78,7 @@ public final class CatBrain {
         g.addGoal(NEEDS, new CatUseScratcherGoal(cat));
         g.addGoal(NEEDS, new BreedGoal(cat, 1.0D));
 
+        g.addGoal(IDLE, new com.kittytalents.ai.goal.CatTraitGoal(cat)); // 4.0: personality habits
         g.addGoal(IDLE, new com.kittytalents.ai.goal.CatPerchGoal(cat)); // 4.0: rest on a Cat Tree and keep watch
         g.addGoal(IDLE, new CatWanderGoal(cat));
         g.addGoal(IDLE, new CatPlaceTorchGoal(cat));

@@ -183,3 +183,18 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
   - 3D accessory item icons sat off-centre. The renderer now centres and sizes each model from its real box bounds.
 - Tests: KittyGearGameTests (4). Covers each slot accepting and rejecting by drag; rank gates by drag, shift-click and click; shift-click both ways with swaps; and strangers being refused.
 - Verification: build green, all 94 GameTests pass, Gear tab and item icons checked at GUI scales 2 and 3.
+
+### 2026-11-10: Phase 6: Living cats
+- **Growth:** `core/living/GrowthStage` (Newborn, Kitten, Junior, Adult), derived from the vanilla age and synced to clients.
+  - Each stage has its own body size and head size (kittens have big heads). Kittens have less health and damage until grown.
+  - Fish skips 10% of the remaining growing time and a treat skips 25%.
+  - A kitten is born with rank 1 in one talent a parent trained.
+- **Personalities:** `core/living/CatTrait` (Brave, Lazy, Curious, Playful, Shy, Greedy), each with one bonus, one quirk and one idle habit (`ai/goal/CatTraitGoal`).
+  - Rolled on natural spawn, on taming and on the first load of a pre-4.0 cat.
+  - Kittens take a parent's trait 80% of the time.
+- **Bond:** `core/living/CatBond`, levels 0–10 from time together, petting, feeding, play and kills near the owner, with a cooldown per kind.
+  - Perks: Comfort (2), Playtime with String (3), Quick Learner (5), Kindred (7), Soulmates (10).
+- All numbers are tunable in new tuning sections `traits`, `growth` and `bond`.
+- Home tab: a bond bar with the bond level and personality. Hovering shows the bonus, quirk, perks and growth stage.
+- Tests: KittyLivingGameTests (10). Render matrix has four growth combos, including a kitten with a hat.
+- Verification: build green, all 104 GameTests pass, growth renders and the Home tab checked.

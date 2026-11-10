@@ -40,7 +40,7 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, KTCatModel> {
 
     @Override
     protected void scale(TalentedCat cat, PoseStack poseStack, float partialTickTime) {
-        float scale = cat.getCatScale();
+        float scale = cat.getCatScale() * cat.getScale(); // steed size x growth stage (kittens are small)
         poseStack.scale(scale, scale, scale);
         super.scale(cat, poseStack, partialTickTime);
     }

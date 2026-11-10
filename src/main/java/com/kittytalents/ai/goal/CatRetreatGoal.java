@@ -41,6 +41,7 @@ public class CatRetreatGoal extends Goal {
     @Override
     public boolean canUse() {
         if (cat.isTwined() || cat.isIncapacitated() || cat.isOrderedToSit() || !cat.getCatMode().retreatsWhenHurt()) return false;
+        if (cat.getTrait() == com.kittytalents.core.living.CatTrait.BRAVE) return false; // brave cats stand their ground
         if (cat.level().getGameTime() < readyAt) return false;
         return healthFraction() < RETREAT_BELOW && inDanger();
     }

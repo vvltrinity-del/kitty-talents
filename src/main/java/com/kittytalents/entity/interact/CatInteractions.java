@@ -116,6 +116,7 @@ public final class CatInteractions {
                 }
                 if (!cat.level().isClientSide) {
                     cat.tame(player);
+                    cat.rollTraitIfNone();
                     cat.setOrderedToSit(true);
                     cat.level().broadcastEntityEvent(cat, (byte) 7); // Heart particles
                     player.sendSystemMessage(Component.literal("You tamed " + cat.getName().getString() + "!").withStyle(ChatFormatting.GREEN));
@@ -129,6 +130,7 @@ public final class CatInteractions {
                 if (!cat.level().isClientSide) {
                     if (cat.getRandom().nextInt(3) == 0) {
                         cat.tame(player);
+                    cat.rollTraitIfNone();
                         cat.setOrderedToSit(true);
                         cat.level().broadcastEntityEvent(cat, (byte) 7); // Heart particles
                         player.sendSystemMessage(Component.literal("You tamed " + cat.getName().getString() + "!").withStyle(ChatFormatting.GREEN));
@@ -145,6 +147,7 @@ public final class CatInteractions {
                 if (!cat.level().isClientSide) {
                     if (cat.getRandom().nextInt(2) == 0) {
                         cat.tame(player);
+                    cat.rollTraitIfNone();
                         cat.setOrderedToSit(true);
                         cat.level().broadcastEntityEvent(cat, (byte) 7); // Heart particles
                         player.sendSystemMessage(Component.literal("You tamed " + cat.getName().getString() + " with Catnip!").withStyle(ChatFormatting.GREEN));
@@ -221,9 +224,34 @@ public final class CatInteractions {
                 cat.increaseHunger(5);
                 cat.incrementTimesPet();
                 cat.syncStats();
+                cat.gainBond("pet", com.kittytalents.core.living.CatBond.PET_POINTS.i());
+                if (cat.hasBondPerk(com.kittytalents.core.living.CatBond.Perk.COMFORT)) {
+                    player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.REGENERATION, 100, 0));
+                }
                 String[] petStyles = {"Head Scratch", "Chin Scratch", "Belly Rub", "Back Scratch"};
                 String style = petStyles[cat.getRandom().nextInt(petStyles.length)];
                 player.displayClientMessage(Component.literal("You gave " + cat.getName().getString() + " a loving " + style + "! ❤").withStyle(ChatFormatting.LIGHT_PURPLE), true);
+            }
+            return InteractionResult.sidedSuccess(cat.level().isClientSide);
+        }
+
+        // 4.0 Phase 6: play with String (bond level 3+): the cat hops after it and gets its Energy back.
+        if (held.is(Items.STRING) && cat.isOwnedBy(player) && !cat.isIncapacitated()) {
+            if (!cat.level().isClientSide) {
+                if (!cat.hasBondPerk(com.kittytalents.core.living.CatBond.Perk.PLAY)) {
+                    player.displayClientMessage(Component.translatable("message.kittytalents.play_needs_bond",
+                            cat.getName(), com.kittytalents.core.living.CatBond.Perk.PLAY.level).withStyle(ChatFormatting.GRAY), true);
+                } else if (cat.gainBond("play", com.kittytalents.core.living.CatBond.PLAY_POINTS.i())) {
+                    cat.setOrderedToSit(false);
+                    cat.getLookControl().setLookAt(player);
+                    cat.setDeltaMovement(cat.getDeltaMovement().add(0, 0.42D, 0));
+                    cat.hasImpulse = true;
+                    cat.playSound(SoundEvents.CAT_AMBIENT, 1.0F, 1.5F);
+                    com.kittytalents.combat.FelineEnergyEngine.restoreEnergy(cat, com.kittytalents.core.living.CatBond.PLAY_ENERGY.i());
+                    cat.level().broadcastEntityEvent(cat, (byte) 7);
+                } else {
+                    player.displayClientMessage(Component.translatable("message.kittytalents.play_tired", cat.getName()).withStyle(ChatFormatting.GRAY), true);
+                }
             }
             return InteractionResult.sidedSuccess(cat.level().isClientSide);
         }
@@ -296,6 +324,15 @@ public final class CatInteractions {
 
         // Treats for leveling
         if (held.getItem() instanceof CatTreatItem treatItem && cat.isOwnedBy(player)) {
+            // 4.0 Phase 6: a treat helps a kitten grow (and still levels it when it can).
+            if (cat.isBaby() && !cat.level().isClientSide && cat.feedGrowth(true)) {
+                cat.gainBond("feed", com.kittytalents.core.living.CatBond.FEED_POINTS.i());
+                if (!treatItem.canLevelUp(cat)) {
+                    if (!player.getAbilities().instabuild) held.shrink(1);
+                    cat.playSound(SoundEvents.CAT_EAT, 0.8F, 1.3F);
+                    return InteractionResult.SUCCESS;
+                }
+            }
             if (treatItem.canLevelUp(cat)) {
                 if (!player.getAbilities().instabuild) {
                     held.shrink(1);
@@ -318,12 +355,16 @@ public final class CatInteractions {
         // Fish & meats for food & healing
         if (held.is(Items.COD) || held.is(Items.COOKED_COD) || held.is(Items.SALMON) || held.is(Items.COOKED_SALMON) ||
                 (cat.getTalentLevel(Talents.HAPPY_EATER) > 0 && (held.is(Items.CHICKEN) || held.is(Items.COOKED_CHICKEN) || held.is(Items.BEEF) || held.is(Items.PORKCHOP)))) {
-            if (cat.getHunger() < 120 || cat.getHealth() < cat.getMaxHealth()) {
+            if (cat.getHunger() < 120 || cat.getHealth() < cat.getMaxHealth() || cat.isBaby()) {
                 if (!player.getAbilities().instabuild) {
                     held.shrink(1);
                 }
-                cat.increaseHunger(25);
+                cat.increaseHunger(cat.foodValue(25));
                 cat.heal(6.0F);
+                if (!cat.level().isClientSide) {
+                    cat.feedGrowth(false);
+                    if (cat.isOwnedBy(player)) cat.gainBond("feed", com.kittytalents.core.living.CatBond.FEED_POINTS.i());
+                }
                 cat.syncStats();
                 cat.playSound(SoundEvents.CAT_EAT, 0.8F, 1.0F);
                 return InteractionResult.sidedSuccess(cat.level().isClientSide);

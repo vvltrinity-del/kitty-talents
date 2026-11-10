@@ -81,6 +81,8 @@ public final class Tuning {
     private static final Map<String, Key> KEYS = new LinkedHashMap<>();
     private static final Map<String, List<Key>> BY_OWNER = new HashMap<>();
     private static volatile Map<String, Double> overrides = Map.of();
+    /** Every section a tuning file may have (talents, abilities, traits, growth, bond). */
+    private static final java.util.Set<String> SCOPES = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     static String path(String scope, String owner, String name) {
         return scope + "/" + owner + "/" + name;
@@ -92,6 +94,7 @@ public final class Tuning {
         if (existing != null) return existing;
         Key key = new Key(scope, owner, name, def, min, max, label);
         KEYS.put(path, key);
+        SCOPES.add(scope);
         BY_OWNER.computeIfAbsent(scope + "/" + owner, k -> new ArrayList<>()).add(key);
         return key;
     }
@@ -121,6 +124,9 @@ public final class Tuning {
         com.kittytalents.talent.TalentTuning.init();
         com.kittytalents.talent.effect.TalentEngine.get(null);
         com.kittytalents.ability.CatAbilities.getAll();
+        com.kittytalents.core.living.CatTrait.init();
+        com.kittytalents.core.living.GrowthStage.init();
+        com.kittytalents.core.living.CatBond.init();
     }
 
     /** Tooltip lines for one talent/ability: every key except {@code skip}, with the live (synced) value. */
@@ -158,8 +164,11 @@ public final class Tuning {
         for (Map.Entry<ResourceLocation, JsonElement> file : sorted) {
             try {
                 JsonObject root = file.getValue().getAsJsonObject();
-                for (String scope : new String[]{TALENTS, ABILITIES}) {
-                    if (!root.has(scope)) continue;
+                for (String scope : root.keySet()) {
+                    if (!SCOPES.contains(scope)) {
+                        KittyTalents.LOGGER.warn("[Tuning] {}: unknown section {}", file.getKey(), scope);
+                        continue;
+                    }
                     for (Map.Entry<String, JsonElement> owner : root.getAsJsonObject(scope).entrySet()) {
                         for (Map.Entry<String, JsonElement> value : owner.getValue().getAsJsonObject().entrySet()) {
                             Key key = KEYS.get(path(scope, owner.getKey(), value.getKey()));

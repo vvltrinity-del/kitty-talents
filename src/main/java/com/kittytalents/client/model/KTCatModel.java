@@ -174,6 +174,9 @@ public class KTCatModel extends EntityModel<TalentedCat> {
     @Override
     public void setupAnim(TalentedCat cat, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         CatAnimator.animate(this, cat, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+        // 4.0 Phase 6: kittens have their own look: a big head on a small body (set every frame; 1 for adults).
+        float headScale = cat.getGrowthStage().headScale();
+        head.xScale = head.yScale = head.zScale = headScale;
     }
 
     @Override

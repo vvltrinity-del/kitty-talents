@@ -247,6 +247,11 @@ public class ForgeEvents {
                 boolean hostile = event.getEntity() instanceof net.minecraft.world.entity.monster.Monster;
                 cat.stats().recordKill(hostile);
                 cat.syncStats();
+                // 4.0 Phase 6: fighting side by side builds bond.
+                if (hostile && cat.getOwner() != null && cat.getOwner().level() == cat.level()
+                        && cat.distanceToSqr(cat.getOwner()) <= 16.0D * 16.0D) {
+                    cat.gainBond("kill", com.kittytalents.core.living.CatBond.KILL_POINTS.i());
+                }
             }
         }
     }

@@ -53,6 +53,10 @@ public final class CatProgression {
      */
     public static int addXp(TalentedCat cat, int amount) {
         if (amount <= 0 || cat.level().isClientSide) return 0;
+        // 4.0 Phase 6: Curious cats and well-bonded cats learn faster.
+        double mult = (cat.getTrait() == com.kittytalents.core.living.CatTrait.CURIOUS ? com.kittytalents.core.living.CatTrait.CURIOUS_XP.get() : 1.0)
+                * (cat.hasBondPerk(com.kittytalents.core.living.CatBond.Perk.QUICK_LEARNER) ? com.kittytalents.core.living.CatBond.XP_MULT.get() : 1.0);
+        if (mult != 1.0) amount = (int) Math.max(1, Math.round(amount * mult));
         int cap = KittyTalentsConfig.COMMON.maxCatLevel.get();
         if (cat.getCatLevel() >= cap) {
             cat.setCatXp(0);

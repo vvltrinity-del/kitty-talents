@@ -364,6 +364,7 @@ public class FelineCombatEngine {
             // B) Role Combat Modifiers (R3)
             CatRole role = cat.getCatRole();
             damage *= role.getDamageMultiplier();
+            damage *= cat.bondDamageMultiplier(); // 4.0: Soulmates perk
 
             // C) Critical Claws Talent (R8)
             int critLvl = cat.getTalentLevel(Talents.CRITICAL_CLAWS);

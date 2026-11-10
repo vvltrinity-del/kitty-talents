@@ -106,6 +106,14 @@ public final class RenderMatrix {
         list.add(new Combo("40_skin_panther", c -> c.setCatVariant(CatVariant.PANTHER)));
         list.add(new Combo("41_skin_snow_leopard", c -> c.setCatVariant(CatVariant.SNOW_LEOPARD)));
         list.add(new Combo("42_skin_void_ender", c -> c.setSkin("kittytalents:void_ender")));
+        // 4.0 Phase 6: growth stages (the last with a hat, to check accessories follow the bigger head)
+        list.add(new Combo("43_growth_newborn", c -> c.debugSetGrowth(com.kittytalents.core.living.GrowthStage.NEWBORN)));
+        list.add(new Combo("44_growth_kitten", c -> c.debugSetGrowth(com.kittytalents.core.living.GrowthStage.KITTEN)));
+        list.add(new Combo("45_growth_junior", c -> c.debugSetGrowth(com.kittytalents.core.living.GrowthStage.JUNIOR)));
+        list.add(new Combo("46_growth_kitten_hat", c -> {
+            c.debugSetGrowth(com.kittytalents.core.living.GrowthStage.KITTEN);
+            c.setCosmeticSlot(0, new net.minecraft.world.item.ItemStack(com.kittytalents.registry.ModItems.TOP_HAT.get()));
+        }));
         list.add(new Combo("50_nekomata_stand", c -> c.setMutation(CatBreedingManager.MutationType.NEKOMATA)));
         list.add(new Combo("51_nekomata_sit", c -> {
             c.setMutation(CatBreedingManager.MutationType.NEKOMATA);

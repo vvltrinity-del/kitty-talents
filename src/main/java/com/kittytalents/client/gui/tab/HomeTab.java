@@ -204,12 +204,14 @@ public class HomeTab implements CatTab {
         int tierColor = cat.getProductionTier().getColorValue() | 0xFF000000;
         String name = cat.getName().getString();
         g.drawCenteredString(font, font.plainSubstrByWidth(name, PORTRAIT_W - 12), x + PORTRAIT_W / 2, y + 7, tierColor);
-        int fx = x + 10, fy = y + 20, fw = PORTRAIT_W - 20, fh = Math.max(56, h - 94);
+        int fx = x + 10, fy = y + 20, fw = PORTRAIT_W - 20, fh = Math.max(48, h - 116);
         KTTheme.portrait(g, fx, fy, fw, fh);
         s.drawCat(g, fx + 4, fy + 4, fw - 8, fh - 8, mouseX, mouseY);
 
         // Level badge over the frame's top edge
         String lvl = (cat.isDireAwakened() ? "✦ " : "") + KTText.s("home.level_short", "Lv %s", cat.getCatLevel());
+        var stage = cat.getGrowthStage();
+        if (stage != com.kittytalents.core.living.GrowthStage.ADULT) lvl = stage.title().getString() + " · " + lvl;
         int bw = font.width(lvl) + 8;
         int bx = x + (PORTRAIT_W - bw) / 2, by = fy + fh - 6;
         g.fill(bx - 1, by - 1, bx + bw + 1, by + 12, KTTheme.OUTLINE);
@@ -235,6 +237,22 @@ public class HomeTab implements CatTab {
         barY += 22;
         g.blit(icon("energy_bolt"), x + 8, barY - 3, 0, 0, 10, 10, 10, 10);
         KTTheme.bar(g, barX, barY, barW, 5, cat.getEnergy() / (float) Math.max(1, cat.getMaxEnergy()), 0xFF0EA5E9);
+
+        // Bond bar (progress to the next bond level) with the bond level and personality under it; hover for details
+        barY += 14;
+        int bond = cat.getBondLevel(), pts = cat.getBondPoints();
+        int lo = com.kittytalents.core.living.CatBond.pointsFor(bond), hi = com.kittytalents.core.living.CatBond.pointsFor(bond + 1);
+        float frac = bond >= com.kittytalents.core.living.CatBond.MAX_LEVEL ? 1F : (pts - lo) / (float) Math.max(1, hi - lo);
+        g.drawString(font, "❤", x + 9, barY - 2, 0xFFF472B6, false);
+        KTTheme.bar(g, barX, barY, barW, 5, frac, 0xFFEC4899);
+        String bondText = KTText.s("home.bond", "Bond %s", bond);
+        g.drawString(font, bondText, barX, barY + 7, KTTheme.TEXT_DIM, false);
+        var trait = cat.getTrait();
+        if (trait != com.kittytalents.core.living.CatTrait.NONE) {
+            String t = trait.title().getString();
+            g.drawString(font, t, barX + barW - font.width(t), barY + 7, trait.color, false);
+        }
+        livingX = x + 6; livingY = barY - 4; livingW = PORTRAIT_W - 12; livingH = 22;
 
         // ---- Right top: info card (two columns)
         int rx = rx(s), rw = rw(s);
@@ -271,6 +289,37 @@ public class HomeTab implements CatTab {
         } else if (cat.getTrustedPlayers().isEmpty()) {
             g.drawString(font, KTText.s("home.trusted_hint", "No co-owners yet"), rx + 7, (compact(s) ? cy + 101 : cy + 133), KTTheme.TEXT_DIM, false);
         }
+    }
+
+    private int livingX, livingY, livingW, livingH;
+
+    /** Hovering the bond row: personality (bonus and quirk), bond progress and perks, growth stage. */
+    @Override
+    public void renderOverlay(CatTalentScreen s, GuiGraphics g, int mouseX, int mouseY) {
+        if (livingW == 0 || mouseX < livingX || mouseX >= livingX + livingW || mouseY < livingY || mouseY >= livingY + livingH) return;
+        TalentedCat cat = s.cat();
+        java.util.List<Component> lines = new java.util.ArrayList<>();
+        var trait = cat.getTrait();
+        if (trait != com.kittytalents.core.living.CatTrait.NONE) {
+            lines.add(KTText.t("home.personality", "Personality: %s", trait.title().getString()).copy().withStyle(st -> st.withColor(trait.color & 0xFFFFFF)));
+            lines.add(Component.literal(" + ").append(trait.bonusText()).withStyle(net.minecraft.ChatFormatting.GREEN));
+            lines.add(Component.literal(" ~ ").append(trait.quirkText()).withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+        var stage = cat.getGrowthStage();
+        if (stage != com.kittytalents.core.living.GrowthStage.ADULT) {
+            lines.add(KTText.t("home.growing", "%s: still growing. Food and treats help.", stage.title().getString()).copy().withStyle(net.minecraft.ChatFormatting.AQUA));
+        }
+        int bond = cat.getBondLevel();
+        String progress = bond >= com.kittytalents.core.living.CatBond.MAX_LEVEL ? KTText.s("home.bond_max", "max")
+                : cat.getBondPoints() + " / " + com.kittytalents.core.living.CatBond.pointsFor(bond + 1);
+        lines.add(KTText.t("home.bond_line", "Bond level %s (%s)", bond, progress).copy().withStyle(st -> st.withColor(0xF472B6)));
+        lines.add(KTText.t("home.bond_how", "Grows with time together, petting, feeding, play and fighting side by side.").copy().withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+        for (var perk : com.kittytalents.core.living.CatBond.Perk.values()) {
+            boolean has = bond >= perk.level;
+            lines.add(Component.literal((has ? "✔ " : "✖ ") + perk.level + "  ").append(perk.title()).append(": ").append(perk.text())
+                    .withStyle(has ? net.minecraft.ChatFormatting.WHITE : net.minecraft.ChatFormatting.DARK_GRAY));
+        }
+        g.renderComponentTooltip(s.font(), lines, mouseX, mouseY);
     }
 
     private static void info(GuiGraphics g, Font font, int x, int y, String label, String value, int color, int maxW) {

@@ -100,6 +100,13 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<String> DATA_SKIN =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.STRING);
+    // 4.0 Phase 6 "Living cats": personality, growth stage (age itself is not synced by vanilla) and bond points
+    private static final EntityDataAccessor<String> DATA_TRAIT =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Integer> DATA_GROWTH =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_BOND =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_DIRE_AWAKENED =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> DATA_FEMALE =
@@ -291,6 +298,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.define(DATA_MODE, CatMode.DOCILE.ordinal());
         this.entityData.define(DATA_INCAPACITATED, false);
         this.entityData.define(DATA_SKIN, "");
+        this.entityData.define(DATA_TRAIT, "none");
+        this.entityData.define(DATA_GROWTH, com.kittytalents.core.living.GrowthStage.ADULT.ordinal());
+        this.entityData.define(DATA_BOND, 0);
         this.entityData.define(DATA_DIRE_AWAKENED, false);
         this.entityData.define(DATA_FEMALE, false);
         this.entityData.define(DATA_COSMETICS_VISIBLE, true);
@@ -416,6 +426,139 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     /** Stores the id as given (an id from a removed pack is kept and drawn as the default look until it comes back). */
     public void setSkin(String id) {
         this.entityData.set(DATA_SKIN, id == null ? "" : id);
+    }
+
+    // ------------------------------------------------------------------ 4.0 Phase 6: living cats
+
+    /** Personality. NONE until rolled (natural spawn, taming, breeding, or the first load of a 3.0 cat). */
+    public com.kittytalents.core.living.CatTrait getTrait() {
+        return com.kittytalents.core.living.CatTrait.byId(this.entityData.get(DATA_TRAIT));
+    }
+
+    public void setTrait(com.kittytalents.core.living.CatTrait trait) {
+        this.entityData.set(DATA_TRAIT, (trait == null ? com.kittytalents.core.living.CatTrait.NONE : trait).id);
+        if (!this.level().isClientSide) updateAttributes();
+    }
+
+    /** Rolls a personality if the cat has none yet. */
+    public void rollTraitIfNone() {
+        if (getTrait() == com.kittytalents.core.living.CatTrait.NONE) setTrait(com.kittytalents.core.living.CatTrait.roll(this.random));
+    }
+
+    public com.kittytalents.core.living.GrowthStage getGrowthStage() {
+        return com.kittytalents.core.living.GrowthStage.byOrdinal(this.entityData.get(DATA_GROWTH));
+    }
+
+    /** Body size from the growth stage (kittens are small); replaces vanilla's flat 0.5 for babies. */
+    @Override
+    public float getScale() {
+        return getGrowthStage().scale();
+    }
+
+    /** Render harness only: shows a stage on a client-only cat. */
+    public void debugSetGrowth(com.kittytalents.core.living.GrowthStage stage) {
+        this.entityData.set(DATA_GROWTH, stage.ordinal());
+    }
+
+    public int getBondPoints() {
+        return this.entityData.get(DATA_BOND);
+    }
+
+    public void setBondPoints(int points) {
+        int before = getBondLevel();
+        this.entityData.set(DATA_BOND, Math.max(0, Math.min(com.kittytalents.core.living.CatBond.pointsFor(com.kittytalents.core.living.CatBond.MAX_LEVEL), points)));
+        if (!this.level().isClientSide && getBondLevel() != before) {
+            updateAttributes();
+            if (getBondLevel() > before) {
+                this.level().broadcastEntityEvent(this, (byte) 7);
+                this.playSound(SoundEvents.CAT_PURREOW, 1.0F, 1.3F);
+                if (getOwner() instanceof net.minecraft.world.entity.player.Player p) {
+                    p.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.kittytalents.bond_up",
+                            getName(), getBondLevel()).withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE), true);
+                }
+            }
+        }
+    }
+
+    public int getBondLevel() {
+        return com.kittytalents.core.living.CatBond.levelFor(getBondPoints());
+    }
+
+    public boolean hasBondPerk(com.kittytalents.core.living.CatBond.Perk perk) {
+        return com.kittytalents.core.living.CatBond.has(getBondPoints(), perk);
+    }
+
+    private final Map<String, Long> bondGainReadyAt = new HashMap<>();
+
+    /**
+     * Adds bond points from one kind of moment ("pet", "feed", "play", "kill", "time"); each kind has its own cooldown
+     * so spamming one action does not farm bond. @return true if points were added.
+     */
+    public boolean gainBond(String kind, int points) {
+        if (this.level().isClientSide || points <= 0 || getOwnerUUID() == null) return false;
+        long now = this.level().getGameTime();
+        if (now < bondGainReadyAt.getOrDefault(kind, 0L)) return false;
+        bondGainReadyAt.put(kind, now + com.kittytalents.core.living.CatBond.GAIN_COOLDOWN.i());
+        setBondPoints(getBondPoints() + points);
+        return true;
+    }
+
+    /** Hunger drains faster for Playful and Greedy cats: fewer ticks between hunger points. */
+    private int traitHungerRate(int ticks) {
+        com.kittytalents.core.living.CatTrait trait = getTrait();
+        double mult = trait == com.kittytalents.core.living.CatTrait.PLAYFUL ? com.kittytalents.core.living.CatTrait.PLAYFUL_HUNGER.get() : trait == com.kittytalents.core.living.CatTrait.GREEDY ? com.kittytalents.core.living.CatTrait.GREEDY_HUNGER.get() : 1.0;
+        return mult == 1.0 ? ticks : (int) Math.max(1, Math.round(ticks / mult));
+    }
+
+    /** Food value after the Greedy bonus. */
+    public int foodValue(int base) {
+        return getTrait() == com.kittytalents.core.living.CatTrait.GREEDY ? (int) Math.round(base * com.kittytalents.core.living.CatTrait.GREEDY_FOOD.get()) : base;
+    }
+
+    /** Food or a treat helps a kitten grow: skips a share of the growing time that is left. @return true if it grew. */
+    public boolean feedGrowth(boolean treat) {
+        if (this.level().isClientSide || getAge() >= 0) return false;
+        double share = treat ? com.kittytalents.core.living.GrowthStage.TREAT_SPEEDUP.get() : com.kittytalents.core.living.GrowthStage.FOOD_SPEEDUP.get();
+        int skip = (int) Math.ceil(-getAge() * share);
+        if (skip <= 0) return false;
+        setAge(Math.min(0, getAge() + skip));
+        tickLiving(true);
+        this.level().broadcastEntityEvent(this, (byte) 7);
+        return true;
+    }
+
+    /** Server, every tick (also while resting): growth stage sync, time-together bond, Lazy rest healing. */
+    private void tickLiving(boolean force) {
+        if (!force && (this.tickCount + this.getId()) % 20 != 0) return;
+        int stage = com.kittytalents.core.living.GrowthStage.ofAge(getAge()).ordinal();
+        if (this.entityData.get(DATA_GROWTH) != stage) {
+            this.entityData.set(DATA_GROWTH, stage);
+            this.refreshDimensions();
+            updateAttributes();
+        }
+        if (force) return;
+        if ((this.tickCount + this.getId()) % 1200 == 0 && getOwner() instanceof net.minecraft.world.entity.player.Player owner
+                && owner.level() == this.level() && this.distanceToSqr(owner) <= com.kittytalents.core.living.CatBond.TIME_RANGE.get() * com.kittytalents.core.living.CatBond.TIME_RANGE.get()) {
+            setBondPoints(getBondPoints() + com.kittytalents.core.living.CatBond.TIME_POINTS.i());
+        }
+        if (getTrait() == com.kittytalents.core.living.CatTrait.LAZY && (isOrderedToSit() || isSleeping()) && getHealth() < getMaxHealth()
+                && ((this.tickCount + this.getId()) / 20) % Math.max(1, com.kittytalents.core.living.CatTrait.LAZY_REST_HEAL_TICKS.i() / 20) == 0) {
+            this.heal(1.0F);
+        }
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        if (DATA_GROWTH.equals(key)) this.refreshDimensions();
+    }
+
+    /** Damage multiplier from bond: Soulmates near the owner. */
+    public float bondDamageMultiplier() {
+        if (!hasBondPerk(com.kittytalents.core.living.CatBond.Perk.SOULMATES)) return 1.0F;
+        LivingEntity owner = getOwner();
+        double r = com.kittytalents.core.living.CatBond.SOULMATE_RANGE.get();
+        return owner != null && owner.level() == this.level() && this.distanceToSqr(owner) <= r * r ? com.kittytalents.core.living.CatBond.SOULMATE_DAMAGE.f() : 1.0F;
     }
 
     public CatVariant getCatVariant() {
@@ -1340,6 +1483,19 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             t.maxHealth *= role.getHpMultiplier();
             t.movementSpeed *= role.getSpeedMultiplier();
         }
+        // 4.0 Phase 6: personality, bond perks and growth (kittens are weaker until they grow up).
+        com.kittytalents.core.living.CatTrait trait = getTrait();
+        if (trait == com.kittytalents.core.living.CatTrait.BRAVE) t.attackDamage *= com.kittytalents.core.living.CatTrait.BRAVE_DAMAGE.get();
+        if (trait == com.kittytalents.core.living.CatTrait.LAZY) t.movementSpeed *= com.kittytalents.core.living.CatTrait.LAZY_SPEED.get();
+        if (hasBondPerk(com.kittytalents.core.living.CatBond.Perk.KINDRED)) {
+            t.maxHealth += com.kittytalents.core.living.CatBond.KINDRED_HEALTH.get();
+            t.attackDamage += com.kittytalents.core.living.CatBond.KINDRED_DAMAGE.get();
+        }
+        float grown = getGrowthStage().scale();
+        if (grown < 1.0F) {
+            t.maxHealth *= Math.max(0.4F, grown);
+            t.attackDamage *= Math.max(0.4F, grown);
+        }
         setBase(Attributes.MAX_HEALTH, t.maxHealth);
         setBase(Attributes.MOVEMENT_SPEED, t.movementSpeed);
         setBase(Attributes.ATTACK_DAMAGE, t.attackDamage);
@@ -1440,6 +1596,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         if (com.kittytalents.compat.apotheosis.ApotheosisCompat.checkDodge(this, source)) {
             return false;
+        }
+
+        // Shy cats keep their distance and are harder to hit from range.
+        if (getTrait() == com.kittytalents.core.living.CatTrait.SHY && source.is(net.minecraft.tags.DamageTypeTags.IS_PROJECTILE)) {
+            amount *= com.kittytalents.core.living.CatTrait.SHY_PROJECTILE.f();
         }
 
         // Owner friendly fire. Guard against null: untamed cats have no owner, and environmental damage has no entity.
@@ -1736,7 +1897,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 // Slower hunger drain when resting (3x slower)
                 hungerTimer++;
                 int happyEater = getTalentLevel(Talents.HAPPY_EATER);
-                int rate = (KittyTalentsConfig.COMMON.hungerTickRate.get() + (happyEater * 400)) * 3;
+                int rate = traitHungerRate((KittyTalentsConfig.COMMON.hungerTickRate.get() + (happyEater * 400)) * 3);
+                tickLiving(false);
                 if (hungerTimer >= rate) {
                     hungerTimer = 0;
                     if (this.satiety > 0.0F) {
@@ -1783,7 +1945,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             // Hunger drain with Happy Eater reduction
             hungerTimer++;
             int happyEater = getTalentLevel(Talents.HAPPY_EATER);
-            int rate = KittyTalentsConfig.COMMON.hungerTickRate.get() + (happyEater * 400);
+            int rate = traitHungerRate(KittyTalentsConfig.COMMON.hungerTickRate.get() + (happyEater * 400));
+            tickLiving(false);
             if (hungerTimer >= rate) {
                 hungerTimer = 0;
                 if (this.satiety > 0.0F) {
@@ -1884,6 +2047,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (spiritCatnipPrimed) tag.putBoolean(CatSchema.KEY_SPIRIT_PRIMED, true);
         tag.putBoolean("Incapacitated", isIncapacitated());
         tag.putString(com.kittytalents.core.persist.CatSchema.KEY_SKIN, getSkin());
+        tag.putString("Trait", getTrait().id);
+        tag.putInt("Bond", getBondPoints());
         tag.putBoolean("DireAwakened", isDireAwakened());
         tag.putBoolean("Female", isFemale());
         tag.putBoolean("CosmeticsVisible", isCosmeticsVisible());
@@ -1926,6 +2091,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.spiritCatnipPrimed = tag.getBoolean(CatSchema.KEY_SPIRIT_PRIMED);
         if (tag.contains("Incapacitated")) setIncapacitated(tag.getBoolean("Incapacitated"));
         if (tag.contains(com.kittytalents.core.persist.CatSchema.KEY_SKIN)) setSkin(tag.getString(com.kittytalents.core.persist.CatSchema.KEY_SKIN));
+        // 4.0 Phase 6: saves from before 4.0 have no trait: roll one now. Bond starts at 0.
+        if (tag.contains("Trait")) this.entityData.set(DATA_TRAIT, com.kittytalents.core.living.CatTrait.byId(tag.getString("Trait")).id);
+        else this.entityData.set(DATA_TRAIT, com.kittytalents.core.living.CatTrait.roll(this.random).id);
+        this.entityData.set(DATA_BOND, Math.max(0, tag.getInt("Bond")));
+        this.entityData.set(DATA_GROWTH, com.kittytalents.core.living.GrowthStage.ofAge(getAge()).ordinal());
         if (tag.contains("DireAwakened")) setDireAwakened(tag.getBoolean("DireAwakened"));
         if (tag.contains("Female")) setFemale(tag.getBoolean("Female"));
         if (tag.contains("CosmeticsVisible")) setCosmeticsVisible(tag.getBoolean("CosmeticsVisible"));
@@ -2033,6 +2203,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 child.setProductionTier(childTier);
                 child.setSkin(this.random.nextBoolean() ? this.getSkin() : otherCat.getSkin());
                 child.setFemale(this.random.nextBoolean());
+                child.setTrait(com.kittytalents.core.living.CatTrait.inherit(this.getTrait(), otherCat.getTrait(), this.random));
+                inheritTalentRank(child, this.random.nextBoolean() ? this : otherCat, this.random.nextBoolean() ? otherCat : this);
                 if (spiritUsed) {
                     child.setMutation(CatBreedingManager.MutationType.NEKOMATA);
                 } else {
@@ -2043,10 +2215,27 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 child.setCatVariant(this.getCatVariant());
                 child.setProductionTier(this.getProductionTier());
                 child.setSkin(this.getSkin());
+                child.setTrait(com.kittytalents.core.living.CatTrait.inherit(this.getTrait(), this.getTrait(), this.random));
+                inheritTalentRank(child, this, this);
                 if (spiritUsed) child.setMutation(CatBreedingManager.MutationType.NEKOMATA);
             }
+            child.entityData.set(DATA_GROWTH, com.kittytalents.core.living.GrowthStage.NEWBORN.ordinal());
         }
         return child;
+    }
+
+    /** A kitten is born with rank 1 in one talent a parent has trained (not Dire talents, not the free standard ones). */
+    private static void inheritTalentRank(TalentedCat child, TalentedCat first, TalentedCat second) {
+        for (TalentedCat parent : new TalentedCat[]{first, second}) {
+            java.util.List<Talent> trained = new java.util.ArrayList<>();
+            for (Talent t : Talents.getAll()) {
+                if (!t.isStandard() && !t.requiresDireTreat() && t.isAvailable() && parent.getTalentLevel(t) > 0) trained.add(t);
+            }
+            if (!trained.isEmpty()) {
+                child.setTalentLevel(trained.get(parent.getRandom().nextInt(trained.size())), 1);
+                return;
+            }
+        }
     }
 
     @Nullable
@@ -2056,6 +2245,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         // Randomize gender
         this.setFemale(this.random.nextBoolean());
+        rollTraitIfNone();
 
         // Randomize appearance: pick from CatVariant or custom skins
         if (this.random.nextFloat() < 0.70F) {
