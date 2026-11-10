@@ -117,8 +117,19 @@ public final class TwineManager {
         player.setNoGravity(true);
         player.noPhysics = true;
         player.setDeltaMovement(Vec3.ZERO);
+        broadcastBodies(player.getServer());
         if (player.level() instanceof ServerLevel level) {
             level.sendParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 0.9D, player.getZ(), 24, 0.25D, 0.45D, 0.25D, 0.08D);
+        }
+    }
+
+    /** Tells every client which bodies are dormant, so they are not drawn at all (invisibility still shows gear). */
+    public static void broadcastBodies(@javax.annotation.Nullable net.minecraft.server.MinecraftServer server) {
+        if (server == null) return;
+        var packet = new com.kittytalents.network.PacketSyncTwineBodies(DORMANT_BODY_STATES.keySet());
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            if (p instanceof net.minecraftforge.common.util.FakePlayer) continue;
+            com.kittytalents.network.PacketHandler.sendToPlayer(packet, p);
         }
     }
 
@@ -128,6 +139,7 @@ public final class TwineManager {
             state = DormantBodyState.fromTag(player.getPersistentData().getCompound(BODY_TAG));
         }
         player.getPersistentData().remove(BODY_TAG);
+        broadcastBodies(player.getServer());
         if (state == null) return;
         state.applyTo(player);
         player.fallDistance = 0.0F;

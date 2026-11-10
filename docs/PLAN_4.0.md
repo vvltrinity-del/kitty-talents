@@ -198,3 +198,10 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 - Home tab: a bond bar with the bond level and personality. Hovering shows the bonus, quirk, perks and growth stage.
 - Tests: KittyLivingGameTests (10). Render matrix has four growth combos, including a kitten with a hat.
 - Verification: build green, all 104 GameTests pass, growth renders and the Home tab checked.
+
+### 2026-11-10: Playtest fixes (between Phases 6 and 7)
+- **Twined gun aim:** a Twined shot used the rotation of the player's sleeping body. It now uses the cat's view rotation; sneaking aims down sights. Not testable without TacZ in the test world, so this needs an in-game check.
+- **Sorter / Courier reach:** "arrived" was any spot within 3 blocks, so a cat above an underground chest worked through the floor. Container jobs now need a clear line to the container and path to a free spot beside it. Deposits do the same, with a fallback after about 5 seconds stuck.
+- **Riding:** mounting stands the cat up (Docile or Stay becomes Follow). A ridden cat ignores sit orders. Kittens and downed cats can't be ridden.
+- **Twine body:** the dormant body used only the vanilla invisibility flag, which still draws armor and held items. The server now sends the set of dormant bodies (PacketSyncTwineBodies) and clients skip drawing them.
+- Tests: KittyPlaytestFixGameTests (2). All 106 GameTests pass.

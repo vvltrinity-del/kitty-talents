@@ -193,11 +193,12 @@ public class TacZImpl {
             return false;
         }
 
-        final float pitch = player.getXRot();
-        final float yaw = player.getYRot();
-        cat.setXRot(pitch);
+        // Aim where the CAT is looking (its rotation comes from the Twine input packet). The player's own rotation is
+        // that of the sleeping body, which made Twined shots fly off in unrelated directions.
+        final float pitch = cat.getXRot();
+        final float yaw = cat.getYRot();
         cat.setYHeadRot(yaw);
-        cat.setYRot(yaw);
+        op.aim(cat.isShiftKeyDown()); // sneak to aim down sights: tighter spread
 
         ShootResult result = op.shoot(() -> pitch, () -> yaw);
         return handleShootResult(cat, op, gun, result, pitch, yaw, null, isCreative);

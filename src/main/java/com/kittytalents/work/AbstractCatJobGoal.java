@@ -119,6 +119,55 @@ public abstract class AbstractCatJobGoal extends Goal {
         return true;
     }
 
+    /**
+     * Container jobs (Sorter, Courier): the cat must really stand at the block with a clear line to it. Without this a
+     * cat on the surface counted as "arrived" at a chest a few blocks underground and worked through the floor.
+     */
+    protected boolean needsClearReach() {
+        return false;
+    }
+
+    /** True if nothing solid is between the cat and {@code pos} (the block itself, or its other chest half, may be hit). */
+    protected boolean hasClearLineTo(BlockPos pos) {
+        net.minecraft.world.phys.Vec3 from = cat.getEyePosition();
+        net.minecraft.world.phys.Vec3 to = net.minecraft.world.phys.Vec3.atCenterOf(pos);
+        net.minecraft.world.phys.BlockHitResult hit = cat.level().clip(new net.minecraft.world.level.ClipContext(from, to,
+                net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, cat));
+        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS) return true;
+        BlockPos at = hit.getBlockPos();
+        return at.equals(pos) || (at.distManhattan(pos) == 1 && cat.level().getBlockState(at).is(cat.level().getBlockState(pos).getBlock()));
+    }
+
+    /** Within reach of {@code pos}, and (for container jobs) actually able to get at it. */
+    protected boolean canWorkOn(BlockPos pos, double reachSqr) {
+        double d = cat.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
+        return d <= reachSqr && (!needsClearReach() || hasClearLineTo(pos));
+    }
+
+    /**
+     * Where to walk to work on {@code pos}: for container jobs, a free spot with a floor right beside the block (so the
+     * path leads down into the cellar the chest is in, not to the grass above it); otherwise the block itself.
+     */
+    protected BlockPos walkTarget(BlockPos pos) {
+        if (!needsClearReach()) return pos;
+        BlockPos best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+            for (int dy = 0; dy >= -1; dy--) {
+                BlockPos spot = pos.relative(dir).above(dy);
+                var level = cat.level();
+                if (!level.getBlockState(spot).getCollisionShape(level, spot).isEmpty()) continue;
+                if (level.getBlockState(spot.below()).getCollisionShape(level, spot.below()).isEmpty()) continue;
+                double d = cat.distanceToSqr(spot.getX() + 0.5D, spot.getY(), spot.getZ() + 0.5D);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = spot;
+                }
+            }
+        }
+        return best != null ? best : pos;
+    }
+
     protected void blacklistPosition(BlockPos pos, int durationTicks) {
         if (pos == null) return;
         long now = cat.level().getGameTime();
@@ -226,7 +275,8 @@ public abstract class AbstractCatJobGoal extends Goal {
                         currentTargetPos.getY() + 0.5D,
                         currentTargetPos.getZ() + 0.5D
                 );
-                if (distSqr <= getInteractReachSqr()) {
+                boolean arrived = canWorkOn(currentTargetPos, getInteractReachSqr());
+                if (arrived) {
                     cat.getNavigation().stop();
                     state = WorkState.WORKING;
                     stateTimer = 0;
@@ -235,7 +285,7 @@ public abstract class AbstractCatJobGoal extends Goal {
                     return;
                 }
 
-                if (cat.getNavigation().isDone() && distSqr > getInteractReachSqr()) {
+                if (cat.getNavigation().isDone()) { // stopped without being able to work on it
                     pathFailCount++;
                     if (pathFailCount >= 3) {
                         blacklistPosition(currentTargetPos, 600);
@@ -248,10 +298,11 @@ public abstract class AbstractCatJobGoal extends Goal {
 
                 if (--navCooldown <= 0) {
                     navCooldown = 10;
+                    BlockPos walkTo = walkTarget(currentTargetPos);
                     boolean started = cat.getNavigation().moveTo(
-                            currentTargetPos.getX() + 0.5D,
-                            currentTargetPos.getY(),
-                            currentTargetPos.getZ() + 0.5D,
+                            walkTo.getX() + 0.5D,
+                            walkTo.getY(),
+                            walkTo.getZ() + 0.5D,
                             1.15D
                     );
                     net.minecraft.world.level.pathfinder.Path p = cat.getNavigation().getPath();
@@ -300,14 +351,24 @@ public abstract class AbstractCatJobGoal extends Goal {
                 if (depositPos == null && !data.getLinkedOutputs().isEmpty()) {
                     depositPos = data.getLinkedOutputs().get(0);
                 }
-                if (depositPos != null && cat.distanceToSqr(depositPos.getX() + 0.5D, depositPos.getY() + 0.5D, depositPos.getZ() + 0.5D) > 9.0D) {
-                    cat.setWorkStatus("Returning to deposit");
-                    if (--navCooldown <= 0) {
-                        navCooldown = 10;
-                        cat.getNavigation().moveTo(depositPos.getX() + 0.5D, depositPos.getY(), depositPos.getZ() + 0.5D, 1.2D);
+                // Walk right up to the deposit container (a spot beside it, with a clear line), not just near it:
+                // within 3 blocks through a floor or wall does not count. If it truly cannot get closer, it gives up
+                // being picky after a few seconds rather than standing there forever.
+                if (depositPos != null) {
+                    boolean near = cat.distanceToSqr(depositPos.getX() + 0.5D, depositPos.getY() + 0.5D, depositPos.getZ() + 0.5D) <= 9.0D;
+                    boolean clear = near && hasClearLineTo(depositPos);
+                    if (!clear && !(near && depositStuckTicks > 100)) {
+                        cat.setWorkStatus("Returning to deposit");
+                        if (cat.getNavigation().isDone()) depositStuckTicks++;
+                        if (--navCooldown <= 0) {
+                            navCooldown = 10;
+                            BlockPos walkTo = depositWalkTarget(depositPos);
+                            cat.getNavigation().moveTo(walkTo.getX() + 0.5D, walkTo.getY(), walkTo.getZ() + 0.5D, 1.2D);
+                        }
+                        return;
                     }
-                    return;
                 }
+                depositStuckTicks = 0;
                 boolean ok = WorkInventoryHelper.depositPackToStationOrOutputs(cat, getKeepInPackPredicate());
                 if (ok) {
                     cat.setWorkStatus("Deposited items");
@@ -324,6 +385,18 @@ public abstract class AbstractCatJobGoal extends Goal {
                 }
             }
         }
+    }
+
+    private int depositStuckTicks;
+
+    private BlockPos depositWalkTarget(BlockPos pos) {
+        for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+            BlockPos spot = pos.relative(dir);
+            var level = cat.level();
+            if (level.getBlockState(spot).getCollisionShape(level, spot).isEmpty()
+                    && !level.getBlockState(spot.below()).getCollisionShape(level, spot.below()).isEmpty()) return spot;
+        }
+        return pos;
     }
 
     protected void onTaskCompleted() {

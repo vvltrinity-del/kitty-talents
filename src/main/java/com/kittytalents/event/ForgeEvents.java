@@ -208,6 +208,7 @@ public class ForgeEvents {
     public static void onPlayerLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
             com.kittytalents.entity.TwineManager.restoreOnLogin(sp); // body flags left by a crash mid-Twine
+            com.kittytalents.entity.TwineManager.broadcastBodies(sp.getServer()); // who is Twined right now
         }
     }
 

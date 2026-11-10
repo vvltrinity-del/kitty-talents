@@ -31,6 +31,11 @@ public class SorterJobGoal extends AbstractCatJobGoal {
     }
 
     @Override
+    protected boolean needsClearReach() {
+        return true;
+    }
+
+    @Override
     protected double getInteractReachSqr() {
         return 9.0D;
     }

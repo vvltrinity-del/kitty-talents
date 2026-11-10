@@ -1449,9 +1449,18 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         return super.getDimensions(pose).scale(getCatScale());
     }
 
+    /** A cat that is sat, asleep or in Docile mode gets up (and follows) so it can carry a rider. */
+    public void standUpForRider() {
+        if (getCatMode() == CatMode.DOCILE || getCatMode() == CatMode.STAY) setCatMode(CatMode.FOLLOW);
+        setOrderedToSit(false);
+        setInSittingPose(false);
+        setLying(false);
+    }
+
     @Override
     protected void addPassenger(Entity passenger) {
         super.addPassenger(passenger);
+        if (!this.level().isClientSide && passenger instanceof Player) standUpForRider();
         this.refreshDimensions(); // grow to steed size
     }
 
@@ -1888,6 +1897,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 this.level().addParticle(ParticleTypes.DAMAGE_INDICATOR, this.getX(), this.getY() + 0.3D, this.getZ(), 0, 0.05D, 0);
             }
             return;
+        }
+
+        // A cat carrying a player never sits (an order to sit while ridden is ignored until the rider gets off).
+        if (!this.level().isClientSide && this.isOrderedToSit() && this.getControllingPassenger() instanceof Player) {
+            standUpForRider();
         }
 
         // Sleeping / sitting cats must consume near-zero tick time.

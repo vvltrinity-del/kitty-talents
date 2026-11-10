@@ -373,7 +373,8 @@ public final class CatInteractions {
 
         // Mounting the cat
         if (cat.getTalentLevel(Talents.CAT_MOUNT) > 0 && (cat.isOwnedBy(player) || cat.isTrusted(player.getUUID()) || player.getAbilities().instabuild) && (held.isEmpty() || held.is(Items.SADDLE))) {
-            if (!cat.level().isClientSide && !cat.isVehicle()) {
+            if (!cat.level().isClientSide && !cat.isVehicle() && !cat.isIncapacitated() && !cat.isBaby()) {
+                cat.standUpForRider(); // a sitting or sleeping cat gets up first: no riding a sitting cat
                 player.startRiding(cat);
             }
             return InteractionResult.sidedSuccess(cat.level().isClientSide);
