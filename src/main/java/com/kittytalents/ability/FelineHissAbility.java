@@ -21,6 +21,8 @@ import java.util.List;
  * Emits a ferocious feline hiss that inflicts Weakness and repels Creepers.
  */
 public class FelineHissAbility extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key RADIUS =
+            com.kittytalents.core.tuning.Tuning.ability("feline_hiss", "radius", 6.5, "Radius");
 
     public FelineHissAbility() {
         super("feline_hiss", "Feline Hiss", "Terrifies surrounding enemies, inflicting Weakness and repelling Creepers.",
@@ -38,7 +40,7 @@ public class FelineHissAbility extends CatAbility {
     @Override
     protected boolean execute(TalentedCat cat, Player player) {
         cat.playSound(com.kittytalents.registry.ModSounds.ABILITY_HISS.get(), 1.2F, 1.0F);
-        AABB aoe = cat.getBoundingBox().inflate(6.5D);
+        AABB aoe = cat.getBoundingBox().inflate(RADIUS.get());
 
         for (LivingEntity le : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {

@@ -20,6 +20,10 @@ import java.util.List;
  * dealing immense Arcane damage and inflicting Marked and Vulnerable.
  */
 public class SoulFlameBarrageUltimate extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key DAMAGE =
+            com.kittytalents.core.tuning.Tuning.ability("soul_flame_barrage", "damage_mult", 2.8, "Damage x attack");
+    private static final com.kittytalents.core.tuning.Tuning.Key RADIUS =
+            com.kittytalents.core.tuning.Tuning.ability("soul_flame_barrage", "radius", 12.0, "Radius");
 
     public SoulFlameBarrageUltimate() {
         super("soul_flame_barrage", "Soul Flame Barrage", "Unleashes swirling twin soul-flames at all surrounding enemies, inflicting Marked and Vulnerable.",
@@ -39,11 +43,11 @@ public class SoulFlameBarrageUltimate extends CatAbility {
         cat.playSound(SoundEvents.SOUL_ESCAPE, 1.4F, 0.8F);
         cat.playSound(SoundEvents.WITHER_SHOOT, 1.0F, 1.5F);
 
-        AABB aoe = cat.getBoundingBox().inflate(12.0D);
+        AABB aoe = cat.getBoundingBox().inflate(RADIUS.get());
         List<LivingEntity> enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e));
 
-        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 2.8F;
+        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
 
         for (LivingEntity target : enemies) {
             target.hurt(cat.damageSources().magic(), dmg);

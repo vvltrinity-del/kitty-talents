@@ -134,6 +134,31 @@ back when the pack returns. A pack can override a built-in skin by shipping a fi
 
 There's a complete example in `docs/examples/sunset_skin_pack/`.
 
+## Tuning numbers (datapack)
+
+Every talent and ability number can be changed by a datapack, with no code. This covers per-rank values, cooldowns,
+ranges, Energy costs, max rank and skill-point cost. Put one or more files in `data/<namespace>/kittytalents/tuning/`:
+
+```json
+{ "talents":   { "hunter_cat": { "damage_per_rank": 3.5, "max_rank": 6 } },
+  "abilities": { "frost_nova": { "cooldown_ticks": 120, "radius": 6 } } }
+```
+
+- Run `/kittytalents tuning export` to write every value with its default to `kittytalents_tuning_defaults.json` in
+  the world folder. Copy the values you want to change from there.
+- `/kittytalents tuning changed` lists what the loaded packs changed.
+- Changes apply on `/reload`, and players get the new numbers immediately. The Talents tab shows them when you hover
+  over a description, and the Combat tab shows them under the ability you hover.
+- Each talent has `max_rank` (1–10) and `cost_scale` (a multiplier on each rank's point cost). Each ability has
+  `energy_cost` and `cooldown_ticks`.
+- Values are clamped to 0..10× their default. Unknown names are logged and ignored. Files are read in name order, and
+  a later file wins for the same value.
+- Lowering `max_rank` caps cats that already have more ranks. Respec still refunds every rank they paid for.
+- With no tuning pack, every number is the built-in value.
+
+There's an example in `docs/examples/tuning_pack/`. In code, declare new numbers with `Tuning.talent(...)` or
+`Tuning.ability(...)` as a `static final` field, and read them with `.get()`, `.f()` or `.i()`.
+
 ## Adding a mode
 
 1. Add an entry to `entity/CatMode`: `(langKey, followsOwner, anchorRadius, TargetPolicy, retreatsWhenHurt)`.

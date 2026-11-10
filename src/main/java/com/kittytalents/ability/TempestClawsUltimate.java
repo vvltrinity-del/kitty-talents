@@ -22,6 +22,10 @@ import java.util.List;
  * dealing thunder damage and applying Shock.
  */
 public class TempestClawsUltimate extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key DAMAGE =
+            com.kittytalents.core.tuning.Tuning.ability("tempest_claws", "damage_mult", 2.2, "Damage x attack");
+    private static final com.kittytalents.core.tuning.Tuning.Key RADIUS =
+            com.kittytalents.core.tuning.Tuning.ability("tempest_claws", "radius", 10.0, "Radius");
 
     public TempestClawsUltimate() {
         super("tempest_claws", "Tempest Claws", "Summons a storm of lightning upon all nearby enemies, electrocuting and shocking them.",
@@ -40,13 +44,13 @@ public class TempestClawsUltimate extends CatAbility {
     protected boolean execute(TalentedCat cat, Player player) {
         cat.playSound(SoundEvents.LIGHTNING_BOLT_THUNDER, 1.0F, 1.2F);
 
-        AABB aoe = cat.getBoundingBox().inflate(10.0D);
+        AABB aoe = cat.getBoundingBox().inflate(RADIUS.get());
         List<LivingEntity> enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e));
 
         if (enemies.isEmpty()) return false;
 
-        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 2.2F;
+        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
 
         for (LivingEntity target : enemies) {
             target.hurt(cat.damageSources().lightningBolt(), dmg);

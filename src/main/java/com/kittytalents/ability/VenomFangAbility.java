@@ -17,6 +17,10 @@ import net.minecraft.world.phys.AABB;
  * Vicious bite infusing toxic venom that causes severe Poison and Bleed.
  */
 public class VenomFangAbility extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key DAMAGE =
+            com.kittytalents.core.tuning.Tuning.ability("venom_fang", "damage_mult", 1.5, "Damage x attack");
+    private static final com.kittytalents.core.tuning.Tuning.Key POISON =
+            com.kittytalents.core.tuning.Tuning.ability("venom_fang", "poison_ticks", 100, "Poison ticks");
 
     public VenomFangAbility() {
         super("venom_fang", "Venom Fang", "Bites deeply into a foe, applying lethal Poison and Bleed.",
@@ -50,10 +54,10 @@ public class VenomFangAbility extends CatAbility {
             cat.playSound(SoundEvents.FOX_BITE, 1.0F, 1.1F);
             cat.playSound(SoundEvents.SPIDER_HURT, 1.0F, 1.4F);
 
-            float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.5F;
+            float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
             target.hurt(cat.damageSources().mobAttack(cat), dmg);
 
-            FelineStatusEffects.applyStatus(target, FelineStatusType.POISON, 2, 100);
+            FelineStatusEffects.applyStatus(target, FelineStatusType.POISON, 2, POISON.i());
             FelineStatusEffects.applyStatus(target, FelineStatusType.BLEED, 1, 80);
 
             if (cat.level() instanceof ServerLevel sl) {

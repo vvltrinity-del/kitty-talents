@@ -765,10 +765,11 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     public int getTalentLevel(Talent talent) {
         if (talent == null) return 0;
+        // Clamped to the (tunable) max rank, so lowering max_rank in a datapack caps existing cats too.
         if (talent.isStandard()) {
-            return Math.max(1, talents.getOrDefault(talent.getId(), STANDARD_TALENT_BASELINE));
+            return Math.min(talent.getMaxLevel(), Math.max(1, talents.getOrDefault(talent.getId(), STANDARD_TALENT_BASELINE)));
         }
-        return talents.getOrDefault(talent.getId(), 0);
+        return Math.min(talent.getMaxLevel(), talents.getOrDefault(talent.getId(), 0));
     }
 
     public void setAllTalentLevels(Map<String, Integer> levels) {
@@ -785,6 +786,12 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                     new com.kittytalents.network.PacketSyncTalents(this.getId(), this.getSkillPoints(), talents.view());
             PacketHandler.sendToPlayer(packet, player);
         }
+    }
+
+    /** After /reload changed tuning: max ranks and attribute numbers may differ, so re-derive and re-sync. */
+    public void refreshAfterTuning() {
+        updateAttributes();
+        syncTalents();
     }
 
     public void syncTalents() {
@@ -807,11 +814,14 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     /** Skill-point cost of training {@code talent} up to {@code rank}. The single source for training and respec. */
     public static int costOfRank(Talent talent, int rank) {
-        if (talent.requiresDireTreat()) return rank * 3;
-        if (talent.getMaxLevel() <= 5) return rank <= 2 ? 1 : 2;
-        if (rank <= 2) return 1;
-        if (rank <= 5) return 2;
-        return 3;
+        int base;
+        if (talent.requiresDireTreat()) base = rank * 3;
+        else if (talent.getDefaultMaxLevel() <= 5) base = rank <= 2 ? 1 : 2;
+        else if (rank <= 2) base = 1;
+        else if (rank <= 5) base = 2;
+        else base = 3;
+        double scale = talent.getCostScale();
+        return scale == 1.0 ? base : (int) Math.max(0, Math.round(base * scale));
     }
 
     /** Points needed to take {@code talent} from its free baseline (standard talents start at rank 5) to max. */
@@ -873,7 +883,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public int respecAllTalents() {
         int refundedPoints = 0;
         for (Talent talent : Talents.getAll()) {
-            int lvl = getTalentLevel(talent);
+            int lvl = Math.max(getTalentLevel(talent), talents.getOrDefault(talent.getId(), 0)); // ranks above a lowered max refund too
             // Standard talents are free up to the baseline; refunding those ranks minted free skill points every respec.
             int freeRanks = talent.isStandard() ? STANDARD_TALENT_BASELINE : 0;
             for (int r = freeRanks + 1; r <= lvl; r++) {
@@ -1465,9 +1475,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             if (nineLives > 0 && !isIncapacitated() && now >= combat.getNineLivesReadyAt()) {
                 // Instant revive recharges after (10 min - 1 min per rank); otherwise the cat goes down instead.
                 boolean tenthLife = com.kittytalents.talent.effect.TalentEngine.isMastered(this, Talents.NINE_LIVES);
-                long recharge = Math.max(1200L, 12000L - 1200L * nineLives);
+                long recharge = Math.max(1200L, com.kittytalents.talent.TalentTuning.NINE_LIVES_RECHARGE.i() - (long) com.kittytalents.talent.TalentTuning.NINE_LIVES_RECHARGE_PER_RANK.i() * nineLives);
                 combat.setNineLivesReadyAt(now + (tenthLife ? recharge / 2 : recharge));
-                this.setHealth(tenthLife ? this.getMaxHealth() : Math.max(4.0F, this.getMaxHealth() * Math.min(1.0F, 0.18F * nineLives)));
+                this.setHealth(tenthLife ? this.getMaxHealth() : Math.max(4.0F, this.getMaxHealth() * Math.min(1.0F, com.kittytalents.talent.TalentTuning.NINE_LIVES_HEAL_PER_RANK.f() * nineLives)));
                 if (tenthLife) this.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 1));
                 this.level().broadcastEntityEvent(this, (byte) 35);
                 this.playSound(SoundEvents.TOTEM_USE, 1.0F, 1.0F);

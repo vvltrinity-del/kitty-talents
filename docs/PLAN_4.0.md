@@ -148,3 +148,22 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 - Example pack in `docs/examples/sunset_skin_pack/`. The skin section of EXTENDING.md was rewritten.
 - Also fixed: `gen_screen_lang.py` drops keys added after its generated block, which had removed the Producer Stick item names. Those names were restored above the block.
 - Verification: build green, all 80 GameTests pass, Style skin page checked at GUI scales 2 and 3.
+
+### 2026-11-10: Phase 4: Tunable talents and abilities, plus new abilities
+- `core/tuning/Tuning` holds about 250 named numbers.
+  - Each talent has `max_rank` and `cost_scale`, plus its per-rank values. The four talents whose logic is in the combat engine use `talent/TalentTuning`.
+  - Each ability has `energy_cost` and `cooldown_ticks`, plus its damage, radius and status values.
+  - Defaults are the 3.0 numbers. With no pack, the test confirms every value equals its default.
+- Datapack files go in `data/<ns>/kittytalents/tuning/*.json`. Overrides are synced to players (PacketSyncTuning).
+  After `/reload`, every loaded cat recalculates its attributes and talents.
+- Commands: `/kittytalents tuning export` (writes all defaults as a pack file) and `/kittytalents tuning changed`.
+- Tooltips:
+  - Talents tab: hover the description for "Current numbers". If the description is cut short, the tooltip shows the full text first.
+  - Combat tab: the hovered ability lists its values.
+- New abilities, each with an icon (`tools/asset_gen/ability_icons_40.py`), an AI priority and a GameTest:
+  - Frost: Ice Lance (ranged freeze), Blizzard (ultimate).
+  - Poison: Toxic Cloud (the AI skips it against undead), Plague Bloom (ultimate, heals per foe).
+  - Arcane: Arcane Blink (teleport behind a target and strike), Starfall (ultimate, up to six targets).
+- Tests: KittyTuningGameTests (10). Covers defaults matching 3.0; one JSON change altering behaviour and the tooltip, with clamping and unknown names; a lowered max rank capping and refunding; each new ability; and the AI casting Ice Lance on its own.
+- Example pack `docs/examples/tuning_pack/`; tuning section in EXTENDING.md.
+- Verification: build green, all 90 GameTests pass, Talents tab checked at GUI scales 2 and 3.

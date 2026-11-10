@@ -18,6 +18,12 @@ import net.minecraft.world.phys.AABB;
  * Emits soothing vibrational purrs that heal and apply Regeneration to self and nearby allies.
  */
 public class HealingPurrAbility extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key SELF =
+            com.kittytalents.core.tuning.Tuning.ability("healing_purr", "self_heal", 0.3, "Self heal fraction");
+    private static final com.kittytalents.core.tuning.Tuning.Key ALLY =
+            com.kittytalents.core.tuning.Tuning.ability("healing_purr", "ally_heal", 0.2, "Ally heal fraction");
+    private static final com.kittytalents.core.tuning.Tuning.Key RADIUS =
+            com.kittytalents.core.tuning.Tuning.ability("healing_purr", "radius", 8.0, "Radius");
 
     public HealingPurrAbility() {
         super("healing_purr", "Healing Purr", "Soothes the cat and nearby allies, restoring health and granting Regeneration.",
@@ -34,14 +40,14 @@ public class HealingPurrAbility extends CatAbility {
     @Override
     protected boolean execute(TalentedCat cat, Player player) {
         cat.playSound(SoundEvents.CAT_PURREOW, 1.0F, 1.0F);
-        cat.heal(cat.getMaxHealth() * 0.30F);
+        cat.heal(cat.getMaxHealth() * SELF.f());
         cat.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 1));
         FelineStatusEffects.applyStatus(cat, FelineStatusType.REGENERATION, 2, 120);
 
-        AABB reach = cat.getBoundingBox().inflate(8.0D);
+        AABB reach = cat.getBoundingBox().inflate(RADIUS.get());
         for (LivingEntity ally : cat.level().getEntitiesOfClass(LivingEntity.class, reach,
                 e -> com.kittytalents.ai.CatTargeting.isFriendly(cat, e))) {
-            ally.heal(ally.getMaxHealth() * 0.20F);
+            ally.heal(ally.getMaxHealth() * ALLY.f());
             ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 0));
             FelineStatusEffects.applyStatus(ally, FelineStatusType.REGENERATION, 1, 120);
         }

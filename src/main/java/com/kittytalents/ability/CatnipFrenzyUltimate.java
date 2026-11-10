@@ -17,6 +17,8 @@ import net.minecraft.world.entity.player.Player;
  * regeneration, fortified armor, and fire trails.
  */
 public class CatnipFrenzyUltimate extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key TICKS =
+            com.kittytalents.core.tuning.Tuning.ability("catnip_frenzy", "duration_ticks", 140, "Duration ticks");
 
     public CatnipFrenzyUltimate() {
         super("catnip_frenzy", "Catnip Frenzy", "Enters a legendary berserk rage, supercharging attack speed, granting Regeneration and Fortified.",
@@ -36,13 +38,13 @@ public class CatnipFrenzyUltimate extends CatAbility {
         cat.playSound(SoundEvents.RAVAGER_ROAR, 1.2F, 1.5F);
         cat.playSound(SoundEvents.ENDER_DRAGON_GROWL, 0.8F, 1.8F);
 
-        cat.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 140, 2));
-        cat.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 140, 1));
-        cat.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 140, 2));
+        cat.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, TICKS.i(), 2));
+        cat.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, TICKS.i(), 1));
+        cat.addEffect(new MobEffectInstance(MobEffects.REGENERATION, TICKS.i(), 2));
 
-        FelineStatusEffects.applyStatus(cat, FelineStatusType.HASTE, 2, 140);
-        FelineStatusEffects.applyStatus(cat, FelineStatusType.FORTIFIED, 2, 140);
-        FelineStatusEffects.applyStatus(cat, FelineStatusType.REGENERATION, 3, 140);
+        FelineStatusEffects.applyStatus(cat, FelineStatusType.HASTE, 2, TICKS.i());
+        FelineStatusEffects.applyStatus(cat, FelineStatusType.FORTIFIED, 2, TICKS.i());
+        FelineStatusEffects.applyStatus(cat, FelineStatusType.REGENERATION, 3, TICKS.i());
 
         if (cat.level() instanceof ServerLevel sl) {
             sl.sendParticles(ParticleTypes.FLAME, cat.getX(), cat.getY() + 0.4D, cat.getZ(), 30, 0.5D, 0.3D, 0.5D, 0.1D);

@@ -258,6 +258,12 @@ public class CombatTab implements CatTab {
             CatAbility ab = CatAbilities.get(abilityId(s.cat(), CARDS[hoveredCard]));
             text = ab == null ? Component.empty() : Component.literal(ab.getDisplayName() + ": ").withStyle(s2 -> s2.withColor(KTTheme.TEXT_GOLD & 0xFFFFFF))
                     .append(Component.literal(ab.getDescription()).withStyle(s2 -> s2.withColor(KTTheme.TEXT & 0xFFFFFF)));
+            if (ab != null) {
+                for (Component v : com.kittytalents.core.tuning.Tuning.describeAll(com.kittytalents.core.tuning.Tuning.ABILITIES, ab.getId(),
+                        java.util.Set.of("energy_cost", "cooldown_ticks"))) {
+                    text = text.copy().append(Component.literal("  · ").withStyle(s2 -> s2.withColor(0x7DD3FC))).append(v.copy().withStyle(s2 -> s2.withColor(0x7DD3FC)));
+                }
+            }
         } else {
             text = KTText.t("combat.hint", "Click a card to cycle its ability. Keys work while Twined.");
         }

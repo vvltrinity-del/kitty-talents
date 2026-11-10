@@ -18,6 +18,10 @@ import net.minecraft.world.phys.Vec3;
  * Summons a surging water wave that pushes enemies back and cleanses allies.
  */
 public class TidalSurgeAbility extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key DAMAGE =
+            com.kittytalents.core.tuning.Tuning.ability("tidal_surge", "damage_mult", 1.1, "Damage x attack");
+    private static final com.kittytalents.core.tuning.Tuning.Key RADIUS =
+            com.kittytalents.core.tuning.Tuning.ability("tidal_surge", "radius", 6.0, "Radius");
 
     public TidalSurgeAbility() {
         super("tidal_surge", "Tidal Surge", "Summons a cascading wave that knocks enemies back, douses fire, and cleanses allies.",
@@ -36,8 +40,8 @@ public class TidalSurgeAbility extends CatAbility {
         cat.playSound(SoundEvents.GENERIC_SPLASH, 1.2F, 1.0F);
         cat.playSound(SoundEvents.WATER_AMBIENT, 1.0F, 1.2F);
 
-        AABB aoe = cat.getBoundingBox().inflate(6.0D);
-        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.1F;
+        AABB aoe = cat.getBoundingBox().inflate(RADIUS.get());
+        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
 
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {

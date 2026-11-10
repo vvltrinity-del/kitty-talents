@@ -18,6 +18,8 @@ import net.minecraft.world.phys.Vec3;
  * Electrified forward rush piercing through foes and inflicting Shock.
  */
 public class VoltDashAbility extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key DAMAGE =
+            com.kittytalents.core.tuning.Tuning.ability("volt_dash", "damage_mult", 1.35, "Damage x attack");
 
     public VoltDashAbility() {
         super("volt_dash", "Volt Dash", "Electrifies the cat and surges forward, striking and shocking all enemies in the path.",
@@ -43,7 +45,7 @@ public class VoltDashAbility extends CatAbility {
         AABB reach = cat.getBoundingBox().inflate(2.5D);
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, reach,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
-            float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.35F;
+            float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
             target.hurt(cat.damageSources().lightningBolt(), dmg);
             FelineStatusEffects.applyStatus(target, FelineStatusType.SHOCK, 1, 60);
         }

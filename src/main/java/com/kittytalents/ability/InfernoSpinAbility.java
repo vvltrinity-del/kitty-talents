@@ -17,6 +17,12 @@ import net.minecraft.world.phys.AABB;
  * Rotates rapidly with fiery claws, igniting all surrounding enemies and inflicting Burn.
  */
 public class InfernoSpinAbility extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key DAMAGE =
+            com.kittytalents.core.tuning.Tuning.ability("inferno_spin", "damage_mult", 1.4, "Damage x attack");
+    private static final com.kittytalents.core.tuning.Tuning.Key RADIUS =
+            com.kittytalents.core.tuning.Tuning.ability("inferno_spin", "radius", 4.5, "Radius");
+    private static final com.kittytalents.core.tuning.Tuning.Key BURN =
+            com.kittytalents.core.tuning.Tuning.ability("inferno_spin", "burn_ticks", 100, "Burn ticks");
 
     public InfernoSpinAbility() {
         super("inferno_spin", "Inferno Spin", "Whirls with blazing claws, damaging all surrounding enemies and setting them on fire.",
@@ -36,14 +42,14 @@ public class InfernoSpinAbility extends CatAbility {
         cat.playSound(SoundEvents.FIRECHARGE_USE, 1.0F, 1.2F);
         cat.playSound(SoundEvents.PLAYER_ATTACK_SWEEP, 1.0F, 1.5F);
 
-        AABB aoe = cat.getBoundingBox().inflate(4.5D);
-        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.4F;
+        AABB aoe = cat.getBoundingBox().inflate(RADIUS.get());
+        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
 
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
             target.hurt(cat.damageSources().inFire(), dmg);
             target.setSecondsOnFire(5);
-            FelineStatusEffects.applyStatus(target, FelineStatusType.BURN, 2, 100);
+            FelineStatusEffects.applyStatus(target, FelineStatusType.BURN, 2, BURN.i());
         }
 
         if (cat.level() instanceof ServerLevel sl) {

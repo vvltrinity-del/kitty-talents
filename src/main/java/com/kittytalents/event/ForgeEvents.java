@@ -34,14 +34,27 @@ public class ForgeEvents {
     @SubscribeEvent
     public static void onAddReloadListeners(net.minecraftforge.event.AddReloadListenerEvent event) {
         event.addListener(new com.kittytalents.skin.CatSkins.Loader());
+        event.addListener(new com.kittytalents.core.tuning.Tuning.Loader());
     }
 
     /** Sends the datapack skin list on join (player set) and to everyone after /reload (player null). */
     @SubscribeEvent
     public static void onDatapackSync(net.minecraftforge.event.OnDatapackSyncEvent event) {
-        var packet = new com.kittytalents.network.PacketSyncSkins();
-        if (event.getPlayer() != null) com.kittytalents.network.PacketHandler.sendToPlayer(packet, event.getPlayer());
-        else event.getPlayerList().getPlayers().forEach(p -> com.kittytalents.network.PacketHandler.sendToPlayer(packet, p));
+        var skins = new com.kittytalents.network.PacketSyncSkins();
+        var tuning = new com.kittytalents.network.PacketSyncTuning();
+        var players = event.getPlayer() != null ? java.util.List.of(event.getPlayer()) : event.getPlayerList().getPlayers();
+        for (var p : players) {
+            com.kittytalents.network.PacketHandler.sendToPlayer(skins, p);
+            com.kittytalents.network.PacketHandler.sendToPlayer(tuning, p);
+        }
+        // Talent max ranks may have changed: refresh every loaded cat's synced talents and attributes.
+        if (event.getPlayer() == null) {
+            for (var level : event.getPlayerList().getServer().getAllLevels()) {
+                for (var e : level.getAllEntities()) {
+                    if (e instanceof com.kittytalents.entity.TalentedCat cat) cat.refreshAfterTuning();
+                }
+            }
+        }
     }
 
     @SubscribeEvent

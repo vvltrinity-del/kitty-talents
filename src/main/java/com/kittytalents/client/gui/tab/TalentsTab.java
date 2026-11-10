@@ -36,6 +36,8 @@ public class TalentsTab implements CatTab {
     private Talent selected = Talents.POUNCE;
     private int category;
     private int scroll;
+    private int valuesX, valuesY, valuesW, valuesH; // description box: hover shows the talent's numbers
+    private boolean descCut;
 
     public TalentsTab() {
         for (Talent t : Talents.getAll()) {
@@ -190,9 +192,16 @@ public class TalentsTab implements CatTab {
         // Description box
         int boxX = dx + 8, boxW = dw - 16, by = iy + 26;
         List<FormattedCharSequence> desc = font.split(selected.getDescription(), boxW - 10);
-        int descLines = Math.min(desc.size(), 5);
-        KTTheme.box(g, boxX, by, boxW, descLines * 10 + 8, 0x665C4A3A);
+        // Leave room for a one-line Mastery box above the TRAIN row; the hover tooltip repeats a cut description.
+        int descLines = Math.max(1, Math.min(Math.min(desc.size(), 5), (ly + lh - 34 - by - 50) / 10));
+        descCut = descLines < desc.size();
+        KTTheme.box(g, boxX, by, boxW, descLines * 10 + 17, 0x665C4A3A);
         for (int i = 0; i < descLines; i++) g.drawString(font, desc.get(i), boxX + 5, by + 5 + i * 10, KTTheme.TEXT, false);
+        String hint = KTText.s("talents.values_hint", "Hover for numbers");
+        boolean overValues = mouseX >= boxX && mouseX < boxX + boxW && mouseY >= by && mouseY < by + descLines * 10 + 17;
+        g.drawString(font, hint, boxX + boxW - 5 - font.width(hint), by + 5 + descLines * 10, overValues ? KTTheme.TEXT_GOLD : 0xFF8B8580, false);
+        valuesX = boxX; valuesY = by; valuesW = boxW; valuesH = descLines * 10 + 17;
+        descLines++; // the hint row
 
         // Mastery box
         boolean mastered = TalentEngine.isMastered(cat, selected);
@@ -241,5 +250,25 @@ public class TalentsTab implements CatTab {
             int size = max > 10 ? 3 : 4;
             KTTheme.pips(g, rowX + 22, y, cat.getTalentLevel(t), max, size, 1);
         }
+        renderValuesTooltip(s, g, mouseX, mouseY);
+    }
+
+    private void renderValuesTooltip(CatTalentScreen s, GuiGraphics g, int mouseX, int mouseY) {
+        if (selected == null || valuesW == 0) return;
+        if (mouseX < valuesX || mouseX >= valuesX + valuesW || mouseY < valuesY || mouseY >= valuesY + valuesH) return;
+        List<Component> lines = new ArrayList<>();
+        if (descCut) {
+            for (FormattedCharSequence l : s.font().split(selected.getDescription(), 220)) {
+                StringBuilder sb = new StringBuilder();
+                l.accept((i, st, cp) -> { sb.appendCodePoint(cp); return true; });
+                lines.add(Component.literal(sb.toString()));
+            }
+            lines.add(Component.empty());
+        }
+        lines.add(KTText.t("talents.values", "Current numbers").copy().withStyle(st -> st.withColor(KTTheme.TEXT_GOLD & 0xFFFFFF)));
+        lines.addAll(com.kittytalents.core.tuning.Tuning.describeAll(com.kittytalents.core.tuning.Tuning.TALENTS, selected.getId(),
+                java.util.Set.of("max_rank", "cost_scale")));
+        if (lines.size() == 1) lines.add(KTText.t("talents.values_none", "No adjustable numbers"));
+        g.renderComponentTooltip(s.font(), lines, mouseX, mouseY);
     }
 }

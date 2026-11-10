@@ -21,8 +21,8 @@ public abstract class CatAbility {
     private final String id;
     private final String displayName;
     private final String description;
-    private final int energyCost;
-    private final int cooldownTicks;
+    private final com.kittytalents.core.tuning.Tuning.Key energyCost;
+    private final com.kittytalents.core.tuning.Tuning.Key cooldownTicks;
     private final FelineElement element;
     private final Category category;
 
@@ -30,8 +30,8 @@ public abstract class CatAbility {
         this.id = id;
         this.displayName = displayName;
         this.description = description;
-        this.energyCost = energyCost;
-        this.cooldownTicks = cooldownTicks;
+        this.energyCost = com.kittytalents.core.tuning.Tuning.ability(id, "energy_cost", energyCost, "Energy cost");
+        this.cooldownTicks = com.kittytalents.core.tuning.Tuning.ability(id, "cooldown_ticks", cooldownTicks, "Cooldown ticks");
         this.element = element;
         this.category = category;
     }
@@ -57,11 +57,11 @@ public abstract class CatAbility {
     }
 
     public int getEnergyCost() {
-        return energyCost;
+        return energyCost.i();
     }
 
     public int getCooldownTicks() {
-        return cooldownTicks;
+        return cooldownTicks.i();
     }
 
     public FelineElement getElement() {
@@ -91,17 +91,17 @@ public abstract class CatAbility {
         long lastCastTime = cat.getAbilityCooldown(id);
         long currentTime = cat.level().getGameTime();
 
-        if (currentTime < lastCastTime + cooldownTicks) {
+        if (currentTime < lastCastTime + getCooldownTicks()) {
             return false; // Still on cooldown
         }
 
-        if (FelineEnergyEngine.getEnergy(cat) < energyCost) {
+        if (FelineEnergyEngine.getEnergy(cat) < getEnergyCost()) {
             return false; // Not enough energy
         }
 
         if (execute(cat, player)) {
             cat.playAnimation(TalentedCat.ANIM_CAST);
-            FelineEnergyEngine.consumeEnergy(cat, energyCost);
+            FelineEnergyEngine.consumeEnergy(cat, getEnergyCost());
             cat.setAbilityCooldown(id, currentTime);
 
             if (isUltimate()) {

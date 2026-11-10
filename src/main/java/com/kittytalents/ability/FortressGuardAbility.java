@@ -17,6 +17,8 @@ import net.minecraft.world.phys.AABB;
  * Stomps the ground, drawing enemy aggro and granting Fortified (30% damage reduction).
  */
 public class FortressGuardAbility extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key TICKS =
+            com.kittytalents.core.tuning.Tuning.ability("fortress_guard", "fortified_ticks", 140, "Fortified ticks");
 
     public FortressGuardAbility() {
         super("fortress_guard", "Fortress Guard", "Hardens defenses, taunting nearby enemies and granting Fortified to self and owner.",
@@ -34,10 +36,10 @@ public class FortressGuardAbility extends CatAbility {
         cat.playSound(SoundEvents.SHIELD_BLOCK, 1.0F, 1.0F);
         cat.playSound(SoundEvents.ANVIL_LAND, 0.5F, 1.6F);
 
-        FelineStatusEffects.applyStatus(cat, FelineStatusType.FORTIFIED, 2, 140);
+        FelineStatusEffects.applyStatus(cat, FelineStatusType.FORTIFIED, 2, TICKS.i());
         LivingEntity owner = cat.getOwner();
         if (owner != null) {
-            FelineStatusEffects.applyStatus(owner, FelineStatusType.FORTIFIED, 1, 140);
+            FelineStatusEffects.applyStatus(owner, FelineStatusType.FORTIFIED, 1, TICKS.i());
         }
 
         AABB tauntArea = cat.getBoundingBox().inflate(8.0D);

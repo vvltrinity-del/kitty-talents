@@ -1,0 +1,11 @@
+{
+  "talents": {
+    "hunter_cat": { "damage_per_rank": 3.5, "max_rank": 6 },
+    "cat_armor": { "armor_per_rank": 2.5 },
+    "pounce": { "cooldown_ticks": 80 }
+  },
+  "abilities": {
+    "frost_nova": { "cooldown_ticks": 120, "radius": 6 },
+    "starfall": { "max_targets": 4 }
+  }
+}

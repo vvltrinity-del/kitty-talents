@@ -21,6 +21,10 @@ import java.util.List;
  * all nearby companions and the owner.
  */
 public class CelestialPurrUltimate extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key HEAL =
+            com.kittytalents.core.tuning.Tuning.ability("celestial_purr", "heal", 0.6, "Heal fraction");
+    private static final com.kittytalents.core.tuning.Tuning.Key RADIUS =
+            com.kittytalents.core.tuning.Tuning.ability("celestial_purr", "radius", 12.0, "Radius");
 
     public CelestialPurrUltimate() {
         super("celestial_purr", "Celestial Purr", "Resonates with celestial warmth, cleansing all debuffs and restoring massive health and absorption to allies.",
@@ -39,12 +43,12 @@ public class CelestialPurrUltimate extends CatAbility {
         cat.playSound(SoundEvents.BEACON_ACTIVATE, 1.2F, 1.4F);
         cat.playSound(SoundEvents.TOTEM_USE, 0.8F, 1.5F);
 
-        AABB aoe = cat.getBoundingBox().inflate(12.0D);
+        AABB aoe = cat.getBoundingBox().inflate(RADIUS.get());
         List<LivingEntity> allies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.isFriendly(cat, e));
 
         for (LivingEntity ally : allies) {
-            ally.heal(ally.getMaxHealth() * 0.60F);
+            ally.heal(ally.getMaxHealth() * HEAL.f());
             ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 200, 2));
             ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 300, 2));
 

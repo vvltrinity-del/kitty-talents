@@ -17,6 +17,8 @@ import net.minecraft.world.phys.AABB;
  * Ambush teleport behind an enemy dealing burst shadow damage and inflicting Vulnerable.
  */
 public class ShadowStrikeAbility extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key DAMAGE =
+            com.kittytalents.core.tuning.Tuning.ability("shadow_strike", "damage_mult", 2.2, "Damage x attack");
 
     public ShadowStrikeAbility() {
         super("shadow_strike", "Shadow Strike", "Steps through the shadows to strike an enemy from behind, dealing burst damage and inflicting Vulnerable.",
@@ -50,7 +52,7 @@ public class ShadowStrikeAbility extends CatAbility {
             cat.playSound(SoundEvents.ENDERMAN_TELEPORT, 1.0F, 1.2F);
             cat.playSound(SoundEvents.PLAYER_ATTACK_CRIT, 1.0F, 1.4F);
 
-            float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 2.2F;
+            float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
             target.hurt(cat.damageSources().magic(), dmg);
 
             FelineStatusEffects.applyStatus(target, FelineStatusType.VULNERABLE, 2, 120);

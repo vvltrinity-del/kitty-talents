@@ -32,11 +32,17 @@ final class MobilityAndDireTalents {
 
     /** +0.03 speed/rank; 10%/rank chance to dodge projectiles. Mastery "Ghost Step": also 15% chance to dodge melee. */
     static final class FelineAgility implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key SPEED =
+                com.kittytalents.core.tuning.Tuning.talent("feline_agility", "speed_per_rank", 0.03, "Speed per rank");
+        private static final com.kittytalents.core.tuning.Tuning.Key DODGE =
+                com.kittytalents.core.tuning.Tuning.talent("feline_agility", "projectile_dodge_per_rank", 0.1, "Projectile dodge per rank");
+        private static final com.kittytalents.core.tuning.Tuning.Key MELEE =
+                com.kittytalents.core.tuning.Tuning.talent("feline_agility", "mastery_melee_dodge", 0.15, "Mastery: melee dodge");
         @Override public void applyAttributes(TalentContext ctx, AttributeTotals t) {
-            t.movementSpeed += ctx.rank * 0.03D;
+            t.movementSpeed += ctx.rank * SPEED.get();
         }
         @Override public float modifyIncomingDamage(TalentContext ctx, DamageSource src, float amt) {
-            float chance = src.isIndirect() ? ctx.rank * 0.10F : (ctx.mastered() ? 0.15F : 0.0F);
+            float chance = src.isIndirect() ? ctx.rank * DODGE.f() : (ctx.mastered() ? MELEE.f() : 0.0F);
             if (chance > 0 && ctx.cat.getRandom().nextFloat() < chance) {
                 ctx.cat.playSound(SoundEvents.CAT_PURREOW, 0.7F, 1.5F);
                 return 0.0F;
@@ -98,16 +104,24 @@ final class MobilityAndDireTalents {
 
     /** Below half health in a fight: Speed, Haste and Energy every 2 s. Mastery "Bloodlust": heals 20% of melee damage dealt. */
     static final class FrenzyFocus implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key HP =
+                com.kittytalents.core.tuning.Tuning.talent("frenzy_focus", "trigger_below_health", 0.5, "Triggers below health");
+        private static final com.kittytalents.core.tuning.Tuning.Key EN =
+                com.kittytalents.core.tuning.Tuning.talent("frenzy_focus", "energy", 5, "Energy");
+        private static final com.kittytalents.core.tuning.Tuning.Key EN_PER =
+                com.kittytalents.core.tuning.Tuning.talent("frenzy_focus", "energy_per_rank", 2, "Energy per rank");
+        private static final com.kittytalents.core.tuning.Tuning.Key LEECH =
+                com.kittytalents.core.tuning.Tuning.talent("frenzy_focus", "mastery_lifesteal", 0.2, "Mastery: lifesteal");
         @Override public int tickInterval() { return 40; }
         @Override public void onTick(TalentContext ctx) {
-            if (ctx.cat.getHealth() <= ctx.cat.getMaxHealth() * 0.5F && ctx.cat.getTarget() != null) {
+            if (ctx.cat.getHealth() <= ctx.cat.getMaxHealth() * HP.f() && ctx.cat.getTarget() != null) {
                 ctx.cat.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 50, 1, false, false, true));
                 FelineStatusEffects.applyStatus(ctx.cat, FelineStatusType.HASTE, 1, 50);
-                FelineEnergyEngine.restoreEnergy(ctx.cat, 5 + ctx.rank * 2);
+                FelineEnergyEngine.restoreEnergy(ctx.cat, EN.i() + ctx.rank * EN_PER.i());
             }
         }
         @Override public void onHitDealt(TalentContext ctx, LivingEntity t, float dmg) {
-            if (ctx.mastered()) ctx.cat.heal(dmg * 0.2F);
+            if (ctx.mastered()) ctx.cat.heal(dmg * LEECH.f());
         }
     }
 
@@ -118,6 +132,12 @@ final class MobilityAndDireTalents {
      * (Fixed: procs used to fire on any damage the cat caused, including its own AoE, now melee hits only.)
      */
     static final class AlchemyKitty implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key CH =
+                com.kittytalents.core.tuning.Tuning.talent("alchemy_kitty", "proc_chance", 0.15, "Hit proc chance");
+        private static final com.kittytalents.core.tuning.Tuning.Key CH_PER =
+                com.kittytalents.core.tuning.Tuning.talent("alchemy_kitty", "proc_chance_per_rank", 0.07, "Proc chance per rank");
+        private static final com.kittytalents.core.tuning.Tuning.Key SPLASH =
+                com.kittytalents.core.tuning.Tuning.talent("alchemy_kitty", "mastery_splash_radius", 3.0, "Mastery: splash radius");
         @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 1600; }
         @Override public void onTick(TalentContext ctx) {
@@ -131,10 +151,10 @@ final class MobilityAndDireTalents {
         }
         @Override public void onHitDealt(TalentContext ctx, LivingEntity victim, float dmg) {
             if (ctx.mastered()) transferOwnerDebuffs(ctx, victim);
-            if (ctx.cat.getRandom().nextFloat() >= 0.15F + ctx.rank * 0.07F) return;
+            if (ctx.cat.getRandom().nextFloat() >= CH.f() + ctx.rank * CH_PER.f()) return;
             int roll = ctx.cat.getRandom().nextInt(3);
             afflict(victim, roll);
-            if (ctx.mastered()) TalentHelpers.foesAround(ctx.cat, victim, 3.0D).forEach(e -> afflict(e, roll));
+            if (ctx.mastered()) TalentHelpers.foesAround(ctx.cat, victim, SPLASH.get()).forEach(e -> afflict(e, roll));
             ctx.cat.playSound(SoundEvents.BREWING_STAND_BREW, 0.8F, 1.6F);
             if (ctx.cat.level() instanceof ServerLevel sl) {
                 sl.sendParticles(ParticleTypes.WITCH, victim.getX(), victim.getY() + 0.5, victim.getZ(), 8, 0.2, 0.2, 0.2, 0.05);
@@ -174,25 +194,43 @@ final class MobilityAndDireTalents {
      * (Fixed: the burst used explosion damage credited to the cat, which re-triggered itself on every monster it hit.)
      */
     static final class CatnipCatastrophe implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key HP =
+                com.kittytalents.core.tuning.Tuning.talent("catnip_catastrophe", "shockwave_below_health", 0.25, "Shockwave below health");
+        private static final com.kittytalents.core.tuning.Tuning.Key CD =
+                com.kittytalents.core.tuning.Tuning.talent("catnip_catastrophe", "shockwave_cooldown_ticks", 400, "Shockwave cooldown ticks");
+        private static final com.kittytalents.core.tuning.Tuning.Key R =
+                com.kittytalents.core.tuning.Tuning.talent("catnip_catastrophe", "shockwave_radius", 6.0, "Shockwave radius");
+        private static final com.kittytalents.core.tuning.Tuning.Key DMG =
+                com.kittytalents.core.tuning.Tuning.talent("catnip_catastrophe", "shockwave_damage", 8.0, "Shockwave damage");
+        private static final com.kittytalents.core.tuning.Tuning.Key DMG_PER =
+                com.kittytalents.core.tuning.Tuning.talent("catnip_catastrophe", "shockwave_damage_per_rank", 3.0, "Shockwave damage per rank");
+        private static final com.kittytalents.core.tuning.Tuning.Key HEAL =
+                com.kittytalents.core.tuning.Tuning.talent("catnip_catastrophe", "mastery_heal", 0.3, "Mastery: heal fraction");
+        private static final com.kittytalents.core.tuning.Tuning.Key BURST =
+                com.kittytalents.core.tuning.Tuning.talent("catnip_catastrophe", "burst_chance", 0.2, "Burst chance");
+        private static final com.kittytalents.core.tuning.Tuning.Key BDMG =
+                com.kittytalents.core.tuning.Tuning.talent("catnip_catastrophe", "burst_damage", 3.0, "Burst damage");
+        private static final com.kittytalents.core.tuning.Tuning.Key BDMG_PER =
+                com.kittytalents.core.tuning.Tuning.talent("catnip_catastrophe", "burst_damage_per_rank", 2.0, "Burst damage per rank");
         @Override public int tickInterval() { return 5; }
         @Override public void onTick(TalentContext ctx) {
-            if (ctx.cat.getHealth() >= ctx.cat.getMaxHealth() * 0.25F || !ctx.ready("shockwave")) return;
-            ctx.cooldown("shockwave", 400);
+            if (ctx.cat.getHealth() >= ctx.cat.getMaxHealth() * HP.f() || !ctx.ready("shockwave")) return;
+            ctx.cooldown("shockwave", CD.i());
             ctx.cat.playSound(SoundEvents.GENERIC_EXPLODE, 1.0F, 1.5F);
-            for (LivingEntity m : TalentHelpers.foesAround(ctx.cat, ctx.cat, 6.0D)) {
+            for (LivingEntity m : TalentHelpers.foesAround(ctx.cat, ctx.cat, R.get())) {
                 Vec3 diff = m.position().subtract(ctx.cat.position());
                 Vec3 blast = diff.lengthSqr() > 1.0E-4D ? diff.normalize().scale(1.8D) : new Vec3(0, 0.5D, 0);
                 m.push(blast.x, 0.5D, blast.z);
-                m.hurt(ctx.cat.damageSources().mobAttack(ctx.cat), 8.0F + ctx.rank * 3.0F);
+                m.hurt(ctx.cat.damageSources().mobAttack(ctx.cat), DMG.f() + ctx.rank * DMG_PER.f());
             }
-            if (ctx.mastered()) ctx.cat.heal(ctx.cat.getMaxHealth() * 0.3F);
+            if (ctx.mastered()) ctx.cat.heal(ctx.cat.getMaxHealth() * HEAL.f());
             if (ctx.cat.level() instanceof ServerLevel sl) {
                 sl.sendParticles(ParticleTypes.EXPLOSION_EMITTER, ctx.cat.getX(), ctx.cat.getY() + 0.5D, ctx.cat.getZ(), 1, 0, 0, 0, 0);
             }
         }
         @Override public void onHitDealt(TalentContext ctx, LivingEntity victim, float dmg) {
-            if (!(ctx.cat.getHealth() < ctx.cat.getMaxHealth() * 0.4F || ctx.cat.getRandom().nextFloat() < 0.20F)) return;
-            float aoe = 3.0F + ctx.rank * 2.0F;
+            if (!(ctx.cat.getHealth() < ctx.cat.getMaxHealth() * 0.4F || ctx.cat.getRandom().nextFloat() < BURST.f())) return;
+            float aoe = BDMG.f() + ctx.rank * BDMG_PER.f();
             for (LivingEntity m : TalentHelpers.foesAround(ctx.cat, victim, 3.5D + ctx.rank * 0.5D)) {
                 m.hurt(ctx.cat.damageSources().magic(), aoe); // not credited as a cat melee hit: cannot re-trigger itself
                 m.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 100, 1));

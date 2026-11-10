@@ -38,12 +38,12 @@ public class CatPounceGoal extends Goal {
 
     /** Ticks between pounces: 100 at rank 0, 10 fewer per Pounce rank, never under 40. */
     public static int cooldownTicks(TalentedCat cat) {
-        return Math.max(40, 100 - 10 * cat.getTalentLevel(Talents.POUNCE));
+        return Math.max(com.kittytalents.talent.TalentTuning.POUNCE_MIN_COOLDOWN.i(), com.kittytalents.talent.TalentTuning.POUNCE_COOLDOWN.i() - com.kittytalents.talent.TalentTuning.POUNCE_COOLDOWN_PER_RANK.i() * cat.getTalentLevel(Talents.POUNCE));
     }
 
     /** Max pounce distance in blocks: 8 at rank 0, +0.75 per rank. */
     public static double maxRange(TalentedCat cat) {
-        return 8.0D + 0.75D * cat.getTalentLevel(Talents.POUNCE);
+        return com.kittytalents.talent.TalentTuning.POUNCE_RANGE.get() + com.kittytalents.talent.TalentTuning.POUNCE_RANGE_PER_RANK.get() * cat.getTalentLevel(Talents.POUNCE);
     }
 
     public static boolean isGrounded(TalentedCat cat) {

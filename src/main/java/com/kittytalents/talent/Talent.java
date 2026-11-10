@@ -18,6 +18,8 @@ public class Talent {
     private final boolean standard;
     private final TalentCategory category;
     private final String requiredModId;
+    private final com.kittytalents.core.tuning.Tuning.Key maxRank;
+    private final com.kittytalents.core.tuning.Tuning.Key costScale;
 
     public Talent(String id, int maxLevel, Supplier<ItemStack> iconSupplier) {
         this(id, maxLevel, iconSupplier, false, false, TalentCategory.UTILITY, null);
@@ -43,6 +45,10 @@ public class Talent {
         this.standard = standard;
         this.category = category != null ? category : (requiresDireTreat ? TalentCategory.DIRE : TalentCategory.UTILITY);
         this.requiredModId = requiredModId;
+        this.maxRank = com.kittytalents.core.tuning.Tuning.define(com.kittytalents.core.tuning.Tuning.TALENTS, id, "max_rank",
+                maxLevel, 1, 10, "Max rank");
+        this.costScale = com.kittytalents.core.tuning.Tuning.define(com.kittytalents.core.tuning.Tuning.TALENTS, id, "cost_scale",
+                1.0, 0.0, 10.0, "Point cost multiplier");
     }
 
     public boolean isStandard() {
@@ -53,8 +59,19 @@ public class Talent {
         return id;
     }
 
+    /** Max rank: the datapack value (1..10), default the built-in one. */
     public int getMaxLevel() {
+        return maxRank.i();
+    }
+
+    /** The built-in max rank (decides the point-cost curve, so tuning max_rank doesn't reprice ranks). */
+    public int getDefaultMaxLevel() {
         return maxLevel;
+    }
+
+    /** Multiplier on every rank's skill point cost (tuning "cost_scale", default 1). */
+    public double getCostScale() {
+        return costScale.get();
     }
 
     public boolean requiresDireTreat() {

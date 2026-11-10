@@ -44,10 +44,12 @@ final class UtilityTalents {
 
     /** Repels creepers and phantoms (CatCreeperWardenGoal). Mastery "Cat's Eyes": the owner nearby gets Night Vision. */
     static final class NightProwler implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key R =
+                com.kittytalents.core.tuning.Tuning.talent("night_prowler", "mastery_owner_range", 16.0, "Mastery: owner range");
         @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 100; }
         @Override public void onTick(TalentContext ctx) {
-            Player o = ctx.mastered() ? ctx.ownerWithin(16.0D) : null;
+            Player o = ctx.mastered() ? ctx.ownerWithin(R.get()) : null;
             if (o != null) TalentHelpers.aura(o, MobEffects.NIGHT_VISION, 400, 0);
         }
     }
@@ -88,10 +90,14 @@ final class UtilityTalents {
 
     /** Warns of nearby monsters. Mastery "Sixth Sense": hostiles in range glow so the owner can see them through walls. */
     static final class WhiskerRadar implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key R =
+                com.kittytalents.core.tuning.Tuning.talent("whisker_radar", "radius", 8.0, "Radius");
+        private static final com.kittytalents.core.tuning.Tuning.Key R_PER =
+                com.kittytalents.core.tuning.Tuning.talent("whisker_radar", "radius_per_rank", 4.0, "Radius per rank");
         @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 160; }
         @Override public void onTick(TalentContext ctx) {
-            double r = 8.0D + ctx.rank * 4.0D;
+            double r = R.get() + ctx.rank * R_PER.get();
             var foes = ctx.cat.level().getEntitiesOfClass(LivingEntity.class, ctx.cat.getBoundingBox().inflate(r),
                     e -> e instanceof Enemy && e.isAlive());
             if (foes.isEmpty()) return;
@@ -105,9 +111,13 @@ final class UtilityTalents {
      * (Fixed: the retrieved-items statistic used to count every pull tick of every item, not actual retrievals.)
      */
     static final class PawRetriever implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key R =
+                com.kittytalents.core.tuning.Tuning.talent("paw_retriever", "radius", 4.0, "Radius");
+        private static final com.kittytalents.core.tuning.Tuning.Key R_PER =
+                com.kittytalents.core.tuning.Tuning.talent("paw_retriever", "radius_per_rank", 2.0, "Radius per rank");
         @Override public int tickInterval() { return 10; }
         @Override public void onTick(TalentContext ctx) {
-            for (ItemEntity item : ctx.cat.level().getEntitiesOfClass(ItemEntity.class, ctx.cat.getBoundingBox().inflate(4.0D + ctx.rank * 2.0D),
+            for (ItemEntity item : ctx.cat.level().getEntitiesOfClass(ItemEntity.class, ctx.cat.getBoundingBox().inflate(R.get() + ctx.rank * R_PER.get()),
                     i -> i.isAlive() && !i.hasPickUpDelay())) {
                 Vec3 diff = ctx.cat.position().subtract(item.position());
                 if (diff.lengthSqr() > 1.0E-4D) {
@@ -124,6 +134,8 @@ final class UtilityTalents {
 
     /** Digs up small finds from dirt every minute. Mastery "Treasure Nose": finds can be gold, emeralds or diamonds. */
     static final class SnifferWhiskers implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key RARE =
+                com.kittytalents.core.tuning.Tuning.talent("sniffer_whiskers", "mastery_rare_chance", 0.25, "Mastery: rare find chance");
         @Override public int tickInterval() { return 1200; }
         @Override public void onTick(TalentContext ctx) {
             if (!ctx.cat.onGround() || !ctx.cat.level().getBlockState(ctx.cat.blockPosition().below()).is(BlockTags.DIRT)) return;
@@ -131,7 +143,7 @@ final class UtilityTalents {
             ItemStack[] common = {new ItemStack(Items.WHEAT_SEEDS, 2), new ItemStack(Items.PUMPKIN_SEEDS), new ItemStack(Items.MELON_SEEDS),
                     new ItemStack(Items.BEETROOT_SEEDS), new ItemStack(Items.BONE), new ItemStack(Items.IRON_NUGGET, 2), new ItemStack(ModItems.CATNIP.get())};
             ItemStack[] rare = {new ItemStack(Items.GOLD_INGOT), new ItemStack(Items.EMERALD), new ItemStack(Items.DIAMOND)};
-            ItemStack reward = ctx.mastered() && ctx.cat.getRandom().nextFloat() < 0.25F
+            ItemStack reward = ctx.mastered() && ctx.cat.getRandom().nextFloat() < RARE.f()
                     ? rare[ctx.cat.getRandom().nextInt(rare.length)]
                     : common[ctx.cat.getRandom().nextInt(common.length)];
             Containers.dropItemStack(ctx.cat.level(), ctx.cat.getX(), ctx.cat.getY(), ctx.cat.getZ(), reward.copy());
@@ -190,6 +202,12 @@ final class UtilityTalents {
      * (Fixed: the swim boost used to be applied twice per tick by two separate code paths, compounding.)
      */
     static final class AquaKitty implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key CAP =
+                com.kittytalents.core.tuning.Tuning.talent("aqua_kitty", "swim_speed", 0.22, "Top swim speed");
+        private static final com.kittytalents.core.tuning.Tuning.Key CAP_PER =
+                com.kittytalents.core.tuning.Tuning.talent("aqua_kitty", "swim_speed_per_rank", 0.03, "Swim speed per rank");
+        private static final com.kittytalents.core.tuning.Tuning.Key BOOST =
+                com.kittytalents.core.tuning.Tuning.talent("aqua_kitty", "swim_boost", 1.15, "Swim boost x");
         @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 1; }
         @Override public void onTick(TalentContext ctx) {
@@ -198,8 +216,8 @@ final class UtilityTalents {
             Vec3 mov = ctx.cat.getDeltaMovement();
             if (mov.horizontalDistanceSqr() > 0.001D) {
                 // Boost, but clamp to a top swim speed: a per-tick multiplier alone outpaces water drag and accelerates forever.
-                double cap = 0.22D + ctx.rank * 0.03D;
-                Vec3 boosted = new Vec3(mov.x * 1.15D, 0, mov.z * 1.15D);
+                double cap = CAP.get() + ctx.rank * CAP_PER.get();
+                Vec3 boosted = new Vec3(mov.x * BOOST.get(), 0, mov.z * BOOST.get());
                 double h = boosted.horizontalDistance();
                 if (h > cap) boosted = boosted.scale(cap / h);
                 ctx.cat.setDeltaMovement(boosted.x, mov.y, boosted.z);

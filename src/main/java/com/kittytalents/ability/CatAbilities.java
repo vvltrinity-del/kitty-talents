@@ -24,6 +24,10 @@ public class CatAbilities {
     public static final CatAbility FROST_NOVA = register(new FrostNovaAbility());
     public static final CatAbility TIDAL_SURGE = register(new TidalSurgeAbility());
     public static final CatAbility VENOM_FANG = register(new VenomFangAbility());
+    // 4.0: Frost, Poison and Arcane had the fewest options
+    public static final CatAbility ICE_LANCE = register(new IceLanceAbility());
+    public static final CatAbility TOXIC_CLOUD = register(new ToxicCloudAbility());
+    public static final CatAbility ARCANE_BLINK = register(new ArcaneBlinkAbility());
 
     // Ultimates
     public static final CatAbility CATNIP_FRENZY = register(new CatnipFrenzyUltimate());
@@ -31,6 +35,9 @@ public class CatAbilities {
     public static final CatAbility APEX_PREDATOR = register(new ApexPredatorUltimate());
     public static final CatAbility CELESTIAL_PURR = register(new CelestialPurrUltimate());
     public static final CatAbility TEMPEST_CLAWS = register(new TempestClawsUltimate());
+    public static final CatAbility BLIZZARD = register(new BlizzardUltimate());
+    public static final CatAbility PLAGUE_BLOOM = register(new PlagueBloomUltimate());
+    public static final CatAbility STARFALL = register(new StarfallUltimate());
 
     public static CatAbility register(CatAbility ability) {
         REGISTRY.put(ability.getId(), ability);

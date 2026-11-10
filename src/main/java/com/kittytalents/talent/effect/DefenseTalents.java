@@ -41,13 +41,19 @@ final class DefenseTalents {
 
     /** Takes 12%/rank less damage (min 40% taken). Mastery "Bulwark": absorbs 25% of the damage its owner takes. */
     static final class GuardianCat implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key PER =
+                com.kittytalents.core.tuning.Tuning.talent("guardian_cat", "damage_reduction_per_rank", 0.12, "Damage reduction per rank");
+        private static final com.kittytalents.core.tuning.Tuning.Key FLOOR =
+                com.kittytalents.core.tuning.Tuning.talent("guardian_cat", "min_damage_taken", 0.4, "Min damage taken");
+        private static final com.kittytalents.core.tuning.Tuning.Key SHARE =
+                com.kittytalents.core.tuning.Tuning.talent("guardian_cat", "mastery_owner_share", 0.25, "Mastery: owner damage absorbed");
         @Override public float modifyIncomingDamage(TalentContext ctx, DamageSource src, float amt) {
-            return amt > 1.0F ? amt * Math.max(0.4F, 1.0F - ctx.rank * 0.12F) : amt;
+            return amt > 1.0F ? amt * Math.max(FLOOR.f(), 1.0F - ctx.rank * PER.f()) : amt;
         }
         @Override public float onOwnerHurt(TalentContext ctx, Player owner, DamageSource src, float amt) {
             if (!ctx.mastered() || amt <= 1.0F || src.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return amt;
             if (ctx.cat.getHealth() < ctx.cat.getMaxHealth() * 0.3F) return amt; // don't sacrifice itself
-            float shared = amt * 0.25F;
+            float shared = amt * SHARE.f();
             ctx.cat.hurt(ctx.cat.damageSources().generic(), shared);
             return amt - shared;
         }
@@ -55,11 +61,17 @@ final class DefenseTalents {
 
     /** +3 armor, +1.5 toughness, +15% knockback resistance per rank. Mastery "Living Armor": worn armor repairs itself (free Mending). */
     static final class CatArmor implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key ARMOR =
+                com.kittytalents.core.tuning.Tuning.talent("cat_armor", "armor_per_rank", 3.0, "Armor per rank");
+        private static final com.kittytalents.core.tuning.Tuning.Key TOUGH =
+                com.kittytalents.core.tuning.Tuning.talent("cat_armor", "toughness_per_rank", 1.5, "Toughness per rank");
+        private static final com.kittytalents.core.tuning.Tuning.Key KB =
+                com.kittytalents.core.tuning.Tuning.talent("cat_armor", "knockback_resist_per_rank", 0.15, "Knockback resistance per rank");
         @Override public boolean worksWhileResting() { return true; }
         @Override public void applyAttributes(TalentContext ctx, AttributeTotals t) {
-            t.armor += ctx.rank * 3.0D;
-            t.armorToughness += ctx.rank * 1.5D;
-            t.knockbackResistance = Math.min(0.75D, t.knockbackResistance + ctx.rank * 0.15D);
+            t.armor += ctx.rank * ARMOR.get();
+            t.armorToughness += ctx.rank * TOUGH.get();
+            t.knockbackResistance = Math.min(0.75D, t.knockbackResistance + ctx.rank * KB.get());
         }
         @Override public int tickInterval() { return 40; }
         @Override public void onTick(TalentContext ctx) {
@@ -88,13 +100,15 @@ final class DefenseTalents {
 
     /** Invisible in darkness or while crouching. Mastery "Umbral Cloak": the owner nearby is also hidden in darkness. */
     static final class ShadowPelt implements TalentEffect {
+        private static final com.kittytalents.core.tuning.Tuning.Key LIGHT =
+                com.kittytalents.core.tuning.Tuning.talent("shadow_pelt", "max_light", 4, "Hidden at light level or below");
         @Override public boolean worksWhileResting() { return true; }
         @Override public int tickInterval() { return 20; }
         @Override public void onTick(TalentContext ctx) {
             int light = ctx.cat.level().getBrightness(LightLayer.BLOCK, ctx.cat.blockPosition());
-            if (light <= 4 || ctx.cat.isCrouching()) TalentHelpers.aura(ctx.cat, MobEffects.INVISIBILITY, 40, 0);
+            if (light <= LIGHT.i() || ctx.cat.isCrouching()) TalentHelpers.aura(ctx.cat, MobEffects.INVISIBILITY, 40, 0);
             Player o = ctx.mastered() ? ctx.ownerWithin(8.0D) : null;
-            if (o != null && o.level().getBrightness(LightLayer.BLOCK, o.blockPosition()) <= 4) {
+            if (o != null && o.level().getBrightness(LightLayer.BLOCK, o.blockPosition()) <= LIGHT.i()) {
                 TalentHelpers.aura(o, MobEffects.INVISIBILITY, 40, 0);
             }
         }

@@ -33,6 +33,31 @@ public class KittyTalentsCommand {
             }
         }));
 
+        // /kittytalents tuning export: writes every tunable number with its default, as a ready-to-edit datapack file.
+        root.then(Commands.literal("tuning")
+                .then(Commands.literal("export").executes(context -> {
+                    CommandSourceStack source = context.getSource();
+                    java.nio.file.Path out = source.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+                            .resolve("kittytalents_tuning_defaults.json");
+                    try {
+                        java.nio.file.Files.writeString(out, new com.google.gson.GsonBuilder().setPrettyPrinting().create()
+                                .toJson(com.kittytalents.core.tuning.Tuning.defaultsAsJson()));
+                    } catch (java.io.IOException e) {
+                        source.sendFailure(Component.literal("Could not write " + out + ": " + e.getMessage()));
+                        return 0;
+                    }
+                    int n = com.kittytalents.core.tuning.Tuning.all().size();
+                    source.sendSuccess(() -> Component.literal("§6[Kitty Talents]§r Wrote " + n + " tuning values to " + out.normalize()), false);
+                    return n;
+                }))
+                .then(Commands.literal("changed").executes(context -> {
+                    var changed = com.kittytalents.core.tuning.Tuning.overrides();
+                    context.getSource().sendSuccess(() -> Component.literal("§6[Kitty Talents]§r " + changed.size() + " values changed by datapacks"), false);
+                    changed.forEach((k, v) -> context.getSource().sendSuccess(() -> Component.literal("  " + k + " = "
+                            + com.kittytalents.core.tuning.Tuning.format(v)), false));
+                    return changed.size();
+                })));
+
         root.then(Commands.literal("nekonight")
                 .then(Commands.literal("start").executes(context -> {
                     CommandSourceStack source = context.getSource();

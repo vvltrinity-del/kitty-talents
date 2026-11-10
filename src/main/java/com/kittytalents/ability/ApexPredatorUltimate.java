@@ -20,6 +20,10 @@ import java.util.List;
  * with lethal critical damage, inflicting Bleed and Weakness.
  */
 public class ApexPredatorUltimate extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key DAMAGE =
+            com.kittytalents.core.tuning.Tuning.ability("apex_predator", "damage_mult", 2.5, "Damage x attack");
+    private static final com.kittytalents.core.tuning.Tuning.Key RADIUS =
+            com.kittytalents.core.tuning.Tuning.ability("apex_predator", "radius", 10.0, "Radius");
 
     public ApexPredatorUltimate() {
         super("apex_predator", "Apex Predator", "Teleports in rapid sequence across up to 4 nearby foes, dealing lethal critical strikes.",
@@ -36,7 +40,7 @@ public class ApexPredatorUltimate extends CatAbility {
 
     @Override
     protected boolean execute(TalentedCat cat, Player player) {
-        AABB aoe = cat.getBoundingBox().inflate(10.0D);
+        AABB aoe = cat.getBoundingBox().inflate(RADIUS.get());
         List<LivingEntity> enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e));
 
@@ -45,7 +49,7 @@ public class ApexPredatorUltimate extends CatAbility {
         cat.playSound(SoundEvents.PHANTOM_BITE, 1.2F, 1.6F);
         cat.playSound(SoundEvents.PLAYER_ATTACK_SWEEP, 1.2F, 1.2F);
 
-        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 2.5F;
+        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
         int count = 0;
 
         for (LivingEntity target : enemies) {

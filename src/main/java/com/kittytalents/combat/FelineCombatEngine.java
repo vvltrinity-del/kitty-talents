@@ -217,7 +217,7 @@ public class FelineCombatEngine {
             // Passive dodge from Feline Reflexes talent (R8)
             int reflexesLvl = cat.getTalentLevel(Talents.FELINE_REFLEXES);
             if (reflexesLvl > 0) {
-                float passiveDodgeChance = reflexesLvl * 0.07F; // up to 35%
+                float passiveDodgeChance = reflexesLvl * com.kittytalents.talent.TalentTuning.REFLEX_DODGE_PER_RANK.f(); // up to 35%
                 if (cat.getRandom().nextFloat() < passiveDodgeChance) {
                     event.setCanceled(true);
                     cat.playSound(ModSounds.CAT_DODGE.get(), 0.7F, 1.4F);
@@ -369,10 +369,10 @@ public class FelineCombatEngine {
             int critLvl = cat.getTalentLevel(Talents.CRITICAL_CLAWS);
             float critChance = role.getCritChanceBonus();
             if (critLvl > 0) {
-                critChance += 0.10F + (critLvl * 0.08F); // Up to 50% crit chance
+                critChance += com.kittytalents.talent.TalentTuning.CRIT_CHANCE.f() + (critLvl * com.kittytalents.talent.TalentTuning.CRIT_CHANCE_PER_RANK.f()); // Up to 50% crit chance
             }
             if (cat.getRandom().nextFloat() < critChance) {
-                float critMult = 1.5F + (critLvl * 0.2F); // Up to 2.5x crit damage
+                float critMult = com.kittytalents.talent.TalentTuning.CRIT_MULT.f() + (critLvl * com.kittytalents.talent.TalentTuning.CRIT_MULT_PER_RANK.f()); // Up to 2.5x crit damage
                 damage *= critMult;
                 cat.playSound(SoundEvents.PLAYER_ATTACK_CRIT, 0.9F, 1.4F);
                 FelineEnergyEngine.restoreEnergy(cat, 5);

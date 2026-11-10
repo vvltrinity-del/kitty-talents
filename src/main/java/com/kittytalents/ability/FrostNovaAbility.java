@@ -17,6 +17,12 @@ import net.minecraft.world.phys.AABB;
  * Unleashes a chilling shockwave that freezes and slows all nearby foes.
  */
 public class FrostNovaAbility extends CatAbility {
+    private static final com.kittytalents.core.tuning.Tuning.Key DAMAGE =
+            com.kittytalents.core.tuning.Tuning.ability("frost_nova", "damage_mult", 1.2, "Damage x attack");
+    private static final com.kittytalents.core.tuning.Tuning.Key RADIUS =
+            com.kittytalents.core.tuning.Tuning.ability("frost_nova", "radius", 5.0, "Radius");
+    private static final com.kittytalents.core.tuning.Tuning.Key FREEZE =
+            com.kittytalents.core.tuning.Tuning.ability("frost_nova", "freeze_ticks", 100, "Freeze ticks");
 
     public FrostNovaAbility() {
         super("frost_nova", "Frost Nova", "Unleashes an icy blast freezing surrounding enemies and drastically reducing their speed.",
@@ -25,7 +31,7 @@ public class FrostNovaAbility extends CatAbility {
 
     @Override
     public float getAiPriority(TalentedCat cat) {
-        AABB aoe = cat.getBoundingBox().inflate(5.0D);
+        AABB aoe = cat.getBoundingBox().inflate(RADIUS.get());
         int enemies = cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e)).size();
         return enemies >= 2 ? 2.0f : 0.7f;
@@ -36,13 +42,13 @@ public class FrostNovaAbility extends CatAbility {
         cat.playSound(SoundEvents.PLAYER_HURT_FREEZE, 1.2F, 1.4F);
         cat.playSound(SoundEvents.GLASS_BREAK, 0.8F, 1.8F);
 
-        AABB aoe = cat.getBoundingBox().inflate(5.0D);
-        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.2F;
+        AABB aoe = cat.getBoundingBox().inflate(RADIUS.get());
+        float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
 
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
             target.hurt(cat.damageSources().freeze(), dmg);
-            FelineStatusEffects.applyStatus(target, FelineStatusType.FREEZE, 2, 100);
+            FelineStatusEffects.applyStatus(target, FelineStatusType.FREEZE, 2, FREEZE.i());
             if (target.canFreeze()) {
                 target.setTicksFrozen(target.getTicksRequiredToFreeze() + 60);
             }
