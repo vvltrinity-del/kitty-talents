@@ -20,6 +20,8 @@ import java.util.UUID;
 public class PacketManageTrust extends PacketBase {
     public static final int ADD = 0;
     public static final int REMOVE = 1;
+    /** 4.0: the owner sets a co-owner's role; payload is uuid|ROLE. */
+    public static final int SET_ROLE = 2;
 
     private final int entityId;
     private final int action;
@@ -51,8 +53,9 @@ public class PacketManageTrust extends PacketBase {
 
     /** @return true if the trust list changed. */
     public static boolean apply(ServerPlayer sender, int entityId, int action, String payload) {
-        if (action != ADD && action != REMOVE) return false;
+        if (action != ADD && action != REMOVE && action != SET_ROLE) return false;
         if (action == ADD) return add(sender, entityId, payload);
+        if (action == SET_ROLE) return setRole(sender, entityId, payload);
         UUID target;
         try {
             target = UUID.fromString(payload.trim());
@@ -60,6 +63,35 @@ public class PacketManageTrust extends PacketBase {
             return false;
         }
         return remove(sender, entityId, target);
+    }
+
+    private static boolean setRole(ServerPlayer sender, int entityId, String payload) {
+        int bar = payload.indexOf('|');
+        if (bar <= 0) return false;
+        com.kittytalents.core.perm.TrustRole role = null;
+        for (com.kittytalents.core.perm.TrustRole r : com.kittytalents.core.perm.TrustRole.values()) if (r.name().equals(payload.substring(bar + 1))) role = r;
+        UUID who;
+        try {
+            who = UUID.fromString(payload.substring(0, bar).trim());
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+        if (role == null) return false;
+        TalentedCat cat = authorize(sender, entityId, CatAction.MANAGE_TRUST); // owner only
+        if (cat == null || !cat.isTrusted(who) || cat.getTrustRole(who) == role) return false;
+        cat.setTrustRole(who, role);
+        cat.syncTrust();
+        // Losing a role mid-ride or mid-Twine ends it.
+        ServerPlayer target = sender.server.getPlayerList().getPlayer(who);
+        if (target == null && sender.serverLevel().getPlayerByUUID(who) instanceof ServerPlayer inLevel) target = inLevel;
+        if (target != null) {
+            if (cat.isTwinedWith(target) && !CatPermissions.can(target, cat, CatAction.TWINE_CONTROL)) {
+                com.kittytalents.entity.TwineManager.endForPlayer(target, "Your role for this cat changed - untwined.");
+            }
+            target.sendSystemMessage(Component.translatable("message.kittytalents.trust_role_changed",
+                    cat.getName().getString(), role.title()).withStyle(ChatFormatting.GOLD));
+        }
+        return true;
     }
 
     private static boolean add(ServerPlayer sender, int entityId, String rawName) {

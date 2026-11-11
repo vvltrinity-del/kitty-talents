@@ -212,3 +212,17 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 - Growth renders saved in `docs/render-matrix/growth/`.
 - Every "done when" item is met: each trait has a visible habit and a test, growth stages render correctly, bond perks are tested, and pre-4.0 cats load as adults with a rolled trait and zero bond.
 - Verification: build green, all 109 GameTests pass. Still waiting on the user's in-game check.
+
+### 2026-11-11: Phase 7: Playing together
+- The user confirmed in game: bond bar, Twined gun aim, and cats standing up for a rider all work.
+- **Co-owner roles:** `core/perm/TrustRole` (Rider, Handler, Full). Each `CatAction` names the lowest role that may do it; `CatPermissions.can` uses the co-owner's own role.
+  - Rider: ride and feed. Handler: also modes, sit, whistle and Twine. Full: also gear, pack, style, loadout and jobs.
+  - Co-owners saved before 4.0 load as Full, which is what a co-owner could do in 3.0.
+  - The owner changes a role by clicking the co-owner's chip on the Home tab (PacketManageTrust SET_ROLE). A demotion ends that player's Twine session.
+  - Right-click interactions follow the role too.
+- **Whistle:** a "Mine only / Mine + co-owned" switch, and a favourites row (right-click a command to pin up to six). Both are saved per player in `config/kittytalents-client-prefs.json`.
+- **HUD:** cards for cats you don't own name the owner. A client option (`showFriendCats`, off by default) adds cards for cats of players you share a cat with.
+- **Twine markers:** other players see "Twined: name" over the cat and "name (Twined)" where the body rests (`showTwineMarkers`, on by default).
+- Tests: KittyTogetherGameTests (4): the role matrix, roles through packets, the gear menu, whistle and clicks, roles in saves, and the whistle scope.
+- Verification: build green, all 113 GameTests pass, Home tab and whistle screen checked.
+- Not yet done: the two-player check of the HUD labels and Twine markers, which can only be seen with a second player.

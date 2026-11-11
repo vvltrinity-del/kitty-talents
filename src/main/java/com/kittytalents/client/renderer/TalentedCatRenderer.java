@@ -36,6 +36,15 @@ public class TalentedCatRenderer extends MobRenderer<TalentedCat, KTCatModel> {
         }
 
         super.render(cat, entityYaw, partialTicks, poseStack, buffer, packedLight);
+        // 4.0 Phase 7: a cat another player is Twined with says so.
+        if (com.kittytalents.client.twine.TwineMarkers.enabled()) {
+            String twiner = com.kittytalents.client.twine.TwineMarkers.twinerOf(cat.getUUID());
+            if (twiner != null && this.entityRenderDispatcher.distanceToSqr(cat) < 48 * 48) {
+                com.kittytalents.client.twine.TwineMarkers.label(poseStack, buffer,
+                        net.minecraft.network.chat.Component.translatable("hud.kittytalents.twine_cat", twiner),
+                        cat.getBbHeight() + (cat.hasCustomName() ? 0.75F : 0.5F), packedLight);
+            }
+        }
     }
 
     @Override

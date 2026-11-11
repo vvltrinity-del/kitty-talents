@@ -1292,6 +1292,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public boolean isTrusted(UUID id) { return trust.contains(id); }
     public boolean isTrusted(Player player) { return player != null && isTrusted(player.getUUID()); }
     public void addTrustedPlayer(UUID id, String name) { trust.add(id, name); }
+    public com.kittytalents.core.perm.TrustRole getTrustRole(UUID id) { return trust.role(id); }
+    public void setTrustRole(UUID id, com.kittytalents.core.perm.TrustRole role) { trust.setRole(id, role); }
+    public Map<UUID, com.kittytalents.core.perm.TrustRole> getTrustRoles() { return trust.roles(); }
     public void removeTrustedPlayer(UUID id) { trust.remove(id); }
     public void setTrustedPlayers(Map<UUID, String> players) {
         trust.replaceAll(players);
@@ -1300,14 +1303,14 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (!this.level().isClientSide) {
             PacketHandler.INSTANCE.send(
                     PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> this),
-                    new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view())
+                    new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view(), trust.roles())
             );
         }
     }
     public void syncTrust(ServerPlayer player) {
         if (!this.level().isClientSide && player != null) {
             PacketHandler.sendToPlayer(
-                    new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view()),
+                    new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view(), trust.roles()),
                     player
             );
         }
@@ -2006,7 +2009,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 this.getName()
         ), buf -> buf.writeInt(this.getId()));
         com.kittytalents.network.PacketHandler.sendToPlayer(
-                new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view()), player);
+                new com.kittytalents.network.PacketSyncTrustedPlayers(this.getId(), trust.view(), trust.roles()), player);
         syncEquipment(player);
         syncTalents(player);
         syncLoadout(player);

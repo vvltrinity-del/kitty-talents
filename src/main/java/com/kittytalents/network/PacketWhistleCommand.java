@@ -22,31 +22,46 @@ import java.util.List;
 /** Client -> server: a whistle command for every cat of the sender's within 64 blocks (owner or co-owner). */
 public class PacketWhistleCommand extends PacketBase {
     private final int commandId;
+    /** 4.0: only the sender's own cats, not the ones they co-own. */
+    private final boolean mineOnly;
 
     public PacketWhistleCommand(WhistleCommand cmd) {
+        this(cmd.ordinal());
+    }
+
+    public PacketWhistleCommand(WhistleCommand cmd, boolean mineOnly) {
         this.commandId = cmd.ordinal();
+        this.mineOnly = mineOnly;
     }
 
     public PacketWhistleCommand(int commandId) {
         this.commandId = commandId;
+        this.mineOnly = false;
     }
 
     public PacketWhistleCommand(FriendlyByteBuf buf) {
         this.commandId = buf.readInt();
+        this.mineOnly = buf.readBoolean();
     }
 
     @Override
     public void toBytes(FriendlyByteBuf buf) {
         buf.writeInt(commandId);
+        buf.writeBoolean(mineOnly);
     }
 
     @Override
     protected void handleServer(ServerPlayer player) {
-        apply(player, commandId);
+        apply(player, commandId, mineOnly);
     }
 
     /** @return how many cats responded, or -1 if the command id was invalid. */
     public static int apply(ServerPlayer player, int commandId) {
+        return apply(player, commandId, false);
+    }
+
+    /** @param mineOnly leave out cats the player only co-owns. */
+    public static int apply(ServerPlayer player, int commandId, boolean mineOnly) {
         WhistleCommand[] commands = WhistleCommand.values();
         if (commandId < 0 || commandId >= commands.length) return -1;
         WhistleCommand cmd = commands[commandId];
@@ -54,7 +69,7 @@ public class PacketWhistleCommand extends PacketBase {
         ServerLevel level = player.serverLevel();
         AABB area = player.getBoundingBox().inflate(64.0D);
         List<TalentedCat> cats = level.getEntitiesOfClass(TalentedCat.class, area,
-                c -> CatPermissions.check(player, c, CatAction.COMMAND).allowed());
+                c -> (!mineOnly || c.isPrimaryOwner(player)) && CatPermissions.check(player, c, CatAction.COMMAND).allowed());
 
         if (cats.isEmpty()) {
             player.sendSystemMessage(Component.literal("No nearby cats heard your whistle.").withStyle(net.minecraft.ChatFormatting.GRAY));

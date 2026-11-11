@@ -338,7 +338,7 @@ public class ForgeEvents {
             cat.syncEquipment(player);
             cat.syncStats(player);
             com.kittytalents.network.PacketHandler.sendToPlayer(
-                    new com.kittytalents.network.PacketSyncTrustedPlayers(cat.getId(), cat.getTrustedPlayers()),
+                    new com.kittytalents.network.PacketSyncTrustedPlayers(cat.getId(), cat.getTrustedPlayers(), cat.getTrustRoles()),
                     player
             );
             if (cat.isTwinedWith(player)) {

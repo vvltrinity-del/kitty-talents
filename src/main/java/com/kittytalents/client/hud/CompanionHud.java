@@ -42,12 +42,20 @@ public final class CompanionHud implements IGuiOverlay {
     private static List<TalentedCat> findCats(Minecraft mc) {
         LocalPlayer me = mc.player;
         double range = KittyTalentsClientConfig.COMPANION_HUD_RANGE.get();
-        return mc.level.getEntitiesOfClass(TalentedCat.class, me.getBoundingBox().inflate(range), cat ->
-                        cat.isAlive() && cat.isTame()
-                                && (me.getUUID().equals(cat.getOwnerUUID()) || cat.isTrusted(me))
+        List<TalentedCat> near = mc.level.getEntitiesOfClass(TalentedCat.class, me.getBoundingBox().inflate(range),
+                cat -> cat.isAlive() && cat.isTame());
+        // Friends (optional): players you share a cat with, either way round.
+        java.util.Set<java.util.UUID> friends = new java.util.HashSet<>();
+        if (KittyTalentsClientConfig.SHOW_FRIEND_CATS.get()) {
+            for (TalentedCat cat : near) {
+                if (me.getUUID().equals(cat.getOwnerUUID())) friends.addAll(cat.getTrustedPlayers().keySet());
+                else if (cat.isTrusted(me) && cat.getOwnerUUID() != null) friends.add(cat.getOwnerUUID());
+            }
+        }
+        return near.stream().filter(cat ->
+                        (me.getUUID().equals(cat.getOwnerUUID()) || cat.isTrusted(me) || friends.contains(cat.getOwnerUUID()))
                                 && (cat.getCatMode().followsOwner() || cat.isIncapacitated()
                                     || cat.getHealth() < cat.getMaxHealth() * 0.5F))
-                .stream()
                 .sorted(Comparator.comparingDouble(me::distanceToSqr))
                 .limit(KittyTalentsClientConfig.COMPANION_HUD_MAX.get())
                 .toList();
@@ -60,13 +68,29 @@ public final class CompanionHud implements IGuiOverlay {
         if (!KittyTalentsClientConfig.SHOW_COMPANION_HUD.get()) return;
         int y = Y;
         for (TalentedCat cat : shownCats(mc)) {
-            card(g, mc.font, X, y, cat);
-            y += H + 4;
+            y += card(g, mc.font, X, y, cat) + 4;
         }
     }
 
-    public static void card(GuiGraphics g, Font font, int x, int y, TalentedCat cat) {
-        KTTheme.hudPanel(g, x, y, W, H);
+    /** The owner's name when the cat is not yours (a co-owned or a friend's cat), else null. */
+    @javax.annotation.Nullable
+    public static String otherOwner(TalentedCat cat) {
+        Minecraft mc = Minecraft.getInstance();
+        java.util.UUID owner = cat.getOwnerUUID();
+        if (owner == null || mc.player == null || owner.equals(mc.player.getUUID())) return null;
+        var info = mc.getConnection() != null ? mc.getConnection().getPlayerInfo(owner) : null;
+        return info != null ? info.getProfile().getName() : KTText.s("hud.someone", "someone");
+    }
+
+    /** Draws one card. @return its height (cats that are not yours get an extra line naming the owner). */
+    public static int card(GuiGraphics g, Font font, int x, int y, TalentedCat cat) {
+        String other = otherOwner(cat);
+        int h = other != null ? H + 9 : H;
+        KTTheme.hudPanel(g, x, y, W, h);
+        if (other != null) {
+            String line = KTText.s("hud.owned_by", "%s's cat", other);
+            g.drawString(font, font.plainSubstrByWidth(line, W - 10), x + 5, y + H - 3, 0xFF7DD3FC, false);
+        }
         String lvl = "Lv" + cat.getCatLevel();
         int lvlW = font.width(lvl);
         String name = cat.getName().getString();
@@ -88,5 +112,6 @@ public final class CompanionHud implements IGuiOverlay {
             int sx = x + 5 + barW + 3;
             for (int i = 0; i < shown; i++) sx += StatusView.drawBadge(g, font, sx, by - 2, 8, statuses.get(i), false) - 1;
         }
+        return h;
     }
 }

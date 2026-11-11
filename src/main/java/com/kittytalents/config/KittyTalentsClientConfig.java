@@ -8,6 +8,8 @@ public final class KittyTalentsClientConfig {
     public static final ForgeConfigSpec.BooleanValue SHOW_COMPANION_HUD;
     public static final ForgeConfigSpec.IntValue COMPANION_HUD_MAX;
     public static final ForgeConfigSpec.IntValue COMPANION_HUD_RANGE;
+    public static final ForgeConfigSpec.BooleanValue SHOW_FRIEND_CATS;
+    public static final ForgeConfigSpec.BooleanValue SHOW_TWINE_MARKERS;
 
     static {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
@@ -18,6 +20,10 @@ public final class KittyTalentsClientConfig {
                 .defineInRange("companionHudMax", 3, 1, 6);
         COMPANION_HUD_RANGE = b.comment("Only cats within this many blocks get a card.")
                 .defineInRange("companionHudRange", 32, 8, 128);
+        SHOW_FRIEND_CATS = b.comment("Also show cards for cats of players you share a cat with (they co-own one of yours, or you co-own one of theirs).")
+                .define("showFriendCats", false);
+        SHOW_TWINE_MARKERS = b.comment("Show a small label over cats other players are Twined with, and where their body rests.")
+                .define("showTwineMarkers", true);
         b.pop();
         SPEC = b.build();
     }

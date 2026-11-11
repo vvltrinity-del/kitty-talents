@@ -126,7 +126,9 @@ public final class TwineManager {
     /** Tells every client which bodies are dormant, so they are not drawn at all (invisibility still shows gear). */
     public static void broadcastBodies(@javax.annotation.Nullable net.minecraft.server.MinecraftServer server) {
         if (server == null) return;
-        var packet = new com.kittytalents.network.PacketSyncTwineBodies(DORMANT_BODY_STATES.keySet());
+        Map<UUID, UUID> sessions = new java.util.HashMap<>();
+        for (UUID body : DORMANT_BODY_STATES.keySet()) sessions.put(body, SESSIONS.getOrDefault(body, new UUID(0L, 0L)));
+        var packet = new com.kittytalents.network.PacketSyncTwineBodies(sessions);
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (p instanceof net.minecraftforge.common.util.FakePlayer) continue;
             com.kittytalents.network.PacketHandler.sendToPlayer(packet, p);

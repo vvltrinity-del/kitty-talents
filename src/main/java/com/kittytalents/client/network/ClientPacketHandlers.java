@@ -69,12 +69,13 @@ public class ClientPacketHandlers {
         }
     }
 
-    public static void handleSyncTrustedPlayers(int entityId, Map<UUID, String> players) {
+    public static void handleSyncTrustedPlayers(int entityId, Map<UUID, String> players, Map<UUID, com.kittytalents.core.perm.TrustRole> roles) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         Entity e = mc.level.getEntity(entityId);
         if (e instanceof TalentedCat cat) {
             cat.setTrustedPlayers(players);
+            roles.forEach(cat::setTrustRole);
             if (mc.screen instanceof CatTalentScreen screen) {
                 screen.refreshTrustUi();
             }

@@ -106,6 +106,25 @@ public final class CatInteractions {
             return InteractionResult.PASS;
         }
 
+        // 4.0 Phase 7: co-owner roles. A Rider may ride and feed; a Handler may also open the screen (the server still
+        // checks every action there) and sit / stand the cat. Everything else by hand needs the Full role.
+        if (cat.isTame() && !cat.isPrimaryOwner(player) && cat.isTrusted(player.getUUID())
+                && cat.getTrustRole(player.getUUID()) != com.kittytalents.core.perm.TrustRole.FULL) {
+            com.kittytalents.core.perm.TrustRole role = cat.getTrustRole(player.getUUID());
+            boolean handler = role == com.kittytalents.core.perm.TrustRole.HANDLER;
+            boolean ride = cat.getTalentLevel(Talents.CAT_MOUNT) > 0 && (held.isEmpty() || held.is(Items.SADDLE));
+            boolean food = held.is(Items.COD) || held.is(Items.COOKED_COD) || held.is(Items.SALMON) || held.is(Items.COOKED_SALMON);
+            boolean screen = held.is(Items.STICK) || held.is(ModItems.CAT_LASER_POINTER.get());
+            boolean sit = handler && held.isEmpty() && !player.isShiftKeyDown();
+            if (!(ride || food || screen || sit)) {
+                if (!cat.level().isClientSide && hand == InteractionHand.MAIN_HAND) {
+                    player.displayClientMessage(Component.translatable("message.kittytalents.trust_role_denied",
+                            role.title(), cat.getName()).withStyle(ChatFormatting.GRAY), true);
+                }
+                return InteractionResult.sidedSuccess(cat.level().isClientSide);
+            }
+        }
+
         // Spirit Catnip must reach its own item logic (primes the guaranteed Nekomata). It also counts as breeding
         // food, so without this the vanilla Cat#mobInteract fallback consumed it as plain breeding catnip first.
         if (held.getItem() instanceof com.kittytalents.item.SpiritCatnipItem spirit) {

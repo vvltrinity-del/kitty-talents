@@ -60,7 +60,10 @@ public final class CatPermissions {
     }
 
     public static boolean can(@Nullable Player player, TalentedCat cat, CatAction action) {
-        return allows(roleOf(cat, player), action);
+        Role role = roleOf(cat, player);
+        if (role != Role.TRUSTED) return allows(role, action);
+        // 4.0: a co-owner's own role (Rider / Handler / Full) decides.
+        return action.minRole() != null && cat.getTrustRole(player.getUUID()).atLeast(action.minRole());
     }
 
     /**

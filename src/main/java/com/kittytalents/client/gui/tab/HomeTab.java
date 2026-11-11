@@ -124,14 +124,25 @@ public class HomeTab implements CatTab {
             int chipX = x;
             for (Map.Entry<UUID, String> e : cat.getTrustedPlayers().entrySet()) {
                 String pname = e.getValue().isEmpty() ? "Player" : e.getValue();
-                int cw = Math.min(90, font.width("✕ " + pname) + 10);
-                if (chipX + cw > x + w) break;
                 UUID id = e.getKey();
-                s.add(new KTButton(chipX, y, cw, 14, Component.literal("✕ " + pname),
+                // Role chip (click to change what this co-owner may do), then a small remove button
+                com.kittytalents.core.perm.TrustRole role = cat.getTrustRole(id);
+                String label = pname + ": " + role.title().getString();
+                int cw = Math.min(110, font.width(label) + 8);
+                if (chipX + cw + 15 > x + w) break;
+                s.add(new KTButton(chipX, y, cw, 14, Component.literal(label),
+                        b -> PacketHandler.sendToServer(new PacketManageTrust(cat.getId(), PacketManageTrust.SET_ROLE,
+                                id + "|" + role.next().name())))
+                        .style(KTButton.Style.CHIP).color(role == com.kittytalents.core.perm.TrustRole.FULL ? 0xFF86EFAC
+                                : role == com.kittytalents.core.perm.TrustRole.HANDLER ? 0xFF7DD3FC : 0xFFFDE68A)
+                        .tip(Component.empty().append(role.text()).append("\n")
+                                .append(KTText.t("home.trust.role_tip", "Click to change to %s", role.next().title().getString()))));
+                chipX += cw + 1;
+                s.add(new KTButton(chipX, y, 12, 14, Component.literal("✕"),
                         b -> PacketHandler.sendToServer(new PacketManageTrust(cat.getId(), 1, id.toString())))
                         .style(KTButton.Style.CHIP).color(0xFFFCA5A5)
                         .tip(KTText.t("home.trust.remove", "Remove %s as co-owner", pname)));
-                chipX += cw + 3;
+                chipX += 12 + 4;
             }
         }
     }

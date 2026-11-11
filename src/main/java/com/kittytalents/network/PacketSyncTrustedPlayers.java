@@ -12,10 +12,12 @@ import java.util.UUID;
 public class PacketSyncTrustedPlayers extends PacketBase {
     private final int entityId;
     private final Map<UUID, String> players;
+    private final Map<UUID, com.kittytalents.core.perm.TrustRole> roles = new LinkedHashMap<>();
 
-    public PacketSyncTrustedPlayers(int entityId, Map<UUID, String> players) {
+    public PacketSyncTrustedPlayers(int entityId, Map<UUID, String> players, Map<UUID, com.kittytalents.core.perm.TrustRole> roles) {
         this.entityId = entityId;
         this.players = new LinkedHashMap<>(players);
+        this.roles.putAll(roles);
     }
 
     public PacketSyncTrustedPlayers(FriendlyByteBuf buf) {
@@ -23,7 +25,9 @@ public class PacketSyncTrustedPlayers extends PacketBase {
         int size = buf.readVarInt();
         this.players = new LinkedHashMap<>();
         for (int i = 0; i < size; i++) {
-            players.put(buf.readUUID(), buf.readUtf(64));
+            UUID id = buf.readUUID();
+            players.put(id, buf.readUtf(64));
+            roles.put(id, buf.readEnum(com.kittytalents.core.perm.TrustRole.class));
         }
     }
 
@@ -34,11 +38,12 @@ public class PacketSyncTrustedPlayers extends PacketBase {
         players.forEach((id, name) -> {
             buf.writeUUID(id);
             buf.writeUtf(name, 64);
+            buf.writeEnum(roles.getOrDefault(id, com.kittytalents.core.perm.TrustRole.FULL));
         });
     }
 
     @Override
     protected void handleClient() {
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncTrustedPlayers(entityId, players));
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlers.handleSyncTrustedPlayers(entityId, players, roles));
     }
 }
