@@ -226,3 +226,17 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 - Tests: KittyTogetherGameTests (4): the role matrix, roles through packets, the gear menu, whistle and clicks, roles in saves, and the whistle scope.
 - Verification: build green, all 113 GameTests pass, Home tab and whistle screen checked.
 - Not yet done: the two-player check of the HUD labels and Twine markers, which can only be seen with a second player.
+
+### 2026-11-11: Phase 8: Addon modes and jobs
+- `CatMode` and `CatJob` are registries: final classes with the same constants, `values()`, `ordinal()` and `name()`.
+  Built-in entries keep their order and numbers; addon entries follow, sorted by name, so both sides agree.
+- New API (version **2.0.0**): `KittyTalentsAPI.registerMode` / `registerJob`, with `CatMode.builder` and `CatJob.builder`.
+  Follow distances and "sits in this mode" became mode data (they were a `switch` in CatFollowGoal).
+- `CatBrain` builds one job goal per registered job from `CatJob.createGoal`.
+- A mode or job whose addon is gone loads as Follow / unemployed. Duplicate, legacy and malformed ids are refused.
+- `test/TestAddon` adds a mode and a job through the API only (GameTest server only); 4 new GameTests in
+  `KittyRegistryGameTests`. 117 GameTests and 31 unit tests pass.
+- `KittyTalentsCompat` uses neither type; it was rebuilt against this jar without changes.
+- Seen once in three runs: `testStalksUnawareTargetThenPounces` failed 1 of its 30 attempts (cat stayed in CatStalkGoal
+  at 9 blocks). Not touched by this phase; to look at in Phase 9.
+

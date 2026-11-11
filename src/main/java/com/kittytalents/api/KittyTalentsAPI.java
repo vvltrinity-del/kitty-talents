@@ -2,10 +2,12 @@ package com.kittytalents.api;
 
 import com.kittytalents.ability.CatAbilities;
 import com.kittytalents.ability.CatAbility;
+import com.kittytalents.entity.CatMode;
 import com.kittytalents.talent.Talent;
 import com.kittytalents.talent.Talents;
 import com.kittytalents.talent.effect.TalentEffect;
 import com.kittytalents.talent.effect.TalentEngine;
+import com.kittytalents.work.CatJob;
 
 import javax.annotation.Nullable;
 
@@ -21,7 +23,7 @@ public final class KittyTalentsAPI {
      * Semantic version of this API (package {@code com.kittytalents.api} plus the types listed in docs/EXTENDING.md).
      * Major: something was removed or changed incompatibly. Minor: something was added. Patch: fixes only.
      */
-    public static final String API_VERSION = "1.0.0";
+    public static final String API_VERSION = "2.0.0";
 
     private KittyTalentsAPI() {}
 
@@ -55,5 +57,34 @@ public final class KittyTalentsAPI {
             throw new IllegalArgumentException("Kitty Talents: an ability with id '" + ability.getId() + "' already exists");
         }
         return CatAbilities.register(ability);
+    }
+
+    /**
+     * Adds a behaviour mode (API 2.0). It joins the mode cycle on the Home tab after the built-in modes and is saved
+     * by name. What the cat does in it comes from the builder (follow, anchor, target policy, retreat); for anything
+     * more, add a goal in {@link com.kittytalents.api.event.RegisterCatGoalsEvent} that checks
+     * {@code cat.getCatMode() == yourMode}. The display name is the lang key {@code mode.kittytalents.<id>}.
+     *
+     * <p>Register on both sides, in common setup, before any world loads. A cat saved in an addon mode goes to Follow
+     * if the addon is removed.</p>
+     *
+     * @throws IllegalArgumentException if a mode with this name already exists
+     */
+    public static CatMode registerMode(CatMode mode) {
+        return CatMode.register(mode);
+    }
+
+    /**
+     * Adds a job (API 2.0). It joins the job picker on the Home tab and the Work Clipboard, is saved by id, and its
+     * goal runs in the WORK band while the cat is clocked in to it. The title is the lang key
+     * {@code job.kittytalents.<id>}.
+     *
+     * <p>Register on both sides, in common setup, before any world loads. A cat whose job comes from an addon that is
+     * removed becomes unemployed.</p>
+     *
+     * @throws IllegalArgumentException if a job with this id already exists
+     */
+    public static CatJob registerJob(CatJob job) {
+        return CatJob.register(job);
     }
 }

@@ -69,7 +69,7 @@ At 3.0.0, 100 cats cost about 2.4 ms per server tick (~24 µs per cat). The test
 
 ## Addon API (`com.kittytalents.api`)
 
-Full guide with examples and the stability rules: `docs/EXTENDING.md`. API version 1.0.0 (`KittyTalentsAPI.API_VERSION`).
+Full guide with examples and the stability rules: `docs/EXTENDING.md`. API version 2.0.0 (`KittyTalentsAPI.API_VERSION`); addons can also add modes and jobs.
 
 - `KittyTalentsAPI.registerTalent(talent, effect)` / `registerAbility(ability)`: add talents and abilities from an addon.
 

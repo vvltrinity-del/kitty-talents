@@ -3,7 +3,6 @@ package com.kittytalents.ai;
 import com.kittytalents.ai.goal.*;
 import com.kittytalents.entity.TalentedCat;
 import com.kittytalents.entity.ai.*;
-import com.kittytalents.work.jobs.*;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.player.Player;
 
@@ -62,15 +61,11 @@ public final class CatBrain {
         g.addGoal(COMMAND, new CatReturnHomeGoal(cat));
         g.addGoal(COMMAND, new CatFetchToyGoal(cat));
 
-        g.addGoal(WORK, new FarmerJobGoal(cat));
-        g.addGoal(WORK, new LumberjackJobGoal(cat));
-        g.addGoal(WORK, new MinerJobGoal(cat));
-        g.addGoal(WORK, new RancherJobGoal(cat));
-        g.addGoal(WORK, new CourierJobGoal(cat));
-        g.addGoal(WORK, new SorterJobGoal(cat));
-        g.addGoal(WORK, new FisherJobGoal(cat));
-        g.addGoal(WORK, new CollectorJobGoal(cat));
-        g.addGoal(WORK, new GunsmithJobGoal(cat));
+        // One goal per registered job (built-in and addon); each only runs while its job is the cat's job.
+        for (com.kittytalents.work.CatJob job : com.kittytalents.work.CatJob.values()) {
+            net.minecraft.world.entity.ai.goal.Goal jobGoal = job.createGoal(cat);
+            if (jobGoal != null) g.addGoal(WORK, jobGoal);
+        }
 
         g.addGoal(NEEDS, new CatEatFromBowlGoal(cat));
         g.addGoal(NEEDS, new CatBackpackFeedGoal(cat));

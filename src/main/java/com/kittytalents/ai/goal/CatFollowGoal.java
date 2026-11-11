@@ -30,19 +30,11 @@ public class CatFollowGoal extends Goal {
     }
 
     private static double startDist(CatMode mode) {
-        return switch (mode) {
-            case SUPPORT -> 4.0D;
-            case TACTICAL -> 7.0D;
-            default -> 6.0D;
-        };
+        return mode.followStartDistance();
     }
 
     private static double stopDist(CatMode mode) {
-        return switch (mode) {
-            case SUPPORT -> 2.5D;
-            case TACTICAL -> 5.0D;
-            default -> 3.0D;
-        };
+        return mode.followStopDistance();
     }
 
     /** While a fight is on, only follow once the owner is this far away. */

@@ -10,11 +10,12 @@ commands are in `PROJECT.md`.
 | AI behaviour | yes | `RegisterCatGoalsEvent` |
 | Reacting to gifts | yes | `CatRewardEvent` |
 | Skin | resources only, inside this mod | a JSON file + texture, plus two code lines (below) |
-| Mode, job | inside this mod | add an enum entry and its goal |
+| Mode | yes (API 2.0) | `KittyTalentsAPI.registerMode` |
+| Job | yes (API 2.0) | `KittyTalentsAPI.registerJob` |
 
 ## API stability
 
-`com.kittytalents.api` is versioned by `KittyTalentsAPI.API_VERSION` (currently **1.0.0**) using semantic versioning:
+`com.kittytalents.api` is versioned by `KittyTalentsAPI.API_VERSION` (currently **2.0.0**) using semantic versioning:
 
 - **Major** bump: something an addon may use was removed or changed incompatibly.
 - **Minor** bump: something was added (new method, event, band).
@@ -26,8 +27,15 @@ Stable (covered by the version): everything in `com.kittytalents.api`, plus thes
 - `talent.TalentCategory`.
 - `talent.effect.TalentEffect` (every hook method) and `talent.effect.TalentContext` (its public fields and methods).
 - `ability.CatAbility`: its constructors, `Category`, `execute`, `getAiPriority` and the getters.
+- `entity.CatMode`: the built-in constants, `builder`, `TargetPolicy` and the getters.
+- `work.CatJob`: the built-in constants, `builder` and the getters; `work.AbstractCatJobGoal`: its constructor and the
+  three methods a job implements.
 - `entity.TalentedCat`: only `getTalentLevel`, `getOwner`, `isOwnedBy`, `getCatMode`, `getCatLevel`, `getEnergy`,
   plus the vanilla `Mob` / `TamableAnimal` methods it inherits (such as `getTarget`).
+
+**2.0.0 (mod 4.0):** `CatMode` and `CatJob` were enums and are now registries (final classes with the same constants,
+`values()`, `ordinal()` and `name()`). Code that only reads them keeps working after a recompile; a `switch` over
+either one has to become `if` / `==` checks.
 
 Everything else is internal and can change in any release. If an addon needs something internal, ask for it to be
 added to the API instead of reaching in.
@@ -175,30 +183,67 @@ There's an example in `docs/examples/tuning_pack/`. In code, declare new numbers
 
 ## Adding a mode
 
-1. Add an entry to `entity/CatMode`: `(langKey, followsOwner, anchorRadius, TargetPolicy, retreatsWhenHurt)`.
-   - `anchorRadius`: `-1` means no anchor; otherwise it's the leash around the spot the mode was set at.
-   - `TargetPolicy`: NONE, SELF_DEFENSE, DEFEND_OWNER, AREA_DEFENSE or SEEK_HOSTILES.
-2. Add the `mode.kittytalents.<name>` lang key.
-3. If the mode needs movement the existing goals don't give, add a goal to the COMMAND band in `ai/CatBrain`.
-   The goal should check `cat.getCatMode()`.
-4. Add a GameTest showing the mode behaves differently from the others.
+A mode is data: who the cat follows, where it holds, what it may attack. From an addon (or inside this mod, where the
+built-in ones are constants in `entity/CatMode`):
 
-Modes are saved **by name**. Never rename one. If one is removed, map its old name in `CatMode.LEGACY`.
+```java
+public static CatMode SCOUT;
+
+event.enqueueWork(() -> SCOUT = KittyTalentsAPI.registerMode(
+        CatMode.builder("mymod_scout")              // id: a-z, 0-9, _  (saved as MYMOD_SCOUT)
+                .followsOwner()                     // or .anchorRadius(8) to hold a spot; not both
+                .followDistance(9.0, 7.0)           // start walking beyond 9 blocks, stop within 7
+                .targetPolicy(CatMode.TargetPolicy.SEEK_HOSTILES)
+                .retreatsWhenHurt(false)
+                .build()));
+```
+
+- Defaults: does not follow, no anchor, `SELF_DEFENSE`, retreats when hurt. `.stationary()` makes the cat sit.
+- `TargetPolicy`: NONE, SELF_DEFENSE, DEFEND_OWNER, AREA_DEFENSE, HUNT or SEEK_HOSTILES.
+- Add the lang key `mode.kittytalents.mymod_scout`.
+- For behaviour the data doesn't cover, add a goal in `RegisterCatGoalsEvent` that checks `cat.getCatMode() == SCOUT`.
+- The mode joins the Home tab's mode cycle after the built-in modes. The whistle wheel only has the built-in commands.
+
+Rules:
+
+- Register in common setup, on **both** client and server. Mode numbers in packets come from the list order (built-in
+  modes first, then addon modes by name), so both sides need the same addons.
+- Modes are saved **by name**. Never rename one. A cat saved in a mode whose addon was removed loads in Follow.
+- Inside this mod, a removed mode's old name goes in `CatMode.LegacyNames`.
+- Add a GameTest showing the mode behaves differently from the others.
 
 ## Adding a job
 
-1. Add an entry to `work/CatJob`:
-   - Arguments: `(id, displayName, description, requiredTalent, minTalentRank, minCatLevel, icon, requiresTacZ)`.
-   - Jobs are saved by id; don't change it.
-2. Write a goal extending `work/AbstractCatJobGoal` that implements:
-   - `findNextTask(scanBudget)`: the next block to work on, or null.
-   - `isTaskStillValid(pos)`
-   - `executeTask(pos)`: do one unit of work; return true if it did something.
+A job is an entry in the `CatJob` registry plus a goal that does the work:
 
-   The base class handles walking, the work area, reach, the blacklist, the pack and the "only while clocked in"
-   check.
-3. Register the goal in the WORK band in `ai/CatBrain`.
-4. Add a GameTest that assigns the job and checks one unit of work gets done.
+```java
+public static CatJob BEEKEEPER;
+
+event.enqueueWork(() -> BEEKEEPER = KittyTalentsAPI.registerJob(
+        CatJob.builder("mymod_beekeeper", "Beekeeper")   // id is saved; don't change it
+                .description("Collects honeycomb from hives in the work area.")
+                .requiresTalent(Talents.GREEN_PAW, 2)    // optional
+                .minCatLevel(10)                         // optional, default 1
+                .icon(() -> new ItemStack(Items.HONEYCOMB))
+                .goal(BeekeeperGoal::new)                // made once per cat
+                .build()));
+```
+
+The goal extends `work/AbstractCatJobGoal` (`super(cat, BEEKEEPER)`) and implements:
+
+- `findNextTask(scanBudget)`: the next block to work on, or null.
+- `isTaskStillValid(pos)`
+- `executeTask(pos)`: do one unit of work; return true if it did something.
+
+The base class handles walking, the work area, reach, the blacklist, the pack and the "only while clocked in" check.
+A plain `Goal` also works if it checks `cat.getCatJob() == BEEKEEPER && cat.isClockedIn()` itself.
+
+- Add the lang key `job.kittytalents.mymod_beekeeper`.
+- The job joins the job picker on the Home tab and the Work Clipboard, after the built-in jobs.
+- Same rules as modes: register in common setup on both sides. A cat whose job's addon was removed becomes unemployed.
+- Add a GameTest that assigns the job and checks one unit of work gets done.
+
+`test/TestAddon` is a complete, minimal example of both (it is only registered on the GameTest server).
 
 ## Before you ship
 

@@ -216,7 +216,7 @@ public class CatTestHarness {
             result.pass("TaCZ Firearm AI & Fallback: Empty ammo / weapon handling safe and operational");
 
             // 12. Worker Jobs & Automation Engine Verification
-            if (com.kittytalents.work.CatJob.values().length == 10) {
+            if (com.kittytalents.work.CatJob.values().length >= 10) {
                 testCat.setCatJob(com.kittytalents.work.CatJob.FARMER);
                 testCat.setClockedIn(true);
                 boolean jobOk = testCat.getCatJob() == com.kittytalents.work.CatJob.FARMER
@@ -230,7 +230,7 @@ public class CatTestHarness {
                     result.fail("Worker Job Engine failed state transitions");
                 }
             } else {
-                result.fail("Expected 10 CatJob enum values, found " + com.kittytalents.work.CatJob.values().length);
+                result.fail("Expected at least 10 jobs, found " + com.kittytalents.work.CatJob.values().length);
             }
 
         } catch (Throwable t) {

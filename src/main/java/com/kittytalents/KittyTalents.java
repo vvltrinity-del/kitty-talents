@@ -49,6 +49,8 @@ public class KittyTalents {
             PacketHandler.register();
             com.kittytalents.compat.tacz.TacZCompat.isLoaded();
             com.kittytalents.compat.curios.CuriosCompat.init();
+            // GameTest server only: a stand-in addon that adds a mode and a job through the API.
+            if (net.minecraftforge.gametest.ForgeGameTestHooks.isGametestServer()) com.kittytalents.test.TestAddon.register();
         });
         LOGGER.info("Kitty Talents initialized successfully!");
     }
