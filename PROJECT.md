@@ -1,7 +1,7 @@
-# Kitty Talents 3.0: developer guide
+# Kitty Talents 4.0: developer guide
 
 Minecraft 1.20.1, Forge 47, Java 17. Player-facing features are in `README.md`; the history and decisions of the 3.0
-rewrite are in `OVERHAUL_PLAN.md`.
+rewrite are in `OVERHAUL_PLAN.md`; the 4.0 plan and its progress log are in `docs/PLAN_4.0.md`.
 
 ## Building and running
 
@@ -18,7 +18,7 @@ export JAVA_HOME="C:/Users/VivianV/.gradle/jdks/eclipse_adoptium-17-amd64-window
 | Check | Command | Passes when |
 |---|---|---|
 | Unit tests | `./gradlew build` | BUILD SUCCESSFUL |
-| GameTests (in-world, ~70 tests) | `bash tools/run_gametests.sh` | it prints `All N required tests passed`. Gradle exits 0 even when the server fails, so trust only that line. Each run starts from a fresh world with mob spawning off. |
+| GameTests (in-world, 117 tests) | `bash tools/run_gametests.sh` | it prints `All N required tests passed`. Gradle exits 0 even when the server fails, so trust only that line. Each run starts from a fresh world with mob spawning off. |
 | Dedicated server boots | `python tools/test_server_boot.py` | the `Done (` line appears (it always ends with "did not stop in 45s"; that is expected) |
 | Cat rendering | `bash tools/run_render_matrix.sh` | 0 texture warnings; PNGs in `run-render/matrix` (contact sheets: `tools/matrix_sheets.py`) |
 | Screen and HUD look | `./gradlew runScreenShots` | PNGs of every tab at GUI scale 2 and 3, plus `hud.png`, in `run-render/screens` |
@@ -29,27 +29,32 @@ Writing GameTests: entities spawn at y=2 (the structure floor is y=1); templates
 forever (vanilla), so tests that need movement should use one.
 
 Performance: the stress test grows tamed cats 0 → 10 → 50 → 100 and times only their own ticks (`util/TickCost`).
-At 3.0.0, 100 cats cost about 2.4 ms per server tick (~24 µs per cat). The test fails above 25 ms.
+At 4.0.0, 100 cats cost about 2.1 ms per server tick (~21 µs per cat), the same as 3.0.0 measured back to back on
+the same machine (single runs vary from 1.8 to 3 ms). The test fails above 25 ms.
 
 ## Package layout (`src/main/java/com/kittytalents`)
 
 | Package | Contents |
 |---|---|
-| `entity` | `TalentedCat`, `CatMode` (12 modes), `TwineManager` / `TwineMoves` (server Twine sessions), breeding, variants and tiers |
+| `entity` | `TalentedCat`, `CatMode` (registry; 12 built-in modes), `TwineManager` / `TwineMoves` (server Twine sessions), breeding, variants and tiers |
 | `entity/interact` | `CatInteractions`: every right-click interaction (taming, feeding, dye, revive, mount, treats) |
 | `core/component` | State split out of `TalentedCat`: equipment, loadout, trust, job data, stats, combat state |
-| `core/persist` | `CatSchema` and migrators: 1.0 / 2.0 saves load into 3.0 |
+| `core/persist` | `CatSchema` and migrators: 1.0 / 2.0 / 3.0 saves load into 4.0 |
+| `core/tuning` | `Tuning`: datapack-tunable numbers, synced to clients |
+| `core/living` | Traits, growth stages and bond |
+| `core/gear` | `CatGearRules`: what each gear slot accepts |
+| `skin` | `CatSkins`: datapack skins, synced to clients |
 | `core/progression` | `CatProgression`: XP, levels, skill points |
-| `core/perm` | `CatPermissions` + `CatAction`: owner / co-owner / stranger matrix used by every packet |
+| `core/perm` | `CatPermissions`, `CatAction`, `TrustRole`: owner / co-owner role / stranger matrix used by every packet |
 | `ai` | `CatBrain` (goal priority bands), `CatTargeting` (`canHarm` / `isFriendly`) |
 | `ai/goal`, `entity/ai` | AI goals: follow, hold anchor, pounce, stalk, dodge, melee, retreat, needs, idle life |
 | `talent`, `talent/effect` | 51 talents; `TalentEngine` dispatches talent hooks (tick, hits, damage taken, attributes, kills, mastery) |
-| `ability` | 16 active abilities (10 skills, 5 ultimates, one utility) and the `CatAbilities` registry |
+| `ability` | 22 active abilities and the `CatAbilities` registry |
 | `combat` | Roles, elements, Energy, dodges, status effects (statuses sync to the client for the HUDs) |
-| `work`, `work/jobs` | Jobs and their goals (only run in Work mode while clocked in) |
+| `work`, `work/jobs` | `CatJob` (registry; 9 built-in jobs) and their goals (only run in Work mode while clocked in) |
 | `network` | All packets extend `PacketBase`; server handlers are `public static apply(...)` so GameTests can call them |
 | `block`, `inventory`, `recipe`, `item`, `registry` | Blocks and block entities (habitat, bowl, bed, oven...), menus, recipes, items, registries |
-| `client/model`, `client/anim`, `client/renderer`, `client/skin` | `KTCatModel` (own rig with anchor bones), `CatAnimator`, layers, JSON skin registry |
+| `client/model`, `client/anim`, `client/renderer`, `client/skin` | `KTCatModel` (own rig with anchor bones), `CatAnimator`, layers, 3D accessory models |
 | `client/gui`, `client/gui/tab`, `client/gui/theme` | `CatTalentScreen` shell, one class per tab, the wood-and-leather theme (`KTTheme`, `KTButton`, `KTWidget`, `KTText`) |
 | `client/hud` | `TwineHud`, `CompanionHud` (registered GUI overlays) |
 | `client/twine` | Client Twine: `ClientTwineState`, `TwineCamera`, `TwineInput` |
@@ -72,6 +77,7 @@ At 3.0.0, 100 cats cost about 2.4 ms per server tick (~24 µs per cat). The test
 Full guide with examples and the stability rules: `docs/EXTENDING.md`. API version 2.0.0 (`KittyTalentsAPI.API_VERSION`); addons can also add modes and jobs.
 
 - `KittyTalentsAPI.registerTalent(talent, effect)` / `registerAbility(ability)`: add talents and abilities from an addon.
+- `KittyTalentsAPI.registerMode(mode)` / `registerJob(job)`: add modes and jobs (`CatMode.builder`, `CatJob.builder`).
 
 - `event.RegisterCatGoalsEvent`: fired once per cat when its AI is built. Use
   `event.addGoal(CatGoalBand.NEEDS, goal)` (bands, highest first: SAFETY, ORDERS, COMBAT, MELEE, COMMAND, WORK,

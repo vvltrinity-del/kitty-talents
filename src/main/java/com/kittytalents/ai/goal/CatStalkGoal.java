@@ -17,11 +17,16 @@ import java.util.EnumSet;
 public class CatStalkGoal extends Goal {
     private static final double MAX_STALK_DISTANCE = 24.0D;
     private static final int MAX_TICKS = 300;
+    private static final int STALL_TICKS = 40;
 
     private final TalentedCat cat;
     private LivingEntity target;
     private int ticks;
     private int repath;
+    /** Closest the cat has got in this stalk, and when; a stalk that stops closing in is dropped. */
+    private double bestDistance;
+    private int bestTick;
+    private int giveUpUntil;
 
     public CatStalkGoal(TalentedCat cat) {
         this.cat = cat;
@@ -49,7 +54,7 @@ public class CatStalkGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (!allowed()) return false;
+        if (!allowed() || cat.tickCount < giveUpUntil) return false;
         LivingEntity t = cat.getTarget();
         if (t == null || !t.isAlive() || !unaware(t)) return false;
         double d = cat.distanceTo(t);
@@ -59,7 +64,7 @@ public class CatStalkGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         return allowed() && target != null && target.isAlive() && target == cat.getTarget() && unaware(target)
-                && ticks < MAX_TICKS && cat.distanceTo(target) > stalkStopDistance();
+                && ticks < MAX_TICKS && ticks - bestTick < STALL_TICKS && cat.distanceTo(target) > stalkStopDistance();
     }
 
     @Override
@@ -67,12 +72,19 @@ public class CatStalkGoal extends Goal {
         target = cat.getTarget();
         ticks = 0;
         repath = 0;
+        bestDistance = Double.MAX_VALUE;
+        bestTick = 0;
         cat.setPose(Pose.CROUCHING);
     }
 
     @Override
     public void tick() {
         ticks++;
+        double d = cat.distanceTo(target);
+        if (d < bestDistance - 0.25D) {
+            bestDistance = d;
+            bestTick = ticks;
+        }
         cat.setPose(Pose.CROUCHING);
         cat.getLookControl().setLookAt(target, 30.0F, 30.0F);
         if (--repath <= 0) {
@@ -83,6 +95,8 @@ public class CatStalkGoal extends Goal {
 
     @Override
     public void stop() {
+        // Stuck (no path, or blocked): stop creeping for a while so the normal charge takes over.
+        if (ticks - bestTick >= STALL_TICKS) giveUpUntil = cat.tickCount + 200;
         cat.setPose(Pose.STANDING);
         cat.getNavigation().stop();
         target = null;

@@ -362,7 +362,13 @@ public class KittyAiGameTests {
                 if (trail.size() >= 8) trail.removeFirst();
                 trail.addLast("t" + tick[0] + " d=" + String.format("%.1f", c.distanceTo(z)) + " ground=" + c.onGround()
                         + " y=" + String.format("%.2f", c.getY() - h.absolutePos(BlockPos.ZERO).getY())
-                        + " goals=" + c.goalSelector.getRunningGoals().map(w -> w.getGoal().getClass().getSimpleName()).toList());
+                        + " goals=" + c.goalSelector.getRunningGoals().map(w -> w.getGoal().getClass().getSimpleName()).toList()
+                        + " nav=" + (c.getNavigation().isDone() ? "done" : c.getNavigation().isStuck() ? "stuck" : "path")
+                        + " v=" + String.format("%.3f", c.getDeltaMovement().horizontalDistance())
+                        + " spd=" + String.format("%.3f", c.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED))
+                        + " " + c.getTrait() + (c.isBaby() ? " baby" : "") + (c.isLying() ? " lying" : "") + (c.isInSittingPose() ? " sit" : "")
+                        + " on=" + c.level().getBlockState(c.blockPosition().below()).getBlock().getDescriptionId()
+                        + " in=" + c.level().getBlockState(c.blockPosition()).getBlock().getDescriptionId());
             }
         });
         h.succeedWhen(() -> {

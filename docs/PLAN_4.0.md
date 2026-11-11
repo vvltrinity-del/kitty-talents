@@ -240,3 +240,18 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 - Seen once in three runs: `testStalksUnawareTargetThenPounces` failed 1 of its 30 attempts (cat stayed in CatStalkGoal
   at 9 blocks). Not touched by this phase; to look at in Phase 9.
 
+### 2026-11-11: Phase 9: Release
+- **Stress:** 3.0.0 and 4.0 run back to back, five full runs each: 3.0.0 gave 2.06, 2.00, 1.81, 1.84, 2.15 ms per tick for
+  100 cats; 4.0 gave 2.14, 1.98, 2.05 (two more runs were taken while other heavy work ran and are not counted). A later
+  eight-run loop of 4.0 had a median of 2.06 ms. No slowdown.
+- Shy cats look for strangers in the level's player list instead of an entity search on every check.
+- **Two rare test failures fixed:**
+  - `testStalksUnawareTargetThenPounces` (about 1 attempt in 100): loose gravel from the generated test world fell into
+    the arena and buried the cat's path. Falling blocks are now cancelled on the GameTest server. A stalk that stops
+    closing in for 2 seconds is also dropped for 10 seconds, so a blocked cat charges instead of creeping in place.
+  - `testBondFromKillsAndTimeTogether` (once): the time-together bond point depended on one exact tick. It now counts
+    seconds near the owner.
+- **Regression:** 117 GameTests passed 8 runs in a row; 31 unit tests pass.
+- README, PROJECT and EXTENDING updated for 4.0. `KittyTalentsCompat` got the `pack.mcmeta` it was missing.
+- Version `4.0.0`, tag `v4.0.0`.
+

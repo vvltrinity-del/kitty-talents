@@ -26,4 +26,17 @@ public final class GameTestWorldSetup {
         server.overworld().setDayTime(6000L);
         KittyTalents.LOGGER.info("[GameTest] mob spawning off, time fixed at noon");
     }
+
+    /**
+     * The GameTest world is a generated flat world with villages. Loose gravel and sand from them fell into test
+     * arenas and buried a cat's path (testStalksUnawareTargetThenPounces failed about once in 100 attempts with the
+     * cat standing inside gravel). Nothing falls in the test world.
+     */
+    @SubscribeEvent
+    public static void onEntityJoin(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
+        if (event.getEntity() instanceof net.minecraft.world.entity.item.FallingBlockEntity
+                && event.getLevel().getServer() instanceof GameTestServer) {
+            event.setCanceled(true);
+        }
+    }
 }

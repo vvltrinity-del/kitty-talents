@@ -57,8 +57,9 @@ public class CatTraitGoal extends Goal {
 
     private Player stranger() {
         double r = CatTrait.SHY_DISTANCE.get();
-        for (Player p : cat.level().getEntitiesOfClass(Player.class, cat.getBoundingBox().inflate(r), p -> !p.isSpectator())) {
-            if (!cat.isOwnedBy(p) && !cat.isTrusted(p.getUUID())) return p;
+        // The level's player list, not an entity search: this runs on every canUse of every Shy cat.
+        for (Player p : cat.level().players()) {
+            if (!p.isSpectator() && p.isAlive() && cat.distanceToSqr(p) <= r * r && !cat.isOwnedBy(p) && !cat.isTrusted(p.getUUID())) return p;
         }
         return null;
     }

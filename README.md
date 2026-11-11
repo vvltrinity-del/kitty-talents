@@ -1,7 +1,8 @@
-# Kitty Talents 3.0 (Minecraft 1.20.1, Forge 47)
+# Kitty Talents 4.0 (Minecraft 1.20.1, Forge 47)
 
 Kitty Talents turns cats into trainable companions. They level up, learn talents, wear gear, fight with their own
 moves, work jobs, breed into stronger production tiers, and you can take direct control of one with **Twine**.
+Kittens grow up, every cat has a personality, and the bond between you and a cat grows as you spend time together.
 
 ## Getting started
 
@@ -16,10 +17,10 @@ Seven tabs, in a wood-and-leather style. Switch tabs with the mouse, **Ctrl+Tab*
 
 | Tab | What it does |
 |---|---|
-| **Home** | Portrait with level, HP, XP and Energy. Behaviour mode and job, Sit, Kitty Pack, Whistle, TWINE. Rename and co-owners. |
+| **Home** | Portrait with level, HP, XP, Energy and the bond bar. Personality, behaviour mode and job, Sit, Kitty Pack, Whistle, TWINE. Rename and co-owners. |
 | **Talents** | Every talent with rank pips, its description, its mastery perk and the TRAIN button. Respec. |
-| **Gear** | Weapon, accessory, tool, four armor pieces, three cosmetics. Click a slot with the item in hand; shift-click to take it off. |
-| **Style** | Collar colour, skin, and the breeding codex. |
+| **Gear** | Weapon, accessory, tool, four armor pieces, three cosmetics, with your inventory underneath. Drag items in and out, or shift-click to move one. |
+| **Style** | Collar colour, skin (built-in and from packs), and the breeding codex. |
 | **Stats** | Lifetime records: kills, damage, distance, food, blocks mined and more. Sneak + right-click with Coal to wipe them. |
 | **Combat** | Role, element, the four Twine ability slots and loadout presets. |
 | **Twine** | Start Twining, plus the controls and what the cat's body can do. |
@@ -37,13 +38,15 @@ Co-owners see the same screen without the owner-only controls (training, respec,
 - **Dire talents** (Sky Feline flight, Mole Cat mining, Frenzy Focus, Alchemy Kitty, Catnip Catastrophe) need one
   **Dire Treat** (Master Catnip Treat + Ghast Tear + Diamond) at the required level.
 - **Respec** with a Catnip Respec Elixir refunds every paid rank.
+- **22 abilities** for the Twine slots and AI cats, including ice, poison and arcane ones added in 4.0.
 
 ## Behaviour modes
 
 Docile, Stay, Follow, Wander, Guard, Hunting, Aggressive, Tactical, Support, Fetch, Work and Return Home.
 Each mode decides whether the cat follows you, holds a spot, and what it is allowed to attack. Every cat **stalks and
 pounces** as its opening move, dodges arrows and creeper blasts, and retreats when badly hurt (except in Aggressive).
-The **Kitty Whistle** commands all your cats nearby at once.
+The **Kitty Whistle** commands all your cats nearby at once. Switch it between "mine only" and "mine + co-owned",
+and right-click a command to pin it to the favourites row.
 
 ## Jobs and production
 
@@ -53,6 +56,16 @@ The **Kitty Whistle** commands all your cats nearby at once.
   cats of the same tier gives the next tier. Higher tiers are tougher and hit harder.
 - **Kitty Habitat:** house a cat and it produces its tier's resource over time.
 - **Nekomata:** feed Spirit Catnip to a parent before breeding for a guaranteed two-tailed Nekomata kitten.
+
+## Living cats (4.0)
+
+- **Growing up:** kittens go through Newborn, Kitten and Junior before they are adults. Young cats are smaller and
+  can't be ridden yet. Feeding speeds growth up.
+- **Personality:** each cat has one trait with a bonus and a quirk: Brave, Lazy, Curious, Playful, Shy or Greedy.
+  Kittens usually inherit a parent's trait.
+- **Bond:** time together, petting, feeding, play and fighting side by side raise the bond (levels 1 to 10).
+  Perks unlock at levels 2, 3, 5, 7 and 10, from Regeneration when you pet the cat to bonus damage near you.
+- **Cat Tree:** a two-block perch. Guard and Wander cats rest on it and mark nearby monsters with Glowing.
 
 ## Care
 
@@ -74,8 +87,21 @@ change how many show in `config/kittytalents-client.toml`.
 
 ## Co-owners
 
-Add another online player as a co-owner from the Home tab. Co-owners can command, equip, style and Twine the cat. Only the
-owner can train, respec, rename or manage co-owners. A co-owner can leave on their own.
+Add another online player as a co-owner from the Home tab, then click their chip to set a role:
+
+- **Rider:** may ride the cat.
+- **Handler:** also commands it (modes, whistle, jobs) and Twines.
+- **Full:** also changes gear and style.
+
+Only the owner can train, respec, rename or manage co-owners. A co-owner can leave on their own. Cats that aren't
+yours show their owner's name on the HUD, and other players see a label over a Twined cat and its resting body.
+
+## Packs and addons
+
+- **Skins** come from datapacks plus a resource pack for the texture (`docs/examples/sunset_skin_pack`).
+- **Balance** is tunable from a datapack: talent, ability, trait, growth and bond numbers
+  (`/kittytalents tuning export` writes every default).
+- **Addons** can add talents, abilities, modes, jobs and AI goals through the API (`docs/EXTENDING.md`).
 
 ## Mod compatibility
 
@@ -84,5 +110,5 @@ Built-in: **TaCZ** (cats use guns, ammo pouch, Gunsmith job), **Apotheosis**, **
 
 ## Installing
 
-Build with `./gradlew build` (JDK 17) and put `build/libs/kittytalents-3.0.0.jar` in your `mods` folder with
-Forge 1.20.1 (47.x). Server and clients must run the same version.
+Build with `./gradlew build` (JDK 17) and put `build/libs/kittytalents-4.0.0.jar` in your `mods` folder with
+Forge 1.20.1 (47.x). Server and clients must run the same build. Worlds from 1.0, 2.0 and 3.0 load as they are.

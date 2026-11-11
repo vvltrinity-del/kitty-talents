@@ -528,6 +528,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     /** Server, every tick (also while resting): growth stage sync, time-together bond, Lazy rest healing. */
+    /** Seconds spent near the owner since the last time-together bond point (not saved). */
+    private int bondSecondsTogether;
+
     private void tickLiving(boolean force) {
         if (!force && (this.tickCount + this.getId()) % 20 != 0) return;
         int stage = com.kittytalents.core.living.GrowthStage.ofAge(getAge()).ordinal();
@@ -537,9 +540,13 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             updateAttributes();
         }
         if (force) return;
-        if ((this.tickCount + this.getId()) % 1200 == 0 && getOwner() instanceof net.minecraft.world.entity.player.Player owner
+        // Time together is counted in seconds near the owner (not on one exact tick, which a pause in ticking could miss).
+        if (getOwner() instanceof net.minecraft.world.entity.player.Player owner
                 && owner.level() == this.level() && this.distanceToSqr(owner) <= com.kittytalents.core.living.CatBond.TIME_RANGE.get() * com.kittytalents.core.living.CatBond.TIME_RANGE.get()) {
-            setBondPoints(getBondPoints() + com.kittytalents.core.living.CatBond.TIME_POINTS.i());
+            if (++bondSecondsTogether >= 60) {
+                bondSecondsTogether = 0;
+                setBondPoints(getBondPoints() + com.kittytalents.core.living.CatBond.TIME_POINTS.i());
+            }
         }
         if (getTrait() == com.kittytalents.core.living.CatTrait.LAZY && (isOrderedToSit() || isSleeping()) && getHealth() < getMaxHealth()
                 && ((this.tickCount + this.getId()) / 20) % Math.max(1, com.kittytalents.core.living.CatTrait.LAZY_REST_HEAL_TICKS.i() / 20) == 0) {
