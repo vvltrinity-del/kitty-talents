@@ -504,7 +504,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     }
 
     /** Hunger drains faster for Playful and Greedy cats: fewer ticks between hunger points. */
-    private int traitHungerRate(int ticks) {
+    public int traitHungerRate(int ticks) {
         com.kittytalents.core.living.CatTrait trait = getTrait();
         double mult = trait == com.kittytalents.core.living.CatTrait.PLAYFUL ? com.kittytalents.core.living.CatTrait.PLAYFUL_HUNGER.get() : trait == com.kittytalents.core.living.CatTrait.GREEDY ? com.kittytalents.core.living.CatTrait.GREEDY_HUNGER.get() : 1.0;
         return mult == 1.0 ? ticks : (int) Math.max(1, Math.round(ticks / mult));

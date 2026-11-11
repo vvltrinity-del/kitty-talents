@@ -335,4 +335,42 @@ public class KittyLivingGameTests {
             leave(h, owner);
         }
     }
+
+    /** Greedy and Playful cats get hungry faster: fewer ticks per hunger point. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testTraitHungerRates(GameTestHelper h) {
+        TalentedCat plain = cat(h, new BlockPos(1, 2, 1), CatTrait.NONE);
+        TalentedCat greedy = cat(h, new BlockPos(2, 2, 1), CatTrait.GREEDY);
+        TalentedCat playful = cat(h, new BlockPos(3, 2, 1), CatTrait.PLAYFUL);
+        h.assertTrue(plain.traitHungerRate(1200) == 1200, "ordinary cats keep the configured rate");
+        h.assertTrue(greedy.traitHungerRate(1200) == 960, "Greedy: 25% faster, got " + greedy.traitHungerRate(1200));
+        h.assertTrue(playful.traitHungerRate(1200) == 1091, "Playful: 10% faster, got " + playful.traitHungerRate(1200));
+        h.succeed();
+    }
+
+    /** Bond grows by itself: a kill next to the owner, and a minute spent near the owner. Not when the owner is away. */
+    @GameTest(template = "arena", timeoutTicks = 1400)
+    public static void testBondFromKillsAndTimeTogether(GameTestHelper h) {
+        FakePlayer owner = joinFakeOwner(h, new BlockPos(4, 2, 4));
+        FakePlayer away = joinFakeOwner(h, new BlockPos(4, 2, 4));
+        BlockPos far = h.absolutePos(new BlockPos(4, 2, 4)).offset(200, 0, 0);
+        away.moveTo(far.getX(), far.getY(), far.getZ());
+        TalentedCat near = cat(h, new BlockPos(5, 2, 5), CatTrait.NONE);
+        TalentedCat lonely = cat(h, new BlockPos(7, 2, 7), CatTrait.NONE);
+        near.tame(owner);
+        lonely.tame(away);
+        for (TalentedCat c : new TalentedCat[]{near, lonely}) c.setCatMode(CatMode.STAY);
+        Zombie z = h.spawn(EntityType.ZOMBIE, new BlockPos(8, 2, 5));
+        z.setNoAi(true);
+        z.hurt(h.getLevel().damageSources().mobAttack(near), 1000.0F);
+        h.assertTrue(!z.isAlive() && near.getBondPoints() == 2, "a kill next to the owner gives 2 bond, got " + near.getBondPoints());
+        h.runAfterDelay(1320, () -> {
+            int n = near.getBondPoints(), l = lonely.getBondPoints();
+            leave(h, owner);
+            leave(h, away);
+            h.assertTrue(n >= 3, "a minute near the owner should add bond, got " + n);
+            h.assertTrue(l == 0, "no bond while the owner is far away, got " + l);
+            h.succeed();
+        });
+    }
 }

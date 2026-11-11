@@ -205,3 +205,10 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 - **Riding:** mounting stands the cat up (Docile or Stay becomes Follow). A ridden cat ignores sit orders. Kittens and downed cats can't be ridden.
 - **Twine body:** the dormant body used only the vanilla invisibility flag, which still draws armor and held items. The server now sends the set of dormant bodies (PacketSyncTwineBodies) and clients skip drawing them.
 - Tests: KittyPlaytestFixGameTests (2). All 106 GameTests pass.
+
+### 2026-11-10: Phase 6 closed
+- Added the tests that were missing: hunger rates for Greedy and Playful, bond from a kill near the owner, and bond from a minute together (and none while the owner is away). KittyLivingGameTests is now 12 tests.
+- EXTENDING.md documents the `traits`, `growth` and `bond` tuning sections.
+- Growth renders saved in `docs/render-matrix/growth/`.
+- Every "done when" item is met: each trait has a visible habit and a test, growth stages render correctly, bond perks are tested, and pre-4.0 cats load as adults with a rolled trait and zero bond.
+- Verification: build green, all 109 GameTests pass. Still waiting on the user's in-game check.

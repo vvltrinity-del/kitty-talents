@@ -156,6 +156,20 @@ ranges, Energy costs, max rank and skill-point cost. Put one or more files in `d
 - Lowering `max_rank` caps cats that already have more ranks. Respec still refunds every rank they paid for.
 - With no tuning pack, every number is the built-in value.
 
+The same files can also tune living-cat numbers (4.0), in three more sections:
+
+```json
+{ "traits": { "brave": { "damage_mult": 1.2 }, "inheritance": { "parent_chance": 0.5 } },
+  "growth": { "kitten": { "scale": 0.65, "head_scale": 1.2 }, "feeding": { "treat_fraction": 0.5 } },
+  "bond":   { "levels": { "points_step": 15 }, "gain": { "petting": 3, "cooldown_ticks": 300 } } }
+```
+
+- `traits`: each personality's bonus and quirk numbers, and how often a kitten takes a parent's personality.
+- `growth`: body and head size for `newborn`, `kitten` and `junior`, and how much growing time food and treats skip.
+- `bond`: points per level, points per kind of moment, the cooldown between gains of one kind, and the perk numbers.
+
+`/kittytalents tuning export` lists every name in all five sections.
+
 There's an example in `docs/examples/tuning_pack/`. In code, declare new numbers with `Tuning.talent(...)` or
 `Tuning.ability(...)` as a `static final` field, and read them with `.get()`, `.f()` or `.i()`.
 
