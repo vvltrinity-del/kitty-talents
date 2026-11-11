@@ -146,6 +146,8 @@ public class PacketTwineAction extends PacketBase {
             sender.displayClientMessage(Component.literal("Another player is already controlling this cat!").withStyle(ChatFormatting.RED), true);
             return false;
         }
+        // Riding your own cat: hop off and Twine, instead of being told you can't.
+        if (sender.getVehicle() == cat) sender.stopRiding();
         if (cat.isVehicle() || cat.isPassenger()) {
             sender.displayClientMessage(Component.literal("Your cat can't be twined while riding or being ridden.").withStyle(ChatFormatting.RED), true);
             return false;

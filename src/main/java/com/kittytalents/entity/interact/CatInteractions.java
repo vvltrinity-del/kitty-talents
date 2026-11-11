@@ -100,6 +100,11 @@ public final class CatInteractions {
     @javax.annotation.Nullable
     public static InteractionResult handle(TalentedCat cat, Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
+        // An empty off hand must never act on its own while the main hand holds something (a stick opening the
+        // screen must not also mount or sit the cat through the off-hand pass).
+        if (hand == InteractionHand.OFF_HAND && held.isEmpty() && !player.getMainHandItem().isEmpty()) {
+            return InteractionResult.PASS;
+        }
 
         // Spirit Catnip must reach its own item logic (primes the guaranteed Nekomata). It also counts as breeding
         // food, so without this the vanilla Cat#mobInteract fallback consumed it as plain breeding catnip first.

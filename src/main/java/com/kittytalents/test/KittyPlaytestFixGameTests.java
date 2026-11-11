@@ -88,4 +88,31 @@ public class KittyPlaytestFixGameTests {
             }
         });
     }
+
+    /** A stick opens the screen and nothing else: neither hand's pass may mount the cat. Twine works from the saddle. */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testStickNeverMountsAndTwineDismounts(GameTestHelper h) {
+        FakePlayer p = joinFakeOwner(h, new BlockPos(3, 2, 2));
+        try {
+            TalentedCat c = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
+            c.tame(p);
+            c.setTalentLevel(Talents.CAT_MOUNT, 1);
+            CatMode mode = c.getCatMode();
+            p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STICK));
+            p.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
+            CatInteractions.handle(c, p, InteractionHand.OFF_HAND);
+            h.assertTrue(p.getVehicle() == null && c.getCatMode() == mode, "the empty off hand must do nothing while the main hand holds a stick");
+            // Riding, then Twine: the rider hops off and the session starts.
+            p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            CatInteractions.handle(c, p, InteractionHand.MAIN_HAND);
+            h.assertTrue(p.getVehicle() == c, "riding");
+            h.assertTrue(com.kittytalents.network.PacketTwineAction.apply(p, c.getId(),
+                    com.kittytalents.network.PacketTwineAction.ActionType.TWINE_START, 0), "Twine should start from the saddle");
+            h.assertTrue(p.getVehicle() == null && c.isTwinedWith(p), "dismounted and twined");
+            com.kittytalents.entity.TwineManager.endForPlayer(p, "test");
+            h.succeed();
+        } finally {
+            leave(h, p);
+        }
+    }
 }
