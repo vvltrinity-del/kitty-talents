@@ -276,3 +276,7 @@ next to the enemy, every talent at max rank in a brawl, and every status effect.
   direct call.
 186 GameTests pass 4 runs in a row.
 
+
+### 2026-11-11: 4.0.1
+- Version 4.0.1 with the combat audit fixes (above). KittyTalentsCompat 4.0.1 is built against it and includes its
+  `pack.mcmeta`. 186 GameTests and 31 unit tests pass; the dedicated server boots. Changelog: `docs/CHANGELOG_4.0.1.md`.
