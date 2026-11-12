@@ -42,16 +42,12 @@ public class CatEatFromBowlGoal extends Goal {
         BlockPos catPos = cat.blockPosition();
         int searchRadius = cat.getHunger() < 40 ? 18 : 12;
 
-        for (BlockPos pos : BlockPos.betweenClosed(catPos.offset(-searchRadius, -2, -searchRadius), catPos.offset(searchRadius, 2, searchRadius))) {
-            if (cat.level().getBlockState(pos).getBlock() instanceof CatFoodBowlBlock) {
-                BlockEntity be = cat.level().getBlockEntity(pos);
-                if (be instanceof CatFoodBowlBlockEntity bowl && !bowl.getFirstEdibleFood(cat).isEmpty()) {
-                    bowlPos = pos.immutable();
-                    return true;
-                }
-            }
-        }
-        return false;
+        // Nearest bowl with food the cat can eat (palette-skipping search, 5.0 performance pass).
+        bowlPos = com.kittytalents.util.BlockSearch.closest(cat.level(), catPos,
+                catPos.offset(-searchRadius, -2, -searchRadius), catPos.offset(searchRadius, 2, searchRadius),
+                s -> s.getBlock() instanceof CatFoodBowlBlock,
+                p -> cat.level().getBlockEntity(p) instanceof CatFoodBowlBlockEntity bowl && !bowl.getFirstEdibleFood(cat).isEmpty());
+        return bowlPos != null;
     }
 
     @Override

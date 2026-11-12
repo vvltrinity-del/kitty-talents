@@ -35,11 +35,11 @@ public class CatUseScratcherGoal extends Goal {
         }
 
         BlockPos catPos = cat.blockPosition();
-        for (BlockPos pos : BlockPos.betweenClosed(catPos.offset(-8, -2, -8), catPos.offset(8, 2, 8))) {
-            if (cat.level().getBlockState(pos).getBlock() instanceof CatScratcherBlock) {
-                scratcherPos = pos.immutable();
-                return true;
-            }
+        BlockPos found = com.kittytalents.util.BlockSearch.closest(cat.level(), catPos, catPos.offset(-8, -2, -8),
+                catPos.offset(8, 2, 8), s -> s.getBlock() instanceof CatScratcherBlock, p -> true);
+        if (found != null) {
+            scratcherPos = found;
+            return true;
         }
         cooldown = 100;
         return false;

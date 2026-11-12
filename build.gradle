@@ -95,6 +95,16 @@ minecraft {
             args '--quickPlaySingleplayer', 'render_world'
         }
 
+        // Frame time with and without cats near the player, with a Java Flight Recorder profile (tools/run_perf_scene.sh).
+        perfScene {
+            parent runs.client
+            workingDirectory project.file('run-render')
+            property 'kittytalents.perfScene', 'true'
+            property 'kittytalents.perfCats', project.findProperty('perfCats') ?: '4'
+            jvmArg "-XX:StartFlightRecording=filename=${project.file('run-render/perf.jfr').absolutePath},settings=profile"
+            args '--quickPlaySingleplayer', 'render_world', '--width', '1280', '--height', '720'
+        }
+
         // Screenshots of the companion screen (every tab, GUI scale 2 and 3) for UI review; writes run-render/screens and quits.
         screenShots {
             parent runs.client

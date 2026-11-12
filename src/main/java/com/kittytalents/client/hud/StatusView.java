@@ -67,6 +67,7 @@ public final class StatusView {
         g.fill(x, y, x + size, y + size, 0xCC000000);
         ResourceLocation tex = icon(e.type());
         if (tex != null) {
+            g.flush(); // the badge background may still be batched (managed HUD drawing)
             g.blit(tex, x, y, 0, 0, size, size, size, size);
         } else {
             g.fill(x + 1, y + 1, x + size - 1, y + size - 1, (c & 0x00FFFFFF) | 0x88000000);

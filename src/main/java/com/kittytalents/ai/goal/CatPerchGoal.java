@@ -68,20 +68,21 @@ public class CatPerchGoal extends Goal {
 
     private BlockPos findFreeTree() {
         BlockPos origin = cat.blockPosition();
-        BlockPos best = null;
-        double bestDist = Double.MAX_VALUE;
-        for (BlockPos p : BlockPos.betweenClosed(origin.offset(-SEARCH_RADIUS, -3, -SEARCH_RADIUS), origin.offset(SEARCH_RADIUS, 4, SEARCH_RADIUS))) {
-            BlockState state = cat.level().getBlockState(p);
-            if (!state.is(ModBlocks.CAT_TREE.get()) || state.getValue(CatTreeBlock.HALF) != DoubleBlockHalf.UPPER) continue;
-            Vec3 spot = CatTreeBlock.perchOf(state, p);
-            if (occupied(spot)) continue;
-            double d = cat.distanceToSqr(spot);
-            if (d < bestDist) {
-                bestDist = d;
-                best = p.immutable();
-            }
-        }
-        return best;
+        BlockPos[] best = {null};
+        double[] bestDist = {Double.MAX_VALUE};
+        com.kittytalents.util.BlockSearch.forEach(cat.level(), origin.offset(-SEARCH_RADIUS, -3, -SEARCH_RADIUS),
+                origin.offset(SEARCH_RADIUS, 4, SEARCH_RADIUS),
+                s -> s.is(ModBlocks.CAT_TREE.get()) && s.getValue(CatTreeBlock.HALF) == DoubleBlockHalf.UPPER,
+                (p, state) -> {
+                    Vec3 spot = CatTreeBlock.perchOf(state, p);
+                    if (occupied(spot)) return;
+                    double d = cat.distanceToSqr(spot);
+                    if (d < bestDist[0]) {
+                        bestDist[0] = d;
+                        best[0] = p;
+                    }
+                });
+        return best[0];
     }
 
     private boolean occupied(Vec3 spot) {

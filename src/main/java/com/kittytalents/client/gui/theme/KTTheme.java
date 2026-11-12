@@ -42,14 +42,31 @@ public final class KTTheme {
         tile(g, tex, 16, x, y, w, h);
     }
 
+    /**
+     * One draw call for the whole rectangle (5.0 performance pass). A {@code blit} per tile was an immediate draw each,
+     * about 50 draw calls per HUD card per frame, which made every following cat cost frames.
+     */
     public static void tile(GuiGraphics g, ResourceLocation tex, int size, int x, int y, int w, int h) {
+        if (w <= 0 || h <= 0) return;
+        g.flush(); // keep the order with fills batched before this
+        com.mojang.blaze3d.systems.RenderSystem.setShaderTexture(0, tex);
+        com.mojang.blaze3d.systems.RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionTexShader);
+        org.joml.Matrix4f m = g.pose().last().pose();
+        com.mojang.blaze3d.vertex.BufferBuilder b = com.mojang.blaze3d.vertex.Tesselator.getInstance().getBuilder();
+        b.begin(com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS, com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX);
         for (int yy = y; yy < y + h; yy += size) {
             int bh = Math.min(size, y + h - yy);
+            float v1 = bh / (float) size;
             for (int xx = x; xx < x + w; xx += size) {
                 int bw = Math.min(size, x + w - xx);
-                g.blit(tex, xx, yy, 0, 0, bw, bh, size, size);
+                float u1 = bw / (float) size;
+                b.vertex(m, xx, yy, 0).uv(0, 0).endVertex();
+                b.vertex(m, xx, yy + bh, 0).uv(0, v1).endVertex();
+                b.vertex(m, xx + bw, yy + bh, 0).uv(u1, v1).endVertex();
+                b.vertex(m, xx + bw, yy, 0).uv(u1, 0).endVertex();
             }
         }
+        com.mojang.blaze3d.vertex.BufferUploader.drawWithShader(b.end());
     }
 
     private static void bevel(GuiGraphics g, int x, int y, int w, int h, int light, int dark) {

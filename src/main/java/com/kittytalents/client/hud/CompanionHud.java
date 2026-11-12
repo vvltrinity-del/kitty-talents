@@ -66,10 +66,13 @@ public final class CompanionHud implements IGuiOverlay {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null || mc.options.hideGui || ClientTwineState.isTwined()) return;
         if (!KittyTalentsClientConfig.SHOW_COMPANION_HUD.get()) return;
-        int y = Y;
-        for (TalentedCat cat : shownCats(mc)) {
-            y += card(g, mc.font, X, y, cat) + 4;
-        }
+        // Managed: fills and text batch into a few draws instead of one draw call each.
+        g.drawManaged(() -> {
+            int y = Y;
+            for (TalentedCat cat : shownCats(mc)) {
+                y += card(g, mc.font, X, y, cat) + 4;
+            }
+        });
     }
 
     /** The owner's name when the cat is not yours (a co-owned or a friend's cat), else null. */

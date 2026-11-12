@@ -69,6 +69,7 @@ public class CatFollowGoal extends Goal {
     public void start() {
         owner = cat.getOwner();
         repath = 0;
+        pathedTo = null;
         lastSample = cat.position();
         stuckSamples = 0;
     }
@@ -101,10 +102,18 @@ public class CatFollowGoal extends Goal {
         }
         if (--repath > 0) return;
         repath = 10;
+        // 5.0 performance: a new path only when the owner has moved, or the old path is done. Re-pathing every
+        // 10 ticks to a standing owner was the largest server cost of a group of following cats.
         Vec3 dest = destination();
+        boolean moved = pathedTo == null || pathedTo.distanceToSqr(dest) > 1.5D * 1.5D;
+        if (!moved && !cat.getNavigation().isDone()) return;
+        pathedTo = dest;
         double speed = owner instanceof Player p && p.isSprinting() ? 1.6D : 1.25D;
         cat.getNavigation().moveTo(dest.x, dest.y, dest.z, speed);
     }
+
+    /** Where the current path leads (null: none yet). */
+    private Vec3 pathedTo;
 
     private Vec3 destination() {
         Vec3 o = owner.position();
