@@ -1,0 +1,110 @@
+<title>Living Cats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600&family=Nunito:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  /* Layout: sticky contents rail on the left, one reading column; reference tables run the full column width. */
+  --bg:#f3f5f1; --surface:#ffffff; --sunk:#e8ece6; --ink:#1d2722; --muted:#5a6b61; --line:#d3dbd4;
+  --catnip:#2d8a57; --catnip-ink:#ffffff; --xp:#b97c0c; --dire:#8b2fc9; --warn:#b4471a;
+  --up:#d8f0e0; --up-ink:#14532d; --down:#f8dfd6; --down-ink:#7c2d12;
+  --display:"Pixelify Sans", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Nunito", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;margin:0}
+a{color:var(--catnip)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--xp);outline-offset:2px;border-radius:4px}
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:28px 22px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top-in{max-width:1180px;margin:0 auto;display:grid;gap:18px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(34px,6vw,56px);line-height:1.02;margin:0;letter-spacing:.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--catnip)}
+.lede{max-width:62ch;margin:0;color:var(--muted);font-size:17px}
+.counts{display:flex;flex-wrap:wrap;gap:10px 28px}
+.counts div{display:flex;align-items:baseline;gap:6px}
+.counts b{font-family:var(--mono);font-weight:600;font-size:24px;color:var(--xp);font-variant-numeric:tabular-nums}
+.counts span{color:var(--muted);font-size:14px}
+.search{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.search input{flex:1 1 260px;min-width:0;max-width:460px;font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.search output{font-size:13px;color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:210px minmax(0,1fr);gap:40px;padding-block:28px 80px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+nav.toc{position:sticky;top:calc(16px + env(safe-area-inset-top,0px));align-self:start;display:flex;flex-direction:column;gap:2px;font-size:14px}
+nav.toc a{color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:8px}
+nav.toc a:hover{background:var(--sunk);color:var(--ink)}
+nav.toc a.on{color:var(--catnip);background:var(--sunk);font-weight:700}
+details.toc-m{display:none}
+main{min-width:0}
+section{padding-top:8px;margin-bottom:46px;scroll-margin-top:16px}
+h2{font-family:var(--display);font-weight:600;font-size:30px;margin:0 0 6px;text-wrap:balance}
+h3{font-size:18px;margin:26px 0 8px}
+p,li{max-width:70ch}
+.muted,.sub{color:var(--muted)}
+.sub{font-size:13px}
+kbd{font-family:var(--mono);font-size:13px;padding:2px 7px;border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;background:var(--surface);white-space:nowrap}
+.steps{counter-reset:s;list-style:none;padding:0;display:grid;gap:12px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start}
+.steps li::before{content:counter(s);font-family:var(--mono);font-weight:600;font-size:16px;width:34px;height:34px;display:grid;place-items:center;border-radius:9px;background:var(--catnip);color:var(--catnip-ink)}
+.note{border-left:4px solid var(--xp);background:var(--surface);padding:12px 16px;border-radius:0 10px 10px 0;max-width:70ch}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+thead th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--sunk);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:13.5px;white-space:nowrap}
+tr.group th{background:var(--sunk);font-family:var(--display);font-size:16px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink)}
+.ref td:first-child{min-width:150px}
+.items td.recipe{font-size:13.5px;min-width:220px}
+.how{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block}
+.mastery{margin-top:6px;font-size:13.5px;color:var(--muted)}
+.mastery b{color:var(--xp);font-weight:700;margin-right:4px}
+.pips{display:inline-flex;gap:3px;flex-wrap:wrap;max-width:70px}
+.pips i{width:7px;height:7px;border-radius:2px;background:var(--catnip)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);margin:0 4px 4px 0;white-space:nowrap}
+.tag.dire{color:var(--dire);border-color:currentColor}
+.tag.free{color:var(--catnip);border-color:currentColor}
+.tag.mod{color:var(--xp);border-color:currentColor}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{font:inherit;font-size:14px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--catnip);color:var(--catnip-ink);border-color:var(--catnip)}
+.el{font-size:12.5px;font-weight:700;white-space:nowrap}
+.el-fire{color:#d9480f}.el-water{color:#1c7ed6}.el-frost{color:#0b9bb5}.el-poison{color:#5c940d}.el-electric{color:#c99400}
+.el-shadow{color:#7048e8}.el-arcane{color:#ae3ec9}.el-nature{color:#2b8a3e}.el-physical{color:var(--muted)}
+table.matrix{width:auto;font-size:13px}
+table.matrix th,table.matrix td{padding:6px 9px;text-align:center}
+table.matrix tbody th{text-align:left;background:var(--sunk)}
+td.mx{font-family:var(--mono);min-width:44px}
+td.mx.up{background:var(--up);color:var(--up-ink);font-weight:700}
+td.mx.down{background:var(--down);color:var(--down-ink)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.card h4{margin:0 0 6px;font-size:15px}
+.card p{margin:0;font-size:14.5px;color:var(--muted)}
+ul.whistle{columns:2 300px;column-gap:28px;padding-left:18px}
+ul.whistle li{break-inside:avoid;margin-bottom:6px;font-size:14.5px}
+code{font-family:var(--mono);font-size:13.5px;background:var(--sunk);padding:1px 6px;border-radius:5px}
+.hidden-row{display:none}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:18px}
+@media (max-width:960px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:0}
+  nav.toc{display:none}
+  details.toc-m{display:block;margin-bottom:22px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  details.toc-m summary{cursor:pointer;font-weight:700}
+  details.toc-m div{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px;margin-top:10px}
+  details.toc-m a{font-size:14px;text-decoration:none}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{padding-block:8px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.top{border:1px solid var(--line);border-radius:14px;margin-bottom:24px}
+</style>
+<main><section id="living"><h2>Living cats</h2>
+<h3>Growing up</h3>
+<p>Kittens pass through four stages, growing in size: <b>Newborn</b> (42%) → <b>Kitten</b> (58%) → <b>Junior</b> (78%) → <b>Adult</b> (100%). Young cats can't be ridden. Feeding a kitten makes it grow faster, and treats more so.</p>
+<h3>Personality</h3>
+<p>Every cat has one trait with a bonus and a quirk you can see in how it behaves. Kittens usually inherit a parent's trait. The trait shows on the Home tab.</p>
+<div class="tablewrap"><table class="ref"><thead><tr><th>Trait</th><th>Bonus</th><th>Quirk</th></tr></thead><tbody><tr><td><b>Brave</b></td><td>+10% attack damage</td><td>Never retreats when hurt; stares down nearby monsters</td></tr><tr><td><b>Lazy</b></td><td>Heals while resting</td><td>10% slower; naps when idle</td></tr><tr><td><b>Curious</b></td><td>+15% experience</td><td>Wanders off to inspect dropped items</td></tr><tr><td><b>Playful</b></td><td>+25% Energy recovery</td><td>Gets hungry 10% faster; hops around when idle</td></tr><tr><td><b>Shy</b></td><td>15% less damage from projectiles</td><td>Backs away from strangers</td></tr><tr><td><b>Greedy</b></td><td>Food restores 50% more</td><td>Gets hungry 25% faster; begs when you hold food</td></tr></tbody></table></div>
+<h3>Bond</h3>
+<p>Bond grows from <b>time spent near you</b>, <b>petting</b>, <b>feeding</b>, <b>playing</b> and <b>kills made while you're close</b>. It has 10 levels, shown as the bar on the Home tab. Perks unlock along the way:</p>
+<div class="tablewrap"><table class="ref"><thead><tr><th>Level</th><th>Perk</th><th>Effect</th></tr></thead><tbody><tr><td>2</td><td><b>Comfort</b></td><td>Petting also gives you Regeneration.</td></tr><tr><td>3</td><td><b>Playtime</b></td><td>Right-click with String to play: restores Energy.</td></tr><tr><td>5</td><td><b>Quick Learner</b></td><td>+5% experience.</td></tr><tr><td>7</td><td><b>Kindred</b></td><td>+2 max health and +1 attack damage.</td></tr><tr><td>10</td><td><b>Soulmates</b></td><td>+10% damage while you are close by.</td></tr></tbody></table></div>
+</section></main>

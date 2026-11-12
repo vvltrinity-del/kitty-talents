@@ -1,0 +1,35 @@
+KITTY TALENTS GUIDE ON GOOGLE SITES
+====================================
+
+Each .html file in this folder is the content of one page. Google Sites shows it through an "Embed code" block.
+
+1. Go to https://sites.google.com and start a Blank site. Name it "Kitty Talents".
+2. Make the pages (right panel > Pages > +), in this order, with these names:
+
+  01-home.html  ->  page "Home"  (11 KB)
+  02-living-cats.html  ->  page "Living Cats"  (9 KB)
+  03-talents.html  ->  page "Levels and Talents"  (39 KB)
+  04-combat.html  ->  page "Combat"  (19 KB)
+  05-abilities.html  ->  page "Abilities"  (18 KB)
+  06-twine.html  ->  page "Twine"  (9 KB)
+  07-whistle-and-tools.html  ->  page "Whistle and Tools"  (11 KB)
+  08-jobs.html  ->  page "Jobs and Production"  (10 KB)
+  09-breeding-and-gear.html  ->  page "Breeding and Gear"  (9 KB)
+  10-multiplayer.html  ->  page "Playing Together"  (8 KB)
+  11-items.html  ->  page "Items and Blocks"  (32 KB)
+  12-servers-and-faq.html  ->  page "Servers and FAQ"  (10 KB)
+
+   The first file goes on the Home page that Google Sites already created.
+
+3. On each page:
+   a. Delete the default text box (you can keep the page title in the header).
+   b. Insert > Embed > "Embed code".
+   c. Open the matching .html file in Notepad, select all (Ctrl+A), copy, and paste it into the box. Click Next, then Insert.
+   d. Drag the embed's right edge to the full page width, and drag its bottom edge down until the inner scrollbar disappears.
+      Long pages (Talents, Items) may hit Google's height limit; they then scroll inside the box, which works fine.
+
+4. Theme: pick a light theme (the guide is designed for a light page). "Simple" matches well.
+5. Click Publish, choose a web address (for example sites.google.com/view/kitty-talents), and share it.
+
+To update later: run `python tools/gen_guide.py --google-sites docs/guide/google-sites`, then on each changed page click
+the embed, the pencil (Edit), select all, and paste the new file over the old code.

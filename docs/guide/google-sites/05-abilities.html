@@ -1,0 +1,130 @@
+<title>Abilities</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600&family=Nunito:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  /* Layout: sticky contents rail on the left, one reading column; reference tables run the full column width. */
+  --bg:#f3f5f1; --surface:#ffffff; --sunk:#e8ece6; --ink:#1d2722; --muted:#5a6b61; --line:#d3dbd4;
+  --catnip:#2d8a57; --catnip-ink:#ffffff; --xp:#b97c0c; --dire:#8b2fc9; --warn:#b4471a;
+  --up:#d8f0e0; --up-ink:#14532d; --down:#f8dfd6; --down-ink:#7c2d12;
+  --display:"Pixelify Sans", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Nunito", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;margin:0}
+a{color:var(--catnip)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--xp);outline-offset:2px;border-radius:4px}
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:28px 22px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top-in{max-width:1180px;margin:0 auto;display:grid;gap:18px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(34px,6vw,56px);line-height:1.02;margin:0;letter-spacing:.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--catnip)}
+.lede{max-width:62ch;margin:0;color:var(--muted);font-size:17px}
+.counts{display:flex;flex-wrap:wrap;gap:10px 28px}
+.counts div{display:flex;align-items:baseline;gap:6px}
+.counts b{font-family:var(--mono);font-weight:600;font-size:24px;color:var(--xp);font-variant-numeric:tabular-nums}
+.counts span{color:var(--muted);font-size:14px}
+.search{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.search input{flex:1 1 260px;min-width:0;max-width:460px;font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.search output{font-size:13px;color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:210px minmax(0,1fr);gap:40px;padding-block:28px 80px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+nav.toc{position:sticky;top:calc(16px + env(safe-area-inset-top,0px));align-self:start;display:flex;flex-direction:column;gap:2px;font-size:14px}
+nav.toc a{color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:8px}
+nav.toc a:hover{background:var(--sunk);color:var(--ink)}
+nav.toc a.on{color:var(--catnip);background:var(--sunk);font-weight:700}
+details.toc-m{display:none}
+main{min-width:0}
+section{padding-top:8px;margin-bottom:46px;scroll-margin-top:16px}
+h2{font-family:var(--display);font-weight:600;font-size:30px;margin:0 0 6px;text-wrap:balance}
+h3{font-size:18px;margin:26px 0 8px}
+p,li{max-width:70ch}
+.muted,.sub{color:var(--muted)}
+.sub{font-size:13px}
+kbd{font-family:var(--mono);font-size:13px;padding:2px 7px;border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;background:var(--surface);white-space:nowrap}
+.steps{counter-reset:s;list-style:none;padding:0;display:grid;gap:12px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start}
+.steps li::before{content:counter(s);font-family:var(--mono);font-weight:600;font-size:16px;width:34px;height:34px;display:grid;place-items:center;border-radius:9px;background:var(--catnip);color:var(--catnip-ink)}
+.note{border-left:4px solid var(--xp);background:var(--surface);padding:12px 16px;border-radius:0 10px 10px 0;max-width:70ch}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+thead th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--sunk);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:13.5px;white-space:nowrap}
+tr.group th{background:var(--sunk);font-family:var(--display);font-size:16px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink)}
+.ref td:first-child{min-width:150px}
+.items td.recipe{font-size:13.5px;min-width:220px}
+.how{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block}
+.mastery{margin-top:6px;font-size:13.5px;color:var(--muted)}
+.mastery b{color:var(--xp);font-weight:700;margin-right:4px}
+.pips{display:inline-flex;gap:3px;flex-wrap:wrap;max-width:70px}
+.pips i{width:7px;height:7px;border-radius:2px;background:var(--catnip)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);margin:0 4px 4px 0;white-space:nowrap}
+.tag.dire{color:var(--dire);border-color:currentColor}
+.tag.free{color:var(--catnip);border-color:currentColor}
+.tag.mod{color:var(--xp);border-color:currentColor}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{font:inherit;font-size:14px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--catnip);color:var(--catnip-ink);border-color:var(--catnip)}
+.el{font-size:12.5px;font-weight:700;white-space:nowrap}
+.el-fire{color:#d9480f}.el-water{color:#1c7ed6}.el-frost{color:#0b9bb5}.el-poison{color:#5c940d}.el-electric{color:#c99400}
+.el-shadow{color:#7048e8}.el-arcane{color:#ae3ec9}.el-nature{color:#2b8a3e}.el-physical{color:var(--muted)}
+table.matrix{width:auto;font-size:13px}
+table.matrix th,table.matrix td{padding:6px 9px;text-align:center}
+table.matrix tbody th{text-align:left;background:var(--sunk)}
+td.mx{font-family:var(--mono);min-width:44px}
+td.mx.up{background:var(--up);color:var(--up-ink);font-weight:700}
+td.mx.down{background:var(--down);color:var(--down-ink)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.card h4{margin:0 0 6px;font-size:15px}
+.card p{margin:0;font-size:14.5px;color:var(--muted)}
+ul.whistle{columns:2 300px;column-gap:28px;padding-left:18px}
+ul.whistle li{break-inside:avoid;margin-bottom:6px;font-size:14.5px}
+code{font-family:var(--mono);font-size:13.5px;background:var(--sunk);padding:1px 6px;border-radius:5px}
+.hidden-row{display:none}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:18px}
+@media (max-width:960px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:0}
+  nav.toc{display:none}
+  details.toc-m{display:block;margin-bottom:22px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  details.toc-m summary{cursor:pointer;font-weight:700}
+  details.toc-m div{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px;margin-top:10px}
+  details.toc-m a{font-size:14px;text-decoration:none}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{padding-block:8px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.top{border:1px solid var(--line);border-radius:14px;margin-bottom:24px}
+</style>
+<div class="search" style="margin-bottom:12px"><label for="q" class="eyebrow">Search</label><input id="q" type="search" placeholder="Search this page" autocomplete="off"><output id="q-count" for="q"></output></div><main><section id="abilities"><h2>Abilities</h2>
+<p>A cat carries <b>three skills and one ultimate</b>, set on the Combat tab. In a fight the cat casts them on its own when the moment is right: heals when hurt, area attacks against a crowd, ultimates against several enemies or a big one. While Twined you cast them yourself.</p>
+<div class="tablewrap"><table class="ref"><thead><tr><th>Ability</th><th>Element</th><th class="n">Energy</th><th class="n">Cooldown</th><th>Effect</th></tr></thead><tbody><tr data-search="feline hiss terrifies surrounding enemies, inflicting weakness and repelling creepers. physical skill"><td><b>Feline Hiss</b><div class="sub">Skill</div></td><td><span class="el el-physical">Physical</span></td><td class="n">25</td><td class="n">4 s</td><td>Terrifies surrounding enemies, inflicting Weakness and repelling Creepers.</td></tr><tr data-search="feline dash performs an evasive forward leap with invulnerability frames, granting haste. physical skill"><td><b>Feline Dash</b><div class="sub">Skill</div></td><td><span class="el el-physical">Physical</span></td><td class="n">15</td><td class="n">2 s</td><td>Performs an evasive forward leap with invulnerability frames, granting Haste.</td></tr><tr data-search="fortress guard hardens defenses, taunting nearby enemies and granting fortified to self and owner. physical skill"><td><b>Fortress Guard</b><div class="sub">Skill</div></td><td><span class="el el-physical">Physical</span></td><td class="n">30</td><td class="n">7 s</td><td>Hardens defenses, taunting nearby enemies and granting Fortified to self and owner.</td></tr><tr data-search="utility action performs utility actions such as placing torches or using equipped tools. physical utility"><td><b>Utility Action</b><div class="sub">Utility</div></td><td><span class="el el-physical">Physical</span></td><td class="n">10</td><td class="n">1 s</td><td>Performs utility actions such as placing torches or using equipped tools.</td></tr><tr data-search="healing purr soothes the cat and nearby allies, restoring health and granting regeneration. nature skill"><td><b>Healing Purr</b><div class="sub">Skill</div></td><td><span class="el el-nature">Nature</span></td><td class="n">40</td><td class="n">10 s</td><td>Soothes the cat and nearby allies, restoring health and granting Regeneration.</td></tr><tr data-search="shadow strike steps through the shadows to strike an enemy from behind, dealing burst damage and inflicting vulnerable. shadow skill"><td><b>Shadow Strike</b><div class="sub">Skill</div></td><td><span class="el el-shadow">Shadow</span></td><td class="n">35</td><td class="n">5 s</td><td>Steps through the shadows to strike an enemy from behind, dealing burst damage and inflicting Vulnerable.</td></tr><tr data-search="volt dash electrifies the cat and surges forward, striking and shocking all enemies in the path. electric skill"><td><b>Volt Dash</b><div class="sub">Skill</div></td><td><span class="el el-electric">Electric</span></td><td class="n">30</td><td class="n">4 s</td><td>Electrifies the cat and surges forward, striking and shocking all enemies in the path.</td></tr><tr data-search="inferno spin whirls with blazing claws, damaging all surrounding enemies and setting them on fire. fire skill"><td><b>Inferno Spin</b><div class="sub">Skill</div></td><td><span class="el el-fire">Fire</span></td><td class="n">35</td><td class="n">4.5 s</td><td>Whirls with blazing claws, damaging all surrounding enemies and setting them on fire.</td></tr><tr data-search="frost nova unleashes an icy blast freezing surrounding enemies and drastically reducing their speed. frost skill"><td><b>Frost Nova</b><div class="sub">Skill</div></td><td><span class="el el-frost">Frost</span></td><td class="n">35</td><td class="n">4.5 s</td><td>Unleashes an icy blast freezing surrounding enemies and drastically reducing their speed.</td></tr><tr data-search="tidal surge summons a cascading wave that knocks enemies back, douses fire, and cleanses allies. water skill"><td><b>Tidal Surge</b><div class="sub">Skill</div></td><td><span class="el el-water">Water</span></td><td class="n">30</td><td class="n">4 s</td><td>Summons a cascading wave that knocks enemies back, douses fire, and cleanses allies.</td></tr><tr data-search="venom fang bites deeply into a foe, applying lethal poison and bleed. poison skill"><td><b>Venom Fang</b><div class="sub">Skill</div></td><td><span class="el el-poison">Poison</span></td><td class="n">25</td><td class="n">3 s</td><td>Bites deeply into a foe, applying lethal Poison and Bleed.</td></tr><tr data-search="ice lance hurls a lance of ice at a distant foe, freezing it in place. frost skill"><td><b>Ice Lance</b><div class="sub">Skill</div></td><td><span class="el el-frost">Frost</span></td><td class="n">30</td><td class="n">3.5 s</td><td>Hurls a lance of ice at a distant foe, freezing it in place.</td></tr><tr data-search="toxic cloud bursts a cloud of toxic spores on a foe, poisoning and weakening everything around it. poison skill"><td><b>Toxic Cloud</b><div class="sub">Skill</div></td><td><span class="el el-poison">Poison</span></td><td class="n">30</td><td class="n">5 s</td><td>Bursts a cloud of toxic spores on a foe, poisoning and weakening everything around it.</td></tr><tr data-search="arcane blink blinks behind a distant foe in a flash of starlight and strikes, marking it for the kill. arcane skill"><td><b>Arcane Blink</b><div class="sub">Skill</div></td><td><span class="el el-arcane">Arcane</span></td><td class="n">30</td><td class="n">4 s</td><td>Blinks behind a distant foe in a flash of starlight and strikes, marking it for the kill.</td></tr><tr data-search="catnip frenzy enters a legendary berserk rage, supercharging attack speed, granting regeneration and fortified. physical ultimate"><td><b>Catnip Frenzy</b><div class="sub">Ultimate</div></td><td><span class="el el-physical">Physical</span></td><td class="n">80</td><td class="n">22.5 s</td><td>Enters a legendary berserk rage, supercharging attack speed, granting Regeneration and Fortified.</td></tr><tr data-search="soul flame barrage unleashes swirling twin soul-flames at all surrounding enemies, inflicting marked and vulnerable. arcane ultimate"><td><b>Soul Flame Barrage</b><div class="sub">Ultimate</div></td><td><span class="el el-arcane">Arcane</span></td><td class="n">90</td><td class="n">25 s</td><td>Unleashes swirling twin soul-flames at all surrounding enemies, inflicting Marked and Vulnerable.</td></tr><tr data-search="apex predator teleports in rapid sequence across up to 4 nearby foes, dealing lethal critical strikes. shadow ultimate"><td><b>Apex Predator</b><div class="sub">Ultimate</div></td><td><span class="el el-shadow">Shadow</span></td><td class="n">85</td><td class="n">22.5 s</td><td>Teleports in rapid sequence across up to 4 nearby foes, dealing lethal critical strikes.</td></tr><tr data-search="celestial purr resonates with celestial warmth, cleansing all debuffs and restoring massive health and absorption to allies. nature ultimate"><td><b>Celestial Purr</b><div class="sub">Ultimate</div></td><td><span class="el el-nature">Nature</span></td><td class="n">80</td><td class="n">27.5 s</td><td>Resonates with celestial warmth, cleansing all debuffs and restoring massive health and absorption to allies.</td></tr><tr data-search="tempest claws summons a storm of lightning upon all nearby enemies, electrocuting and shocking them. electric ultimate"><td><b>Tempest Claws</b><div class="sub">Ultimate</div></td><td><span class="el el-electric">Electric</span></td><td class="n">90</td><td class="n">25 s</td><td>Summons a storm of lightning upon all nearby enemies, electrocuting and shocking them.</td></tr><tr data-search="blizzard summons a howling blizzard that freezes every nearby foe and shields the cat and its owner. frost ultimate"><td><b>Blizzard</b><div class="sub">Ultimate</div></td><td><span class="el el-frost">Frost</span></td><td class="n">85</td><td class="n">25 s</td><td>Summons a howling blizzard that freezes every nearby foe and shields the cat and its owner.</td></tr><tr data-search="plague bloom a toxic bloom bursts around the cat, poisoning and weakening every foe; the cat heals for each one. poison ultimate"><td><b>Plague Bloom</b><div class="sub">Ultimate</div></td><td><span class="el el-poison">Poison</span></td><td class="n">85</td><td class="n">25 s</td><td>A toxic bloom bursts around the cat, poisoning and weakening every foe; the cat heals for each one.</td></tr><tr data-search="starfall calls down a rain of falling stars on up to six foes, leaving them vulnerable. arcane ultimate"><td><b>Starfall</b><div class="sub">Ultimate</div></td><td><span class="el el-arcane">Arcane</span></td><td class="n">90</td><td class="n">26 s</td><td>Calls down a rain of falling stars on up to six foes, leaving them Vulnerable.</td></tr></tbody></table></div>
+<p class="muted">Energy and cooldowns are the defaults; a server can change them with a datapack.</p>
+</section></main><script>
+(function(){
+  var input=document.getElementById('q'), out=document.getElementById('q-count'); if(!input) return;
+  var chips=[].slice.call(document.querySelectorAll('.chip')), cat='';
+  function apply(){
+    var q=(input.value||'').trim().toLowerCase(), shown=0, total=0;
+    document.querySelectorAll('tr[data-search]').forEach(function(tr){
+      total++;
+      var okq=!q||tr.getAttribute('data-search').indexOf(q)>=0;
+      var okc=!cat||!tr.hasAttribute('data-cat')||tr.getAttribute('data-cat')===cat;
+      var show=okq&&okc; tr.classList.toggle('hidden-row',!show); if(show&&okq)shown++;
+    });
+    out.textContent=q?(shown+' matching rows in the talent, ability and item tables'):'';
+  }
+  input.addEventListener('input',apply);
+  chips.forEach(function(c){c.addEventListener('click',function(){
+    cat=c.getAttribute('data-filter'); chips.forEach(function(x){x.setAttribute('aria-pressed',String(x===c))}); apply();
+  })});
+  var links=[].slice.call(document.querySelectorAll('nav.toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){
+      links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'-20% 0px -70% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
