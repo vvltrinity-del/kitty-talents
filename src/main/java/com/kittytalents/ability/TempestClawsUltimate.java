@@ -53,7 +53,7 @@ public class TempestClawsUltimate extends CatAbility {
         float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
 
         for (LivingEntity target : enemies) {
-            target.hurt(cat.damageSources().lightningBolt(), dmg);
+            target.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.LIGHTNING_BOLT), dmg);
             FelineStatusEffects.applyStatus(target, FelineStatusType.SHOCK, 2, 100);
 
             if (cat.level() instanceof ServerLevel sl) {

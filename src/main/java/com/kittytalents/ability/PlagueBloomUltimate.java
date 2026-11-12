@@ -43,7 +43,7 @@ public class PlagueBloomUltimate extends CatAbility {
         cat.playSound(SoundEvents.PUFFER_FISH_BLOW_OUT, 1.2F, 0.6F);
         float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
         for (LivingEntity t : foes) {
-            t.hurt(cat.damageSources().magic(), dmg);
+            t.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.MAGIC), dmg);
             FelineStatusEffects.applyStatus(t, FelineStatusType.POISON, 3, POISON.i());
             FelineStatusEffects.applyStatus(t, FelineStatusType.VULNERABLE, 2, 160);
             FelineStatusEffects.applyStatus(t, FelineStatusType.WEAKNESS, 2, 160);

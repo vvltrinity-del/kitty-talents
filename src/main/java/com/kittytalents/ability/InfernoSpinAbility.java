@@ -47,7 +47,7 @@ public class InfernoSpinAbility extends CatAbility {
 
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
-            target.hurt(cat.damageSources().inFire(), dmg);
+            target.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.IN_FIRE), dmg);
             target.setSecondsOnFire(5);
             FelineStatusEffects.applyStatus(target, FelineStatusType.BURN, 2, BURN.i());
         }

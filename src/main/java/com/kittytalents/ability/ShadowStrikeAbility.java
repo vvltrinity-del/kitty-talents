@@ -53,7 +53,7 @@ public class ShadowStrikeAbility extends CatAbility {
             cat.playSound(SoundEvents.PLAYER_ATTACK_CRIT, 1.0F, 1.4F);
 
             float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
-            target.hurt(cat.damageSources().magic(), dmg);
+            target.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.MAGIC), dmg);
 
             FelineStatusEffects.applyStatus(target, FelineStatusType.VULNERABLE, 2, 120);
             FelineStatusEffects.applyElementStatus(target, FelineElement.SHADOW, 1, 100);

@@ -15,6 +15,8 @@ import net.minecraftforge.network.PacketDistributor;
  * Needs {@link CatAction#TWINE_CONTROL}; non-finite values are dropped and the rest are clamped.
  */
 public class PacketTwineInput extends PacketBase {
+    /** Ticks between Twine claw swings (matches the target's hurt invulnerability). */
+    public static final int CLAW_TICKS = 10;
     private final int catEntityId;
     private final float xxa; // strafe (-1.0 to 1.0)
     private final float zza; // forward (-1.0 to 1.0)
@@ -133,11 +135,14 @@ public class PacketTwineInput extends PacketBase {
             if (com.kittytalents.compat.tacz.TacZCompat.isGun(cat.getEquippedWeapon())) {
                 com.kittytalents.compat.tacz.TacZCompat.shootGunTwined(cat, sender);
             } else {
-                cat.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
-                net.minecraft.world.phys.AABB reach = cat.getBoundingBox().inflate(2.2D);
-                for (net.minecraft.world.entity.LivingEntity target : cat.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, reach, e -> e != cat && e != sender && !cat.isAlliedTo(e))) {
-                    cat.doHurtTarget(target);
-                    break;
+                // One swing per CLAW_TICKS while the button is held (it is sent every tick): the target's
+                // invulnerability ate the extra hits, but weapon wear, knockback and fire aspect applied each tick.
+                long now = cat.level().getGameTime();
+                if (now >= cat.getTwineClawReadyAt()) {
+                    cat.setTwineClawReadyAt(now + CLAW_TICKS);
+                    cat.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                    net.minecraft.world.entity.LivingEntity target = com.kittytalents.combat.CatDamage.twineStrikeTarget(cat, sender, 2.2D, 0.35D);
+                    if (target != null) cat.doHurtTarget(target);
                 }
             }
         }
@@ -154,9 +159,8 @@ public class PacketTwineInput extends PacketBase {
                 cat.setDeltaMovement(look.x * pounceSpeed, 0.48D, look.z * pounceSpeed);
                 cat.hasImpulse = true;
                 cat.playSound(net.minecraft.sounds.SoundEvents.FOX_BITE, 1.0F, 1.2F);
-
-                net.minecraft.world.phys.AABB pounceReach = cat.getBoundingBox().inflate(2.5D);
-                for (net.minecraft.world.entity.LivingEntity target : cat.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, pounceReach, e -> e != cat && e != sender && !cat.isAlliedTo(e))) {
+                net.minecraft.world.entity.LivingEntity pounced = com.kittytalents.combat.CatDamage.twineStrikeTarget(cat, sender, 2.5D, 0.2D);
+                for (net.minecraft.world.entity.LivingEntity target : pounced == null ? java.util.List.<net.minecraft.world.entity.LivingEntity>of() : java.util.List.of(pounced)) {
                     cat.doHurtTarget(target);
                     target.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 60, 2));
                     if (cat.level() instanceof net.minecraft.server.level.ServerLevel sl) {

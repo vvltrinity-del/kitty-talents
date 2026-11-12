@@ -82,7 +82,7 @@ public class CatAbilities {
             case SHADOW -> SHADOW_STRIKE;
             case POISON -> VENOM_FANG;
             case NATURE -> HEALING_PURR;
-            case ARCANE -> SOUL_FLAME_BARRAGE;
+            case ARCANE -> ARCANE_BLINK;
             case PHYSICAL -> FELINE_DASH;
         };
     }

@@ -50,7 +50,7 @@ public class SoulFlameBarrageUltimate extends CatAbility {
         float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
 
         for (LivingEntity target : enemies) {
-            target.hurt(cat.damageSources().magic(), dmg);
+            target.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.MAGIC), dmg);
             FelineStatusEffects.applyStatus(target, FelineStatusType.MARKED, 1, 140);
             FelineStatusEffects.applyStatus(target, FelineStatusType.VULNERABLE, 2, 120);
 

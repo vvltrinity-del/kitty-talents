@@ -40,7 +40,7 @@ public class BlizzardUltimate extends CatAbility {
         cat.playSound(SoundEvents.PLAYER_HURT_FREEZE, 1.2F, 0.8F);
         float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
         for (LivingEntity t : foes) {
-            t.hurt(cat.damageSources().freeze(), dmg);
+            t.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.FREEZE), dmg);
             FelineStatusEffects.applyStatus(t, FelineStatusType.FREEZE, 3, FREEZE.i());
             t.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, FREEZE.i(), 3));
             if (t.canFreeze()) t.setTicksFrozen(t.getTicksRequiredToFreeze() + 100);

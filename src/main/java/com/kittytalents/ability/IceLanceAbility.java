@@ -39,7 +39,7 @@ public class IceLanceAbility extends CatAbility {
         if (t == null || !cat.hasLineOfSight(t)) return false;
         cat.playSound(SoundEvents.GLASS_BREAK, 0.9F, 1.9F);
         cat.playSound(SoundEvents.PLAYER_HURT_FREEZE, 1.0F, 1.2F);
-        t.hurt(cat.damageSources().freeze(), (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f());
+        t.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.FREEZE), (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f());
         FelineStatusEffects.applyStatus(t, FelineStatusType.FREEZE, 1, FREEZE.i());
         t.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, FREEZE.i(), 2));
         if (t.canFreeze()) t.setTicksFrozen(t.getTicksRequiredToFreeze() + 40);

@@ -255,3 +255,24 @@ numbers are tunable from the start). Phase 8 is last so the release isn't blocke
 - README, PROJECT and EXTENDING updated for 4.0. `KittyTalentsCompat` got the `pack.mcmeta` it was missing.
 - Version `4.0.0`, tag `v4.0.0`.
 
+### 2026-11-11: Combat audit (after the 4.0.0 tag)
+New `test/KittyCombatAuditGameTests` (69 tests): every ability and ultimate through the Twine keys and through the AI,
+kill credit for every damaging ability, the Twine claw, pounce, dodge and all four team synergies with friends standing
+next to the enemy, every talent at max rank in a brawl, and every status effect. Bugs it found, all fixed:
+- 11 abilities dealt damage nobody owned (freeze, fire, lightning, drowning, magic): their kills gave no XP, kill count,
+  bond, on-kill talents, XP orbs or Hunter Cat drops. They now use `CatDamage.ability` (credited to the cat; the claw
+  combo, crit, role and element bonuses still only apply to direct hits, so ability damage is unchanged).
+- Twine Team Synergy hurt, burned or debuffed co-owners, villagers and the owner's other cats. Now only real enemies.
+- Twine pounce hit the owner's other cats; the Twine claw hit whatever was first in range (often the enemy behind the
+  cat). Both now hit the nearest creature in front, never a friend.
+- Holding the Twine claw ran a full attack every tick: weapon wear, knockback and fire aspect 20 times a second. Now one
+  swing per 10 ticks.
+- A perfect dodge set Energy to 100 on cats with more than 100 max Energy; a cow or villager nearby counted as a
+  "perfect" dodge and got slowed. The refund now respects max Energy and only real enemies count.
+- Feline Dash charged 35 Energy (its own 15 plus the dodge's 20). Now 15.
+- Healing Purr healed the cat twice; Apex Predator picked any four enemies instead of the nearest; the element
+  suggestion for Arcane was an ultimate.
+- Every hurt event involving a cat threw and caught a ClassNotFoundException (Neko Night lookup by reflection). Now a
+  direct call.
+186 GameTests pass 4 runs in a row.
+

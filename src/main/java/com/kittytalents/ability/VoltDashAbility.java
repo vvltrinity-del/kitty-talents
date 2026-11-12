@@ -46,7 +46,7 @@ public class VoltDashAbility extends CatAbility {
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, reach,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
             float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
-            target.hurt(cat.damageSources().lightningBolt(), dmg);
+            target.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.LIGHTNING_BOLT), dmg);
             FelineStatusEffects.applyStatus(target, FelineStatusType.SHOCK, 1, 60);
         }
 

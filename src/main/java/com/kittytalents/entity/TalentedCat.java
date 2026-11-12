@@ -260,6 +260,10 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     /** Transient (not saved): last Twine right-click pounce, for its 1-second cooldown. */
     public long getLastTwinePounceTick() { return combat.lastTwinePounceTick; }
     public void setLastTwinePounceTick(long tick) { combat.lastTwinePounceTick = tick; }
+    /** Game time of the next allowed Twine claw swing (not saved). */
+    private long twineClawReadyAt;
+    public long getTwineClawReadyAt() { return twineClawReadyAt; }
+    public void setTwineClawReadyAt(long tick) { twineClawReadyAt = tick; }
 
     public ItemStack getCarriedToy() { return equipment.getCarriedToy(); }
     public void setCarriedToy(ItemStack toy) { equipment.setCarriedToy(toy); }

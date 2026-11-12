@@ -45,7 +45,7 @@ public class TidalSurgeAbility extends CatAbility {
 
         for (LivingEntity target : cat.level().getEntitiesOfClass(LivingEntity.class, aoe,
                 e -> com.kittytalents.ai.CatTargeting.canHarm(cat, e))) {
-            target.hurt(cat.damageSources().drown(), dmg);
+            target.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.DROWN), dmg);
             target.clearFire();
             Vec3 push = target.position().subtract(cat.position()).normalize().scale(1.2);
             target.push(push.x, 0.35, push.z);

@@ -46,7 +46,7 @@ public class HealingPurrAbility extends CatAbility {
 
         AABB reach = cat.getBoundingBox().inflate(RADIUS.get());
         for (LivingEntity ally : cat.level().getEntitiesOfClass(LivingEntity.class, reach,
-                e -> com.kittytalents.ai.CatTargeting.isFriendly(cat, e))) {
+                e -> e != cat && com.kittytalents.ai.CatTargeting.isFriendly(cat, e))) { // the cat had its own heal twice
             ally.heal(ally.getMaxHealth() * ALLY.f());
             ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 0));
             FelineStatusEffects.applyStatus(ally, FelineStatusType.REGENERATION, 1, 120);

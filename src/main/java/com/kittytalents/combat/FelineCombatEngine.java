@@ -52,6 +52,11 @@ public class FelineCombatEngine {
      * Executes a directional 4-way dodge consuming energy and granting brief invulnerability.
      */
     public static boolean performDodge(TalentedCat cat, DodgeDirection direction) {
+        return performDodge(cat, direction, true);
+    }
+
+    /** @param payEnergy false when the caller already pays (Feline Dash costs its own ability Energy). */
+    public static boolean performDodge(TalentedCat cat, DodgeDirection direction, boolean payEnergy) {
         if (cat == null || cat.level().isClientSide || !cat.isAlive() || cat.isIncapacitated()) {
             return false;
         }
@@ -60,7 +65,7 @@ public class FelineCombatEngine {
         int agilityLvl = cat.getTalentLevel(Talents.FELINE_AGILITY);
         energyCost = Math.max(10, energyCost - (agilityLvl * 2));
 
-        if (!FelineEnergyEngine.consumeEnergy(cat, energyCost)) {
+        if (payEnergy && !FelineEnergyEngine.consumeEnergy(cat, energyCost)) {
             return false; // Not enough energy
         }
 
@@ -300,7 +305,9 @@ public class FelineCombatEngine {
         }
 
         // 3. Cat Attacker Combat Logic
-        if (attackerEntity instanceof TalentedCat cat && !cat.level().isClientSide) {
+        // Only the cat's own hits (claws, bites, its direct strikes). Ability damage is credited to the cat for kills
+        // and XP (CatDamage) but is not a claw: no combo, crit, role or element bonus on top of the ability's numbers.
+        if (attackerEntity instanceof TalentedCat cat && source.getDirectEntity() == cat && !cat.level().isClientSide) {
             float damage = event.getAmount();
             long gameTime = cat.level().getGameTime();
 
@@ -440,21 +447,7 @@ public class FelineCombatEngine {
      */
     public static boolean isNekoNight(net.minecraft.world.level.Level level) {
         if (level == null) return false;
-        try {
-            Class<?> clazz = Class.forName("com.kittytalents.entity.ai.NekoNightManager");
-            java.lang.reflect.Method m = clazz.getMethod("isNekoNight", net.minecraft.world.level.Level.class);
-            return (boolean) m.invoke(null, level);
-        } catch (Throwable ignored) {}
-        try {
-            Class<?> clazz = Class.forName("com.kittytalents.event.NekoNightManager");
-            java.lang.reflect.Method m = clazz.getMethod("isNekoNight", net.minecraft.world.level.Level.class);
-            return (boolean) m.invoke(null, level);
-        } catch (Throwable ignored) {}
-        if (level.isNight()) {
-            long day = level.getDayTime() / 24000L;
-            if (day > 0 && day % 8 == 5) return true;
-        }
-        return false;
+        return com.kittytalents.event.NekoNightManager.isNekoNight(level);
     }
 
     /**

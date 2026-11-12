@@ -26,7 +26,7 @@ public class FelineDashAbility extends CatAbility {
 
     @Override
     protected boolean execute(TalentedCat cat, Player player) {
-        boolean success = FelineCombatEngine.performDodge(cat, FelineCombatEngine.DodgeDirection.FORWARD);
+        boolean success = FelineCombatEngine.performDodge(cat, FelineCombatEngine.DodgeDirection.FORWARD, false);
         if (success) {
             FelineStatusEffects.applyStatus(cat, FelineStatusType.HASTE, 1, 60);
         }

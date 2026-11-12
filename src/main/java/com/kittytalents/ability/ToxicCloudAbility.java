@@ -43,7 +43,7 @@ public class ToxicCloudAbility extends CatAbility {
         cat.playSound(SoundEvents.PUFFER_FISH_BLOW_UP, 1.0F, 0.8F);
         float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
         for (LivingEntity t : AbilityTargets.foesAround(cat, centre, RADIUS.get())) {
-            t.hurt(cat.damageSources().magic(), dmg);
+            t.hurt(com.kittytalents.combat.CatDamage.ability(cat, net.minecraft.world.damagesource.DamageTypes.MAGIC), dmg);
             FelineStatusEffects.applyStatus(t, FelineStatusType.POISON, 2, POISON.i());
             FelineStatusEffects.applyStatus(t, FelineStatusType.WEAKNESS, 1, 100);
             t.addEffect(new MobEffectInstance(MobEffects.POISON, POISON.i(), 0));

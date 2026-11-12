@@ -225,6 +225,7 @@ public final class TwineMoves {
         }
 
         // 4. Select companion and determine synergy matchup
+        companions.sort(java.util.Comparator.comparingDouble(leadCat::distanceToSqr));
         TalentedCat partner = companions.get(0);
         SynergyType synergy = determineSynergy(leadCat, partner);
 
@@ -246,7 +247,7 @@ public final class TwineMoves {
                 level.playSound(null, leadCat.getX(), leadCat.getY(), leadCat.getZ(), SoundEvents.CAT_HISS, SoundSource.PLAYERS, 1.2F, 0.8F);
 
                 AABB aoe = leadCat.getBoundingBox().inflate(6.0D);
-                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, aoe, e -> e != leadCat && e != partner && e != player && !leadCat.isAlliedTo(e))) {
+                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, aoe, e -> e != partner && e != player && com.kittytalents.ai.CatTargeting.canHarm(leadCat, e))) {
                     target.hurt(leadCat.damageSources().mobAttack(leadCat), 14.0F);
                     target.setSecondsOnFire(8);
                     target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 160, 1));
@@ -260,7 +261,7 @@ public final class TwineMoves {
                 level.playSound(null, leadCat.getX(), leadCat.getY(), leadCat.getZ(), SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.0F, 1.4F);
 
                 AABB wave = leadCat.getBoundingBox().inflate(8.0D);
-                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, wave, e -> e != leadCat && e != partner && e != player && !leadCat.isAlliedTo(e))) {
+                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, wave, e -> e != partner && e != player && com.kittytalents.ai.CatTargeting.canHarm(leadCat, e))) {
                     target.hurt(leadCat.damageSources().mobAttack(leadCat), 10.0F);
                     target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 160, 3));
                     target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 1));
@@ -276,8 +277,8 @@ public final class TwineMoves {
                 level.playSound(null, leadCat.getX(), leadCat.getY(), leadCat.getZ(), SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 1.2F, 1.1F);
 
                 AABB soulAoe = leadCat.getBoundingBox().inflate(7.0D);
-                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, soulAoe, e -> e != leadCat && e != partner && e != player && !leadCat.isAlliedTo(e))) {
-                    target.hurt(leadCat.damageSources().magic(), 18.0F);
+                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, soulAoe, e -> e != partner && e != player && com.kittytalents.ai.CatTargeting.canHarm(leadCat, e))) {
+                    target.hurt(com.kittytalents.combat.CatDamage.ability(leadCat, net.minecraft.world.damagesource.DamageTypes.MAGIC), 18.0F);
                     target.addEffect(new MobEffectInstance(MobEffects.WITHER, 120, 1));
                     target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0));
                 }
@@ -295,7 +296,7 @@ public final class TwineMoves {
                 level.playSound(null, leadCat.getX(), leadCat.getY(), leadCat.getZ(), SoundEvents.CAT_PURREOW, SoundSource.PLAYERS, 1.0F, 1.2F);
 
                 AABB packAoe = leadCat.getBoundingBox().inflate(5.5D);
-                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, packAoe, e -> e != leadCat && e != partner && e != player && !leadCat.isAlliedTo(e))) {
+                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, packAoe, e -> e != partner && e != player && com.kittytalents.ai.CatTargeting.canHarm(leadCat, e))) {
                     target.hurt(leadCat.damageSources().mobAttack(leadCat), 12.0F);
                     target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 80, 1));
                 }
@@ -382,7 +383,7 @@ public final class TwineMoves {
         // 4. Perfect Dodge Check: Hostile entity within 3.5 blocks targeting cat or player
         AABB scan = cat.getBoundingBox().inflate(3.5D);
         List<LivingEntity> nearbyHostiles = level.getEntitiesOfClass(LivingEntity.class, scan,
-                e -> e != cat && e != player && !cat.isAlliedTo(e) && e.isAlive());
+                e -> e != player && com.kittytalents.ai.CatTargeting.canHarm(cat, e));
 
         boolean perfectDodge = false;
         for (LivingEntity hostile : nearbyHostiles) {
@@ -394,7 +395,7 @@ public final class TwineMoves {
 
         if (perfectDodge) {
             // Refund energy on perfect timing!
-            cat.setEnergy(Math.min(100, cat.getEnergy() + 15));
+            com.kittytalents.combat.FelineEnergyEngine.restoreEnergy(cat, 15);
             level.playSound(null, cat.getX(), cat.getY(), cat.getZ(), ModSounds.CAT_PERFECT_DODGE.get(), SoundSource.PLAYERS, 1.0F, 1.2F);
             level.sendParticles(ParticleTypes.ENCHANTED_HIT, cat.getX(), cat.getY() + 0.3D, cat.getZ(), 20, 0.6D, 0.3D, 0.6D, 0.1D);
             player.displayClientMessage(Component.literal("★ Perfect Dodge! Energy refunded! ★").withStyle(ChatFormatting.GOLD), true);

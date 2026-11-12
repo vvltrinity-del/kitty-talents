@@ -50,6 +50,7 @@ public class ApexPredatorUltimate extends CatAbility {
         cat.playSound(SoundEvents.PLAYER_ATTACK_SWEEP, 1.2F, 1.2F);
 
         float dmg = (float) cat.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE.f();
+        enemies.sort(java.util.Comparator.comparingDouble(cat::distanceToSqr)); // the four nearest, not any four
         int count = 0;
 
         for (LivingEntity target : enemies) {
