@@ -79,4 +79,23 @@ public class KittyFiveFixGameTests {
         h.assertTrue(be.getEnergyStorage().getEnergyStored() == 300, "energy after two reloads: " + be.getEnergyStorage().getEnergyStored());
         h.succeed();
     }
+
+    /** Cats never pick fish as a target, even in Hunting mode (they used to leave a fight to swim after cod). */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testHuntingCatIgnoresFish(GameTestHelper h) {
+        var fp = joinFakeOwner(h, new BlockPos(1, 2, 1));
+        try {
+            TalentedCat c = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(3, 2, 3));
+            c.tame(fp);
+            c.setOrderedToSit(false);
+            c.setCatMode(CatMode.HUNTING);
+            h.spawn(net.minecraft.world.entity.EntityType.COD, new BlockPos(4, 2, 3));
+            h.assertTrue(com.kittytalents.ai.CatTargeting.findBestTarget(c) == null, "a cod should not be a target");
+            var rabbit = h.spawn(net.minecraft.world.entity.EntityType.RABBIT, new BlockPos(3, 2, 4));
+            h.assertTrue(com.kittytalents.ai.CatTargeting.findBestTarget(c) == rabbit, "the rabbit is still prey");
+            h.succeed();
+        } finally {
+            leave(h, fp);
+        }
+    }
 }

@@ -104,7 +104,7 @@ public final class CatTargeting {
     }
 
     public static boolean isPrey(LivingEntity e) {
-        return e instanceof Rabbit || e instanceof Chicken || e instanceof AbstractFish || e instanceof Bat;
+        return e instanceof Rabbit || e instanceof Chicken || e instanceof Bat; // not fish (5.0): cats left the fight to swim after them
     }
 
     /** Scan radius for candidate targets under this cat's current mode. */
@@ -127,7 +127,7 @@ public final class CatTargeting {
         if (radius <= 0) return null;
 
         List<LivingEntity> candidates = cat.level().getEntitiesOfClass(LivingEntity.class,
-                cat.getBoundingBox().inflate(radius, 6.0D, radius), e -> e.isAlive() && !isFriendly(cat, e));
+                cat.getBoundingBox().inflate(radius, 6.0D, radius), e -> e.isAlive() && !(e instanceof AbstractFish) && !isFriendly(cat, e));
         List<Player> trusted = cat.level().getEntitiesOfClass(Player.class, cat.getBoundingBox().inflate(16.0D),
                 p -> cat.isTrusted(p.getUUID()));
 
