@@ -23,7 +23,16 @@ public class KittyJeiPlugin implements IModPlugin {
     }
 
     @Override
+    public void registerCategories(mezz.jei.api.registration.IRecipeCategoryRegistration registration) {
+        var gui = registration.getJeiHelpers().getGuiHelper();
+        registration.addRecipeCategories(new KittyJeiCategories.HabitatCategory(gui), new KittyJeiCategories.BreedingCategory(gui));
+    }
+
+    @Override
     public void registerRecipes(IRecipeRegistration registration) {
+        // 5.0: Habitat output per tier (and data-driven Habitat recipes), and every breeding outcome.
+        registration.addRecipes(KittyJeiCategories.HABITAT, KittyJeiCategories.habitatEntries());
+        registration.addRecipes(KittyJeiCategories.BREEDING, KittyJeiCategories.breedEntries());
         registration.addIngredientInfo(
                 ModItems.KITTY_WORK_CLIPBOARD.get(),
                 Component.translatable("jei.kittytalents.kitty_work_clipboard.info")
@@ -53,5 +62,7 @@ public class KittyJeiPlugin implements IModPlugin {
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
         registration.addRecipeCatalyst(new ItemStack(ModBlocks.TREAT_OVEN.get()), RecipeTypes.SMELTING);
+        registration.addRecipeCatalyst(new ItemStack(ModItems.KITTY_HABITAT.get()), KittyJeiCategories.HABITAT);
+        registration.addRecipeCatalyst(new ItemStack(ModItems.BREEDING_CATNIP.get()), KittyJeiCategories.BREEDING);
     }
 }

@@ -444,6 +444,22 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         return this.entityData.get(DATA_INCAPACITATED);
     }
 
+    private boolean ownerOnlineCache = true;
+    private int ownerOnlineCheckedAt = -1000;
+
+    /**
+     * True if the owner is logged in (or the cat has no owner). Hunger only drains then, so cats on a server don't
+     * starve while their owner is away (5.0). Checked once every 5 s.
+     */
+    public boolean ownerOnline() {
+        if (this.level().isClientSide || getOwnerUUID() == null || this.getServer() == null) return true;
+        if (this.tickCount - ownerOnlineCheckedAt >= 100 || this.tickCount < ownerOnlineCheckedAt) {
+            ownerOnlineCheckedAt = this.tickCount;
+            ownerOnlineCache = this.getServer().getPlayerList().getPlayer(getOwnerUUID()) != null;
+        }
+        return ownerOnlineCache;
+    }
+
     /** Ticks this cat has been downed (for the kittyTalentsCatDeath bleed-out). */
     private int downedTicks;
 
@@ -2077,8 +2093,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         // Process hunger, energy regeneration, and skip all combat/talent environmental scans.
         if ((this.isOrderedToSit() || this.isSleeping()) && !this.isTwined()) {
             if (!this.level().isClientSide) {
-                // Slower hunger drain when resting (3x slower)
-                hungerTimer++;
+                // Slower hunger drain when resting (3x slower); paused while the owner is offline (5.0)
+                if (ownerOnline()) hungerTimer++;
                 int happyEater = getTalentLevel(Talents.HAPPY_EATER);
                 int rate = traitHungerRate((KittyTalentsConfig.COMMON.hungerTickRate.get() + (happyEater * 400)) * 3);
                 tickLiving(false);
@@ -2125,8 +2141,8 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         if (!this.level().isClientSide) {
 
-            // Hunger drain with Happy Eater reduction
-            hungerTimer++;
+            // Hunger drain with Happy Eater reduction; paused while the owner is offline (5.0, servers)
+            if (ownerOnline()) hungerTimer++;
             int happyEater = getTalentLevel(Talents.HAPPY_EATER);
             int rate = traitHungerRate(KittyTalentsConfig.COMMON.hungerTickRate.get() + (happyEater * 400));
             tickLiving(false);
@@ -2341,24 +2357,35 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
     public void die(DamageSource cause) {
         if (!this.level().isClientSide) {
             if (isTwined()) TwineManager.endForCat(this, "Your cat has fallen - untwined.");
-            Containers.dropContents(this.level(), this, equipment.pack());
-            Containers.dropContents(this.level(), this, equipment.ammoPouch());
-            if (!getEquippedWeapon().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getEquippedWeapon());
-            if (!getEquippedTool().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getEquippedTool());
-            if (!getArmorSlotItem(1).isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getArmorSlotItem(1));
-            if (!getArmorSlotItem(2).isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getArmorSlotItem(2));
-            if (!getArmorSlotItem(3).isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getArmorSlotItem(3));
-            if (!getArmorSlotItem(4).isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getArmorSlotItem(4));
-            if (!getEquippedAccessory().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getEquippedAccessory());
-            if (!getCarriedToy().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getCarriedToy());
-            for (int ci = 0; ci < CatEquipment.COSMETIC_SLOTS; ci++) {
-                ItemStack cosmetic = getCosmeticSlot(ci);
-                if (!cosmetic.isEmpty()) {
-                    Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), cosmetic);
-                }
-            }
+            dropAllGear(false);
         }
         super.die(cause);
+    }
+
+    /**
+     * Drops everything the cat carries: weapon, tool, armor, accessory, toy, cosmetics, pack and ammo pouch.
+     * @param clear also empty the slots (5.0: a cat turned back into a vanilla cat keeps no Kitty Talents gear)
+     */
+    public void dropAllGear(boolean clear) {
+        if (this.level().isClientSide) return;
+        Containers.dropContents(this.level(), this, equipment.pack());
+        Containers.dropContents(this.level(), this, equipment.ammoPouch());
+        for (CatEquipment.Slot slot : CatEquipment.Slot.values()) {
+            ItemStack st = equipment.get(slot);
+            if (!st.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), st.copy());
+        }
+        if (!getCarriedToy().isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getCarriedToy().copy());
+        for (int ci = 0; ci < CatEquipment.COSMETIC_SLOTS; ci++) {
+            ItemStack cosmetic = getCosmeticSlot(ci);
+            if (!cosmetic.isEmpty()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), cosmetic.copy());
+        }
+        if (clear) {
+            equipment.pack().clearContent();
+            equipment.ammoPouch().clearContent();
+            for (CatEquipment.Slot slot : CatEquipment.Slot.values()) equipment.set(slot, ItemStack.EMPTY);
+            for (int ci = 0; ci < CatEquipment.COSMETIC_SLOTS; ci++) equipment.setCosmetic(ci, ItemStack.EMPTY);
+            setCarriedToy(ItemStack.EMPTY);
+        }
     }
 
     @Override

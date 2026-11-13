@@ -33,6 +33,18 @@ public class KittyTalentsCommand {
             }
         }));
 
+        // 5.0 safe removal: /kittytalents uninstall turns cats into vanilla cats (data kept hidden), reinstall undoes it.
+        root.then(Commands.literal("uninstall").executes(context -> {
+            int n = com.kittytalents.core.VanillaRevert.uninstall(context.getSource().getServer());
+            context.getSource().sendSuccess(() -> Component.translatable("command.kittytalents.uninstall", n), true);
+            return n;
+        }));
+        root.then(Commands.literal("reinstall").executes(context -> {
+            int n = com.kittytalents.core.VanillaRevert.reinstall(context.getSource().getServer());
+            context.getSource().sendSuccess(() -> Component.translatable("command.kittytalents.reinstall", n), true);
+            return n;
+        }));
+
         // /kittytalents tuning export: writes every tunable number with its default, as a ready-to-edit datapack file.
         root.then(Commands.literal("tuning")
                 .then(Commands.literal("export").executes(context -> {

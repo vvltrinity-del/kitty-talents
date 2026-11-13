@@ -68,6 +68,11 @@ public final class HabitatModifiers {
         if (level != null && !level.isClientSide) LOADED.computeIfAbsent(level, l -> new HashSet<>()).add(pos.immutable());
     }
 
+    /** Loaded Habitats in a level (a copy). */
+    public static java.util.List<BlockPos> loadedIn(Level level) {
+        return java.util.List.copyOf(LOADED.getOrDefault(level, Set.of()));
+    }
+
     public static void unloaded(Level level, BlockPos pos) {
         Set<BlockPos> set = level == null ? null : LOADED.get(level);
         if (set != null) set.remove(pos);

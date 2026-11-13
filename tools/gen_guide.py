@@ -594,13 +594,17 @@ A new cat starts with enough skill points to max out any one regular talent.</di
     ["<code>/kittytalents tuning export</code>", "Writes every tunable number (talents, abilities, traits, growth, bond) with its default."],
     ["<code>/kittytalents tuning changed</code>", "Lists the numbers a datapack changed."],
     ["<code>/kittyrpg setrole | setelement | setability</code>", "Set a cat's role, element or ability slot."],
+    ["<code>/gamerule kittyTalentsCatDeath | kittyTalentsBleedOutSeconds | kittyTalentsFollowerLimit</code>", "Real stakes (off by default), bleed-out time (60 s), followers per player (4)."],
     ["<code>/kittytalents audit</code>", "Runs the mod's self-check."],
+    ["<code>/kittytalents uninstall</code>", "Before removing the mod: turns every Talented Cat into a vanilla tamed cat (same owner, breed, collar and name) and drops its gear. Its Kitty Talents data stays hidden on the cat."],
+    ["<code>/kittytalents reinstall</code>", "Undoes it: those cats turn back into the same Talented Cats, with their level, talents and bond."],
 ], ["Command (operators)", "What it does"])}
 <div class="cols">
   <div class="card"><h4>Balance by datapack</h4><p>Put JSON in <code>data/&lt;pack&gt;/kittytalents/tuning/</code>. Changes apply on <code>/reload</code>, and tooltips show the new numbers.</p></div>
   <div class="card"><h4>Skin packs</h4><p>A skin is a JSON file in <code>data/&lt;pack&gt;/kittytalents/skins/</code> plus a texture in a resource pack.</p></div>
+  <div class="card"><h4>Offline owners</h4><p>Cats don't get hungry while their owner is offline, including cats housed in Habitats, which keep producing.</p></div>
   <div class="card"><h4>Server config</h4><p><code>kittytalents-common.toml</code>: max level, friendly fire, immortal cats, worker block breaking, worker chunk loading, Rancher culling, cat guns.</p></div>
-  <div class="card"><h4>Compatibility</h4><p>TacZ (guns, Gunsmith job), Apotheosis, Curios, Jade, JEI. The KittyTalentsCompat addon adds Lootr, PlayerRevive and Sophisticated Backpacks.</p></div>
+  <div class="card"><h4>Compatibility</h4><p>TacZ (guns, Gunsmith job), Apotheosis, Curios, Jade, JEI (Habitat output and breeding pages), Farmer's Delight (rice, slices and meals for cats; a cooking-pot Chicken and Rice). The KittyTalentsCompat addon adds Lootr, PlayerRevive and Sophisticated Backpacks.</p></div>
 </div>
 </section>
 

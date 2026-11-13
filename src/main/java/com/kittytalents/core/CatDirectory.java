@@ -117,6 +117,11 @@ public class CatDirectory extends SavedData {
         setDirty();
     }
 
+    /** Every known cat (5.0 safe removal reaches unloaded ones through this). */
+    public List<Entry> all() {
+        return List.copyOf(entries.values());
+    }
+
     public List<Entry> getCatsForOwner(UUID ownerUUID) {
         List<Entry> result = new ArrayList<>();
         for (Entry e : entries.values()) {

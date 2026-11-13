@@ -110,6 +110,6 @@ Built-in: **TaCZ** (cats use guns, ammo pouch, Gunsmith job), **Apotheosis**, **
 
 ## Installing
 
-Build with `./gradlew build` (JDK 17) and put `build/libs/kittytalents-4.0.1.jar` in your `mods` folder with
+Build with `./gradlew build` (JDK 17) and put `build/libs/kittytalents-5.0.0.jar` in your `mods` folder with
 Forge 1.20.1 (47.x). Server and clients must run the same build. Worlds from 1.0, 2.0 and 3.0 load as they are.
 "# kitty-talents" 

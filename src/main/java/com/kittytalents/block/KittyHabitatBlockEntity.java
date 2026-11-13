@@ -590,6 +590,9 @@ public class KittyHabitatBlockEntity extends BlockEntity {
                 // Hunger per 5 cycles: 1, x the trait's factor (Lazy 0, Greedy 1.5 as a chance of a second point).
                 float h = habitat.mods.hunger();
                 int base = (int) h + (level.random.nextFloat() < h - (int) h ? 1 : 0);
+                // 5.0: no hunger while the owner is offline (a server base keeps producing without starving its cats).
+                UUID owner = habitat.workerOwner();
+                if (owner != null && level.getServer() != null && level.getServer().getPlayerList().getPlayer(owner) == null) base = 0;
                 if (habitat.cachedWorkerCat != null) {
                     int hungerLoss = habitat.cachedWorkerCat.getTalentLevel(Talents.HAPPY_EATER) >= 3 ? 0 : base;
                     if (hungerLoss > 0) habitat.cachedWorkerCat.setHunger(Math.max(0, habitat.cachedWorkerCat.getHunger() - hungerLoss));
