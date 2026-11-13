@@ -159,7 +159,7 @@ public class KittyFiveFixGameTests {
         TalentedCat c = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
         CompoundTag tag = c.saveWithoutId(new CompoundTag());
         tag.putBoolean("Incapacitated", true);
-        tag.putInt("DownedTicks", com.kittytalents.registry.ModGameRules.BLEED_OUT_TICKS - 5);
+        tag.putInt("DownedTicks", com.kittytalents.registry.ModGameRules.bleedOutTicks(h.getLevel()) - 5);
         c.load(tag);
         h.assertTrue(c.isIncapacitated(), "cat should be downed");
         h.succeedWhen(() -> {

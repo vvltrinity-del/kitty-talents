@@ -46,6 +46,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.TUNA_BOWL.get());
                         output.accept(ModItems.PREMIUM_FEAST.get());
                         output.accept(ModItems.DEEP_FRIED_CHICKEN.get());
+                        output.accept(ModItems.CHICKEN_AND_RICE.get());
+                        output.accept(ModItems.BASE_PIN.get());
                         output.accept(ModItems.RICE_GRAIN.get());
                         output.accept(ModItems.RICE_BOWL.get());
 

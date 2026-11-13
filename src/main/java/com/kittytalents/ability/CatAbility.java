@@ -95,13 +95,15 @@ public abstract class CatAbility {
             return false; // Still on cooldown
         }
 
-        if (FelineEnergyEngine.getEnergy(cat) < getEnergyCost()) {
-            return false; // Not enough energy
+        // Warlock (5.0 promotion): abilities cost health instead of Energy.
+        boolean warlock = cat.isPromoted() && cat.getCatRole() == com.kittytalents.combat.CatRole.MAGE;
+        if (warlock ? cat.getHealth() <= Math.max(1.0F, getEnergyCost() / 5.0F) + 1.0F : FelineEnergyEngine.getEnergy(cat) < getEnergyCost()) {
+            return false; // Not enough energy (or health)
         }
 
         if (execute(cat, player)) {
             cat.playAnimation(TalentedCat.ANIM_CAST);
-            FelineEnergyEngine.consumeEnergy(cat, getEnergyCost());
+            if (!com.kittytalents.combat.RolePromotions.payWithHealth(cat, getEnergyCost())) FelineEnergyEngine.consumeEnergy(cat, getEnergyCost());
             cat.setAbilityCooldown(id, currentTime);
 
             if (isUltimate()) {

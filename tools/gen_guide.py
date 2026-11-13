@@ -52,7 +52,9 @@ ITEM_INFO = {
     "salmon_sushi": ("Food & treats", "Cat food."),
     "tuna_bowl": ("Food & treats", "Cat food."),
     "premium_feast": ("Food & treats", "The most filling cat meal."),
-    "deep_fried_chicken": ("Food & treats", "Food for players, cats and Food Bowls (nutrition 15)."),
+    "deep_fried_chicken": ("Food & treats", "Food for players, cats and Food Bowls (nutrition 8, +27 cat hunger)."),
+    "chicken_and_rice": ("Food & treats", "The best meal: Deep Fried Chicken + Steamed Rice Bowl. Nutrition 15, +50 cat hunger; the bowl comes back."),
+    "base_pin": ("Tools", "Marks out bases (right-click two corners), gives cats guard posts (sneak-click a cat, then a block), and opens the base menu (right-click the air)."),
     "rice_grain": ("Food & treats", "From the Rice Mill."),
     "rice_bowl": ("Food & treats", "Cat food made from milled rice."),
     "catnip_bucket": ("Food & treats", "Milk a cow with it to get Frenzy Cat Milk."),
@@ -254,6 +256,9 @@ growth = " → ".join(f"<b>{esc(s['name'])}</b> ({round(s['scale'] * 100)}%)" fo
 traits_rows = [[f"<b>{esc(t['name'])}</b>", esc(t["bonus"]), esc(t["quirk"])] for t in D["traits"]]
 bond_rows = [[str(b["level"]), f"<b>{esc(b['name'])}</b>", esc(b["what"])] for b in D["bond"]]
 tier_rows = [[f"<b>{esc(t['name'])}</b>", esc(t["output"])] for t in D["tiers"]]
+promo_rows = [[f"<b>{esc(r['name'])}</b>", f"<b>{esc(g.lang('promotion.kittytalents.' + r['name'].lower(), ''))}</b>",
+               esc(g.lang('promotion.kittytalents.' + r['name'].lower() + '.desc', ''))]
+              for r in D["roles"] if g.lang('promotion.kittytalents.' + r['name'].lower())]
 whistle_src = (g.SRC / "entity/WhistleCommand.java").read_text(encoding="utf-8")
 whistle = re.findall(r'^\s+[A-Z_]+\("([^"]+)", "([^"]+)"\)', whistle_src, re.M)
 whistle_list = "".join(f"<li><b>{esc(n)}</b> {esc(d)}</li>" for n, d in whistle)
@@ -443,7 +448,7 @@ A new cat starts with enough skill points to max out any one regular talent.</di
 <div class="cols">
   <div class="card"><h4>Hunger</h4><p>Cats get hungry over time, slower while resting. Feed fish, cat food or treats by hand, or fill a <b>Food Bowl</b> (5 stacks) and they eat on their own.</p></div>
   <div class="card"><h4>Sleep and play</h4><p>Cats sleep on a <b>Cat Bed</b> at night, scratch the <b>Scratching Post</b> and perch on a <b>Cat Tree</b>.</p></div>
-  <div class="card"><h4>Downed, not dead</h4><p>At 0 HP a cat is <b>downed</b>. Revive it with a Golden Apple, Milk or <b>Warm Milk</b>. <b>Nine Lives</b> can bring it back on its own, with a recharge. For real stakes, <code>/gamerule kittyTalentsCatDeath true</code> makes a downed cat die if it isn't revived within 60 seconds.</p></div>
+  <div class="card"><h4>Downed, not dead</h4><p>At 0 HP a cat is <b>downed</b>. Revive it with a Golden Apple, Milk or <b>Warm Milk</b>. <b>Nine Lives</b> can bring it back on its own, with a recharge. For real stakes, <code>/gamerule kittyTalentsCatDeath true</code> makes a downed cat die if it isn't revived within 60 seconds (change the time with <code>/gamerule kittyTalentsBleedOutSeconds</code>).</p></div>
   <div class="card"><h4>Healing</h4><p><b>Healing Herbal Treat</b> heals 14 HP. <b>Feline Recovery Wrap</b> heals 10 HP and cures Poison and Wither.</p></div>
 </div>
 </section>
@@ -457,6 +462,8 @@ A new cat starts with enough skill points to max out any one regular talent.</di
 <h3>Bond</h3>
 <p>Bond grows from <b>time spent near you</b>, <b>petting</b>, <b>feeding</b>, <b>playing</b> and <b>kills made while you're close</b>. It has 10 levels, shown as the bar on the Home tab. Perks unlock along the way:</p>
 {simple_rows(bond_rows, ["Level", "Perk", "Effect"])}
+<h3>Captain</h3>
+<p>At bond level 10 a cat can become your <b>Captain</b> (the ★ on its Home tab; one per owner, and it wears a crown). In Guard or Wander mode it makes monsters within 32 blocks glow. Perched on a Cat Tree, or leading a patrol, it <b>rallies</b>: your cats within 16 blocks deal +10% damage and working Habitats there run 5% faster.</p>
 </section>
 
 <section id="progress"><h2>Levels and talents</h2>
@@ -489,6 +496,9 @@ A new cat starts with enough skill points to max out any one regular talent.</di
 <h3>Roles</h3>
 <p>Pick a role on the Combat tab. It changes the cat's stats and how it fights.</p>
 {roles_table()}
+<h3>Promotions</h3>
+<p>A cat at the maximum level has mastered its role. Click <b>★ Promote</b> on the Combat tab to promote it one tier: it keeps the role's stats and gains a signature perk. The promotion belongs to that role; switch back to it to use it again.</p>
+{simple_rows(promo_rows, ["Role", "Promotion", "Perk"])}
 <h3>Elements</h3>
 <p>A cat's element makes its claws stronger or weaker against some targets, and adds that element's status on a hit.</p>
 {element_grid()}
@@ -542,6 +552,10 @@ A new cat starts with enough skill points to max out any one regular talent.</di
 <h3>Production tiers and the Habitat</h3>
 <p>Every cat has a production tier. A tier treat raises it one step (Coal Cat Treat turns a Standard cat into a Coal cat, and so on). Higher tiers are tougher and hit harder, and two cats of the same tier breed a kitten of the next tier. A cat housed in a <b>Kitty Habitat</b> (use the clipboard on the Habitat) produces its tier's resource over time; <b>Productivity Upgrades</b> (up to 4 per Habitat) speed it up.</p>
 {simple_rows(tier_rows, ["Tier", "Habitat output"])}
+<h3>Personality and bond in the Habitat</h3>
+<p>A housed cat's trait changes how it works, and its neighbours matter, so plan the layout of your colony. The Habitat screen shows the total speed next to the cycle count; hover it for the list.</p>
+<ul><li><b>Shy:</b> +20% with no other working Habitat within 4 blocks, -10% with 3 or more.</li><li><b>Brave (foreman):</b> other working Habitats within 6 blocks get +5% (doesn't stack).</li><li><b>Lazy:</b> 10% slower, but never gets hungry while working.</li><li><b>Curious:</b> each cycle, a 10% chance of a bonus item from the tier below.</li><li><b>Playful:</b> +15% with another Playful Habitat within 4 blocks, -10% with no working Habitat near.</li><li><b>Greedy:</b> +25% output, +50% hunger.</li><li><b>Bond:</b> +1% per bond level while you're within 32 blocks.</li></ul>
+<p>A housed <b>Nekomata</b> wards its Habitat with ghostly flames: hostile mobs within 6 blocks are pushed away. Out in the world, a Nekomata keeps up to 3 blue wisps circling it and sends them at its target (5 damage each; one regrows every 10 s).</p>
 </section>
 
 <section id="breeding"><h2>Breeding</h2>
@@ -558,6 +572,8 @@ A new cat starts with enough skill points to max out any one regular talent.</di
 </section>
 
 <section id="together"><h2>Playing together</h2>
+<h3>Bases, guard posts and patrols</h3>
+<p>Craft a <b>Base Pin</b> (red dye over two iron nuggets). Right-click two corners to mark a base; right-click the air to rename, resize, merge or delete your bases. Sneak + right-click a cat, then sneak + right-click a block: that block is its <b>guard post</b> (on a Cat Tree it perches there for good). Guard cats in a base without a post <b>patrol</b> its border in teams of up to 3.</p>
 <p>Add another online player as a <b>co-owner</b> from the Home tab, then click their name to set a role.</p>
 {simple_rows([
     ["<b>Rider</b>", "Ride the cat."],

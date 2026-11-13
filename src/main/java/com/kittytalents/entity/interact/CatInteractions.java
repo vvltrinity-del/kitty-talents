@@ -106,6 +106,12 @@ public final class CatInteractions {
             return InteractionResult.PASS;
         }
 
+        // 5.0 Base Pin: sneak + right-click selects the cat (handled by the item, before the sit toggle).
+        if (held.getItem() instanceof com.kittytalents.item.BasePinItem pin && player.isShiftKeyDown()) {
+            InteractionResult r = pin.interactLivingEntity(held, player, cat, hand);
+            if (r.consumesAction()) return r;
+        }
+
         // 4.0 Phase 7: co-owner roles. A Rider may ride and feed; a Handler may also open the screen (the server still
         // checks every action there) and sit / stand the cat. Everything else by hand needs the Full role.
         if (cat.isTame() && !cat.isPrimaryOwner(player) && cat.isTrusted(player.getUUID())

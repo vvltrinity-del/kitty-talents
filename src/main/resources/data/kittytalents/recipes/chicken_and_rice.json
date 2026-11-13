@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "kittytalents:deep_fried_chicken" },
+    { "item": "kittytalents:rice_bowl" }
+  ],
+  "result": { "item": "kittytalents:chicken_and_rice", "count": 1 }
+}

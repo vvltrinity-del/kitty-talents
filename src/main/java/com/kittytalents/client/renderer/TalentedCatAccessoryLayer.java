@@ -52,12 +52,28 @@ public class TalentedCatAccessoryLayer extends RenderLayer<TalentedCat, KTCatMod
 
         ItemStack accessory = cat.getEquippedAccessory();
         if (!accessory.isEmpty()) renderOne(poseStack, buffer, packedLight, cat, accessory, limbSwingAmount, ageInTicks);
+        // 5.0 Captain: wears a crown unless it already has something on its head.
+        if (cat.isCaptain() && !wearsHat(cat)) renderOne(poseStack, buffer, packedLight, cat, CAPTAIN_CROWN.get(), limbSwingAmount, ageInTicks);
         if (cat.isCosmeticsVisible()) {
             for (int i = 0; i < 3; i++) {
                 ItemStack cosmetic = cat.getCosmeticSlot(i);
                 if (!cosmetic.isEmpty()) renderOne(poseStack, buffer, packedLight, cat, cosmetic, limbSwingAmount, ageInTicks);
             }
         }
+    }
+
+    private static final java.util.function.Supplier<ItemStack> CAPTAIN_CROWN =
+            com.google.common.base.Suppliers.memoize(() -> new ItemStack(ModItems.CROWN.get()));
+
+    private static boolean wearsHat(TalentedCat cat) {
+        if (isHat(cat.getEquippedAccessory())) return true;
+        if (!cat.isCosmeticsVisible()) return false;
+        for (int i = 0; i < 3; i++) if (isHat(cat.getCosmeticSlot(i))) return true;
+        return false;
+    }
+
+    private static boolean isHat(ItemStack s) {
+        return s.getItem() instanceof CatAccessoryItem acc && acc.getAccessoryType() == CatAccessoryItem.AccessoryType.HAT;
     }
 
     private void renderOne(PoseStack pose, MultiBufferSource buffer, int light, TalentedCat cat, ItemStack stack,

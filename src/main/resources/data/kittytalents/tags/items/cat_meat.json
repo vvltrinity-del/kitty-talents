@@ -11,6 +11,15 @@
     "minecraft:cooked_mutton",
     "minecraft:rabbit",
     "minecraft:cooked_rabbit",
-    "kittytalents:deep_fried_chicken"
+    "kittytalents:deep_fried_chicken",
+    "kittytalents:chicken_and_rice",
+    {
+      "id": "farmersdelight:chicken_cuts",
+      "required": false
+    },
+    {
+      "id": "farmersdelight:cooked_chicken_cuts",
+      "required": false
+    }
   ]
 }

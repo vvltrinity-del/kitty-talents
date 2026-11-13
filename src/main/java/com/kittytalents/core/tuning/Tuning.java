@@ -127,6 +127,8 @@ public final class Tuning {
         com.kittytalents.core.living.CatTrait.init();
         com.kittytalents.core.living.GrowthStage.init();
         com.kittytalents.core.living.CatBond.init();
+        com.kittytalents.core.living.HabitatModifiers.init();
+        com.kittytalents.core.living.SpiritFire.init();
     }
 
     /** Tooltip lines for one talent/ability: every key except {@code skip}, with the live (synced) value. */

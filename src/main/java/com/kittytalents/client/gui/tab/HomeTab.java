@@ -43,6 +43,19 @@ public class HomeTab implements CatTab {
         int x = rx(s) + 6, w = rw(s) - 12;
         int y = s.cy() + infoH(s) + 6 + 14; // inside the controls panel, under its header
 
+        // 5.0 Captain: a star in the portrait card's corner (owner only; bond 10 to promote).
+        var self = net.minecraft.client.Minecraft.getInstance().player;
+        if (self != null && self.getUUID().equals(cat.getOwnerUUID())) {
+            boolean captain = cat.isCaptain();
+            boolean ready = cat.getBondLevel() >= TalentedCat.CAPTAIN_BOND;
+            s.add(new KTButton(s.cx() + PORTRAIT_W - 18, s.cy() + 4, 14, 12, Component.literal("★"),
+                    b -> PacketHandler.sendToServer(new com.kittytalents.network.PacketCaptain(cat.getId(), !cat.isCaptain())))
+                    .style(KTButton.Style.CHIP).selected(captain).color(captain ? 0xFFF0C75E : ready ? 0xFFFDE68A : 0xFF6B6760)
+                    .tip(captain ? KTText.t("home.captain.is", "Captain: spots monsters in Guard or Wander, and rallies nearby cats (+10% damage) and Habitats (+5% speed) from a Cat Tree. Click to step down.")
+                            : ready ? KTText.t("home.captain.make", "Make this cat your Captain (one per owner).")
+                            : KTText.t("home.captain.locked", "Captain unlocks at bond level %s.", TalentedCat.CAPTAIN_BOND)));
+        }
+
         // Mode row: [◀][ mode ][▶][≡]
         int modeW = w - 3 * 20 - 6;
         s.add(new KTButton(x, y, 20, 16, Component.literal("◀"), b -> setMode(s, cat.getCatMode().previous())));

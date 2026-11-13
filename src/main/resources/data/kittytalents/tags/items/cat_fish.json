@@ -6,6 +6,22 @@
     "minecraft:salmon",
     "minecraft:cooked_salmon",
     "minecraft:tropical_fish",
-    "minecraft:pufferfish"
+    "minecraft:pufferfish",
+    {
+      "id": "farmersdelight:cod_slice",
+      "required": false
+    },
+    {
+      "id": "farmersdelight:cooked_cod_slice",
+      "required": false
+    },
+    {
+      "id": "farmersdelight:salmon_slice",
+      "required": false
+    },
+    {
+      "id": "farmersdelight:cooked_salmon_slice",
+      "required": false
+    }
   ]
 }

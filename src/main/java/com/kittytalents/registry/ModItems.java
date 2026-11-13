@@ -83,6 +83,12 @@ public class ModItems {
 
     public static final RegistryObject<Item> DEEP_FRIED_CHICKEN = ITEMS.register("deep_fried_chicken",
             () -> new DeepFriedChickenItem(new Item.Properties()));
+    /** 5.0: marks bases and gives cats guard posts. */
+    public static final RegistryObject<Item> BASE_PIN = ITEMS.register("base_pin",
+            () -> new com.kittytalents.item.BasePinItem(new Item.Properties()));
+    /** 5.0: the top meal (Deep Fried Chicken + Steamed Rice Bowl). */
+    public static final RegistryObject<Item> CHICKEN_AND_RICE = ITEMS.register("chicken_and_rice",
+            () -> new DeepFriedChickenItem(new Item.Properties(), DeepFriedChickenItem.CHICKEN_AND_RICE));
 
     // Milk Buckets
     public static final RegistryObject<Item> CATNIP_BUCKET = ITEMS.register("catnip_bucket",

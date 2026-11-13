@@ -55,6 +55,10 @@ public class PacketHandler {
         toClient(PacketSyncSkins.class, PacketSyncSkins::new);
         toClient(PacketSyncTuning.class, PacketSyncTuning::new);
         toClient(PacketSyncTwineBodies.class, PacketSyncTwineBodies::new);
+        toServer(PacketCaptain.class, PacketCaptain::new);
+        toClient(PacketSyncBaseAreas.class, PacketSyncBaseAreas::new);
+        toServer(PacketBaseAreaAction.class, PacketBaseAreaAction::new);
+        toServer(PacketPromoteRole.class, PacketPromoteRole::new);
     }
 
     private static <T extends PacketBase> void toServer(Class<T> type, Function<FriendlyByteBuf, T> decoder) {

@@ -56,7 +56,14 @@ public class CatPerchGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (cat.level().isClientSide || !allowed() || cat.tickCount < cooldownUntil) return false;
+        if (cat.level().isClientSide || !allowed()) return false;
+        BlockPos postTree = postTree();
+        if (postTree != null) { // 5.0 guard post on a Cat Tree: always perch there
+            treeUpper = postTree;
+            perch = CatTreeBlock.perchOf(cat.level().getBlockState(postTree), postTree);
+            return true;
+        }
+        if (cat.tickCount < cooldownUntil) return false;
         if (searchChance > 1 && cat.getRandom().nextInt(searchChance) != 0) return false;
         BlockPos found = findFreeTree();
         if (found == null) {
@@ -66,6 +73,15 @@ public class CatPerchGoal extends Goal {
         treeUpper = found;
         perch = CatTreeBlock.perchOf(cat.level().getBlockState(found), found);
         return true;
+    }
+
+    /** The upper half of the Cat Tree this cat's guard post is on, or null. */
+    private BlockPos postTree() {
+        BlockPos post = cat.getGuardPost();
+        if (post == null) return null;
+        BlockState s = cat.level().getBlockState(post);
+        if (!s.is(ModBlocks.CAT_TREE.get())) return null;
+        return s.getValue(CatTreeBlock.HALF) == DoubleBlockHalf.UPPER ? post : post.above();
     }
 
     private BlockPos findFreeTree() {
@@ -106,6 +122,7 @@ public class CatPerchGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
+        if (postTree() != null) return allowed() && treeUpper != null && treeStillThere(); // a post holds forever
         return allowed() && treeUpper != null && treeStillThere() && ticks < duration && (onPerch || ticks < 240);
     }
 
@@ -144,6 +161,7 @@ public class CatPerchGoal extends Goal {
         }
         onPerch = true;
         perchYaw = cat.getYRot();
+        if (cat.isCaptain()) com.kittytalents.core.living.CaptainRally.set(cat, true); // Captain's Rally (5.0)
         cat.getNavigation().stop();
         cat.moveTo(perch.x, perch.y, perch.z, perchYaw, 0.0F);
         cat.setInSittingPose(true);
@@ -164,6 +182,7 @@ public class CatPerchGoal extends Goal {
 
     @Override
     public void stop() {
+        com.kittytalents.core.living.CaptainRally.set(cat, false);
         if (onPerch) {
             cat.setLying(false);
             cat.setInSittingPose(false);

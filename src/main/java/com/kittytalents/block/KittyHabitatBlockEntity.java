@@ -147,6 +147,11 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     private int housedHunger = 100;
 
     private int progress = 0;
+    /** Fractional progress from trait speed (5.0): progress gains step x speed per tick. */
+    private float progressCarry = 0;
+    /** Trait / bond / neighbour modifiers (5.0), refreshed every 100 ticks; lines are synced for the screen. */
+    private com.kittytalents.core.living.HabitatModifiers.Mods mods = com.kittytalents.core.living.HabitatModifiers.Mods.NONE;
+    private java.util.List<String> modLines = java.util.List.of();
     private int maxProgress = 160;
     private int totalCycles = 0;
     private int totalResources = 0;
@@ -219,6 +224,56 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         else removeWorker();
     }
     public boolean hasStoredCat() { return storedCat != null && !storedCat.isEmpty(); }
+
+    // ---------------------------------------------------------------- 5.0 traits and bond in the Habitat
+
+    /** True if a cat works here (housed, or assigned and alive in the world). */
+    public boolean hasWorker() { return assignedCatUUID != null || hasStoredCat(); }
+
+    /** The worker's personality: the live cat's, or the housed cat's saved one (NONE for old saves without it). */
+    public com.kittytalents.core.living.CatTrait workerTrait() {
+        if (cachedWorkerCat != null) return cachedWorkerCat.getTrait();
+        return hasStoredCat() ? com.kittytalents.core.living.CatTrait.byId(storedCat.getString("Trait")) : com.kittytalents.core.living.CatTrait.NONE;
+    }
+
+    public int workerBondLevel() {
+        if (cachedWorkerCat != null) return cachedWorkerCat.getBondLevel();
+        return hasStoredCat() ? com.kittytalents.core.living.CatBond.levelFor(storedCat.getInt("Bond")) : 0;
+    }
+
+    @Nullable
+    public UUID workerOwner() {
+        if (cachedWorkerCat != null) return cachedWorkerCat.getOwnerUUID();
+        return hasStoredCat() && storedCat.hasUUID("Owner") ? storedCat.getUUID("Owner") : null;
+    }
+
+    /** Combined speed multiplier as last synced (client screen). */
+    private float clientSpeed = 1.0F;
+
+    public float getSyncedSpeed() { return level != null && level.isClientSide ? clientSpeed : mods.speed(); }
+
+    /** The modifier lines for the worker card ("Shy: alone, +20%"); synced to the client. */
+    public java.util.List<String> getModifierLines() { return modLines; }
+
+    public com.kittytalents.core.living.HabitatModifiers.Mods getModifiers() { return mods; }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        com.kittytalents.core.living.HabitatModifiers.loaded(level, worldPosition);
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        com.kittytalents.core.living.HabitatModifiers.unloaded(level, worldPosition);
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        com.kittytalents.core.living.HabitatModifiers.unloaded(level, worldPosition);
+    }
     public CompoundTag getStoredCatTag() { return storedCat; }
 
     /**
@@ -478,6 +533,24 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             return;
         }
 
+        // 5.0: trait, bond and neighbour modifiers (cached; staggered by position so a colony doesn't refresh at once).
+        if ((level.getGameTime() + (pos.asLong() & 0xFF)) % com.kittytalents.core.living.HabitatModifiers.REFRESH_TICKS == 0
+                || habitat.mods == com.kittytalents.core.living.HabitatModifiers.Mods.NONE && habitat.hasWorker() && level.getGameTime() % 20 == 0) {
+            var next = com.kittytalents.core.living.HabitatModifiers.compute(level, pos, habitat);
+            boolean changed = !next.lines().equals(habitat.modLines);
+            habitat.mods = next;
+            habitat.modLines = next.lines();
+            if (changed) {
+                habitat.setChanged();
+                level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
+            }
+        }
+
+        // 5.0 Nekomata spirit ward: a housed Nekomata keeps hostile mobs away from its Habitat.
+        if ((level.getGameTime() + (pos.asLong() & 0x1F)) % 20 == 0 && "NEKOMATA".equalsIgnoreCase(habitat.assignedCatMutation)) {
+            com.kittytalents.core.living.SpiritFire.ward(level, pos);
+        }
+
         // Optional FE speed boost: +100% speed when 40 FE/tick is available
         int step = 1;
         if (habitat.energyStorage.getEnergyStored() >= 40) {
@@ -485,10 +558,23 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             step = 2;
         }
 
-        habitat.progress += step;
+        habitat.progressCarry += step * habitat.mods.speed();
+        int whole = (int) habitat.progressCarry;
+        habitat.progressCarry -= whole;
+        habitat.progress += whole;
         if (habitat.progress >= habitat.maxProgress) {
             habitat.progress = 0;
-            habitat.insertOutput(habitat.cachedProducedItem.copy());
+            ItemStack made = habitat.cachedProducedItem.copy();
+            if (habitat.mods.output() > 1.0F) { // Greedy: extra output, the fraction as a chance
+                float extra = made.getCount() * (habitat.mods.output() - 1.0F);
+                int add = (int) extra + (level.random.nextFloat() < extra - (int) extra ? 1 : 0);
+                made.setCount(Math.min(made.getMaxStackSize(), made.getCount() + add));
+            }
+            habitat.insertOutput(habitat.canInsertOutput(made) ? made : habitat.cachedProducedItem.copy());
+            if (habitat.mods.curious() && level.random.nextFloat() < com.kittytalents.core.living.HabitatModifiers.CURIOUS.f()) {
+                ItemStack bonus = curiousFind(habitat.assignedCatResourceTier);
+                if (!bonus.isEmpty() && habitat.canInsertOutput(bonus)) habitat.insertOutput(bonus);
+            }
             // 5.0: metal-tier cats sometimes condense Ore Essence (5%, +5% per Mole Cat rank), the Resource
             // Catalyst's ingredient. It used to have no source and no use.
             if (habitat.assignedCatResourceTier.isMetal()) {
@@ -501,16 +587,25 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             habitat.totalResources += habitat.cachedProducedItem.getCount();
 
             if (habitat.totalCycles % 5 == 0) {
+                // Hunger per 5 cycles: 1, x the trait's factor (Lazy 0, Greedy 1.5 as a chance of a second point).
+                float h = habitat.mods.hunger();
+                int base = (int) h + (level.random.nextFloat() < h - (int) h ? 1 : 0);
                 if (habitat.cachedWorkerCat != null) {
-                    int hungerLoss = habitat.cachedWorkerCat.getTalentLevel(Talents.HAPPY_EATER) >= 3 ? 0 : 1;
+                    int hungerLoss = habitat.cachedWorkerCat.getTalentLevel(Talents.HAPPY_EATER) >= 3 ? 0 : base;
                     if (hungerLoss > 0) habitat.cachedWorkerCat.setHunger(Math.max(0, habitat.cachedWorkerCat.getHunger() - hungerLoss));
                 } else if (habitat.hasStoredCat()) {
-                    habitat.housedHunger = Math.max(20, habitat.housedHunger - 1);
+                    habitat.housedHunger = Math.max(20, habitat.housedHunger - base);
                 }
             }
 
             habitat.setChanged();
         }
+    }
+
+    /** Curious cats' bonus find: one of the tier below's product (a Diamond cat finds an Emerald). */
+    private static ItemStack curiousFind(ProductionTier tier) {
+        if (tier == null || tier.ordinal() <= 1) return ItemStack.EMPTY;
+        return ProductionTier.values()[tier.ordinal() - 1].getProductionResult().copy();
     }
 
     private boolean canInsertOutput(ItemStack stack) {
@@ -608,6 +703,10 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         tag.putInt("MaxProgress", maxProgress);
         tag.putInt("Energy", energyStorage.getEnergyStored());
         tag.putInt("HousedHunger", housedHunger);
+        net.minecraft.nbt.ListTag lines = new net.minecraft.nbt.ListTag();
+        for (String l : modLines) lines.add(net.minecraft.nbt.StringTag.valueOf(l));
+        tag.put("TraitMods", lines);
+        tag.putFloat("TraitSpeed", mods.speed());
         if (storedCat != null && !storedCat.isEmpty()) {
             tag.put("StoredCat", storedCat);
         }
@@ -641,6 +740,10 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         if (tag.contains("Status")) status = Status.values()[Math.max(0, Math.min(Status.values().length - 1, tag.getInt("Status")))];
         if (tag.contains("MaxProgress")) maxProgress = Math.max(1, tag.getInt("MaxProgress"));
         housedHunger = tag.contains("HousedHunger") ? tag.getInt("HousedHunger") : 100;
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        for (net.minecraft.nbt.Tag t : tag.getList("TraitMods", net.minecraft.nbt.Tag.TAG_STRING)) lines.add(t.getAsString());
+        modLines = java.util.List.copyOf(lines);
+        clientSpeed = tag.contains("TraitSpeed") ? tag.getFloat("TraitSpeed") : 1.0F;
         if (tag.contains("Energy")) {
             // Set, not add: the client reloads this tag on every status update (5.0 fix; it used to keep growing).
             energyStorage.deserializeNBT(net.minecraft.nbt.IntTag.valueOf(tag.getInt("Energy")));

@@ -36,7 +36,7 @@ public class CatFoodHelper {
 
         // Custom mod foods
         if (stack.getItem() instanceof CatFoodItem) return true;
-        if (stack.is(ModItems.DEEP_FRIED_CHICKEN.get())) return true;
+        if (stack.getItem() instanceof com.kittytalents.item.DeepFriedChickenItem) return true; // Deep Fried Chicken, Chicken and Rice
         if (stack.is(Items.GOLDEN_CARROT)) return true;
 
         // Tag checks
@@ -67,9 +67,10 @@ public class CatFoodHelper {
         int happyEater = cat != null ? cat.getTalentLevel(Talents.HAPPY_EATER) : 0;
         float bonusMult = 1.0F + (happyEater * 0.25F);
 
-        // Deep Fried Chicken - 15 Nutrition, 15 Saturation
-        if (stack.is(ModItems.DEEP_FRIED_CHICKEN.get())) {
-            return new CatFoodValue((int)(50 * bonusMult), 15.0F, 12.0F * bonusMult);
+        // Deep Fried Chicken (+27) and Chicken and Rice (+50, the top meal) - 5.0
+        if (stack.getItem() instanceof com.kittytalents.item.DeepFriedChickenItem meal) {
+            var m = meal.meal();
+            return new CatFoodValue((int)(m.catHunger() * bonusMult), m.catSaturation(), m.catHeal() * bonusMult);
         }
 
         // Golden Carrot - Premium food

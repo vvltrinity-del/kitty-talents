@@ -94,6 +94,16 @@ public class CombatTab implements CatTab {
         TalentedCat cat = s.cat();
         int x = s.cx() + 6, y = s.cy(), w = LEFT_W - 12;
 
+        // 5.0: a max-level cat can be promoted in its role (owner only).
+        var self = net.minecraft.client.Minecraft.getInstance().player;
+        if (cat.canPromoteRole() && self != null && self.getUUID().equals(cat.getOwnerUUID())) {
+            Component promo = Component.translatable(com.kittytalents.combat.RolePromotions.key(cat.getCatRole()));
+            s.add(new KTButton(x + w - 74, y + 2, 74, 13, KTText.t("combat.promote", "★ Promote"),
+                    b -> com.kittytalents.network.PacketHandler.sendToServer(new com.kittytalents.network.PacketPromoteRole(cat.getId())))
+                    .style(KTButton.Style.GOLD)
+                    .tip(Component.empty().append(promo).append(": ").append(Component.translatable(com.kittytalents.combat.RolePromotions.key(cat.getCatRole()) + ".desc"))));
+        }
+
         // Roles (4 per row: Auto + every role)
         int chipW = (w - 6) / 4;
         s.add(new KTButton(x, y + 18, chipW, 16, KTText.t("combat.auto", "Auto"), b -> {
@@ -218,6 +228,10 @@ public class CombatTab implements CatTab {
         List<FormattedCharSequence> rd = font.split(Component.literal(role.getDescription()), LEFT_W - 16);
         int ty = y + 22 + ROLE_ROWS * 18;
         g.drawString(font, role.getDisplayName(), x + 8, ty, KTTheme.TEXT_GOLD, true);
+        if (cat.isPromoted()) { // 5.0 promotion name after the role
+            String promo = "★ " + Component.translatable(com.kittytalents.combat.RolePromotions.key(role)).getString();
+            g.drawString(font, promo, x + 8 + font.width(role.getDisplayName()) + 6, ty, 0xFFF0C75E, true);
+        }
         for (int i = 0; i < Math.min(roleDescLines(s), rd.size()); i++) g.drawString(font, rd.get(i), x + 8, ty + 11 + i * 10, KTTheme.TEXT_DIM, false);
         int sy = statsY(s);
         int sx = stat(g, font, x + 8, sy, "HP", role.getHpMultiplier(), 0xFF86EFAC);

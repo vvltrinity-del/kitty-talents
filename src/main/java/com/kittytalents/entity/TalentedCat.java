@@ -136,6 +136,15 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_ENERGY =
             SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
+    /** 5.0 Captain cat (kept last so the earlier synced ids don't shift). */
+    private static final EntityDataAccessor<Boolean> DATA_CAPTAIN =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.BOOLEAN);
+    /** 5.0 Nekomata spirit fire: wisps circling the cat (0-3). */
+    private static final EntityDataAccessor<Integer> DATA_WISPS =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.INT);
+    /** 5.0 role promotion: the role this cat was promoted in ("" = none). */
+    private static final EntityDataAccessor<String> DATA_PROMOTED =
+            SynchedEntityData.defineId(TalentedCat.class, EntityDataSerializers.STRING);
 
     private boolean isDualStriking = false;
 
@@ -319,6 +328,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         this.entityData.define(DATA_ENERGY, 100);
         this.entityData.define(DATA_XP, 0);
         this.entityData.define(DATA_STATUSES, new net.minecraft.nbt.CompoundTag());
+        this.entityData.define(DATA_CAPTAIN, false);
+        this.entityData.define(DATA_WISPS, 0);
+        this.entityData.define(DATA_PROMOTED, "");
     }
 
     @Override
@@ -381,6 +393,15 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     /** Where STAY / GUARD hold. Set when such a mode is chosen; saved with the cat. */
     @Nullable private BlockPos modeAnchor = null;
+    /** 5.0 Base Pin guard post: a Guard cat holds this spot (a Cat Tree post keeps it perched there). */
+    @Nullable private BlockPos guardPost = null;
+    /** True while BasePatrol has this Captain rallying its patrol team. */
+    public transient boolean patrolRally;
+    @Nullable public BlockPos getGuardPost() { return guardPost; }
+    public void setGuardPost(@Nullable BlockPos pos) {
+        this.guardPost = pos == null ? null : pos.immutable();
+        if (pos != null) { setCatMode(CatMode.GUARD); setOrderedToSit(false); this.modeAnchor = this.guardPost; }
+    }
     @Nullable public BlockPos getModeAnchor() { return modeAnchor; }
     public void setModeAnchor(@Nullable BlockPos pos) { this.modeAnchor = pos; }
 
@@ -508,6 +529,82 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                     p.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.kittytalents.bond_up",
                             getName(), getBondLevel()).withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE), true);
                 }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ 5.0 Captain cat
+
+    /** Bond level a cat needs to be promoted to Captain. */
+    public static final int CAPTAIN_BOND = 10;
+
+    public boolean isCaptain() { return this.entityData.get(DATA_CAPTAIN); }
+
+    public int getWisps() { return this.entityData.get(DATA_WISPS); }
+
+    /** True if this cat was promoted in the role it has now (RolePromotions). */
+    public boolean isPromoted() {
+        return getCatRole() != com.kittytalents.combat.CatRole.NONE && getCatRole().name().equals(this.entityData.get(DATA_PROMOTED));
+    }
+
+    /** A cat at the maximum level has mastered its role and may be promoted in it. */
+    public boolean canPromoteRole() {
+        return getCatRole() != com.kittytalents.combat.CatRole.NONE && !isPromoted()
+                && getCatLevel() >= com.kittytalents.config.KittyTalentsConfig.COMMON.maxCatLevel.get();
+    }
+
+    public boolean promoteRole() {
+        if (!canPromoteRole()) return false;
+        this.entityData.set(DATA_PROMOTED, getCatRole().name());
+        return true;
+    }
+
+    public void setWisps(int n) { this.entityData.set(DATA_WISPS, Math.max(0, n)); }
+
+    /**
+     * Promotes this cat to its owner's one Captain (bond 10 needed); the previous Captain steps down.
+     * @return false if the bond is too low or the cat has no owner.
+     */
+    public boolean promoteToCaptain() {
+        if (this.level().isClientSide || getOwnerUUID() == null || getBondLevel() < CAPTAIN_BOND) return false;
+        if (this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+            com.kittytalents.core.living.CaptainRecord.get(sl).set(getOwnerUUID(), getUUID());
+            for (var l : sl.getServer().getAllLevels()) {
+                for (TalentedCat other : l.getEntities(com.kittytalents.registry.ModEntities.TALENTED_CAT.get(),
+                        c -> c != this && c.isCaptain() && getOwnerUUID().equals(c.getOwnerUUID()))) other.setCaptainFlag(false);
+            }
+        }
+        setCaptainFlag(true);
+        return true;
+    }
+
+    public void demoteCaptain() {
+        if (!isCaptain()) return;
+        setCaptainFlag(false);
+        if (this.level() instanceof net.minecraft.server.level.ServerLevel sl && getOwnerUUID() != null
+                && getUUID().equals(com.kittytalents.core.living.CaptainRecord.get(sl).captainOf(getOwnerUUID()))) {
+            com.kittytalents.core.living.CaptainRecord.get(sl).set(getOwnerUUID(), null);
+        }
+    }
+
+    private void setCaptainFlag(boolean captain) {
+        this.entityData.set(DATA_CAPTAIN, captain);
+        if (!captain) com.kittytalents.core.living.CaptainRally.set(this, false);
+    }
+
+    /** Server, every 2 s: a Captain that lost its post steps down; a Guard/Wander Captain spots monsters (32 blocks). */
+    private void tickCaptain() {
+        if (!isCaptain() || !(this.level() instanceof net.minecraft.server.level.ServerLevel sl)) return;
+        java.util.UUID record = getOwnerUUID() == null ? null : com.kittytalents.core.living.CaptainRecord.get(sl).captainOf(getOwnerUUID());
+        if (!getUUID().equals(record)) {
+            setCaptainFlag(false);
+            return;
+        }
+        CatMode mode = getCatMode();
+        if ((mode == CatMode.GUARD || mode == CatMode.WANDER) && !isIncapacitated()) {
+            for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(32.0D),
+                    e -> e instanceof net.minecraft.world.entity.monster.Enemy && e.isAlive())) {
+                e.addEffect(new MobEffectInstance(MobEffects.GLOWING, 60, 0, true, false));
             }
         }
     }
@@ -1597,6 +1694,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
             }
         }
 
+        // Captain's Rally (5.0): +10% damage near the owner's Captain while it rallies from a Cat Tree.
+        if (com.kittytalents.core.living.CaptainRally.boostsCat(this)) damage *= 1.0F + com.kittytalents.core.living.CaptainRally.DAMAGE_BONUS;
+
         // Apotheosis attack modifiers (crit, elemental damage, life-steal, armor pierce)
         damage = com.kittytalents.compat.apotheosis.ApotheosisCompat.applyAttackModifiers(this, entity, damage);
 
@@ -1884,6 +1984,13 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         }
 
         if (statsDirty && !this.level().isClientSide && this.tickCount % 20 == 0) flushStats();
+        if (!this.level().isClientSide && (this.tickCount + getId()) % 40 == 0) {
+            tickCaptain();
+            com.kittytalents.core.base.BasePatrol.tick(this);
+            com.kittytalents.combat.RolePromotions.tick(this);
+        }
+        if (this.level().isClientSide) com.kittytalents.core.living.SpiritFire.clientTick(this);
+        else com.kittytalents.core.living.SpiritFire.tick(this);
 
         // kittyTalentsCatDeath (5.0, off by default): a downed cat bleeds out after 60 s unless revived.
         if (!this.level().isClientSide && isIncapacitated()) {
@@ -1891,9 +1998,9 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
                 downedTicks++;
                 if (downedTicks == 1 && this.getOwner() instanceof Player owner) {
                     owner.sendSystemMessage(Component.translatable("message.kittytalents.cat_bleeding", this.getName(),
-                            com.kittytalents.registry.ModGameRules.BLEED_OUT_TICKS / 20));
+                            com.kittytalents.registry.ModGameRules.bleedOutTicks(this.level()) / 20));
                 }
-                if (downedTicks >= com.kittytalents.registry.ModGameRules.BLEED_OUT_TICKS) {
+                if (downedTicks >= com.kittytalents.registry.ModGameRules.bleedOutTicks(this.level())) {
                     this.entityData.set(DATA_INCAPACITATED, false);
                     if (this.getOwner() instanceof Player owner) {
                         owner.sendSystemMessage(Component.translatable("message.kittytalents.cat_bled_out", this.getName()));
@@ -2120,11 +2227,15 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         tag.putInt(CatSchema.KEY_SCHEMA, CatSchema.CURRENT);
         tag.putString(CatSchema.KEY_MODE_NAME, getCatMode().name());
         if (modeAnchor != null) tag.put("ModeAnchor", NbtUtils.writeBlockPos(modeAnchor));
+        if (guardPost != null) tag.put("GuardPost", NbtUtils.writeBlockPos(guardPost));
         if (spiritCatnipPrimed) tag.putBoolean(CatSchema.KEY_SPIRIT_PRIMED, true);
         tag.putBoolean("Incapacitated", isIncapacitated());
         tag.putInt("DownedTicks", downedTicks);
         tag.putString(com.kittytalents.core.persist.CatSchema.KEY_SKIN, getSkin());
         tag.putString("Trait", getTrait().id);
+        tag.putBoolean("Captain", isCaptain());
+        tag.putInt("Wisps", getWisps());
+        tag.putString("PromotedRole", this.entityData.get(DATA_PROMOTED));
         tag.putInt("Bond", getBondPoints());
         tag.putBoolean("DireAwakened", isDireAwakened());
         tag.putBoolean("Female", isFemale());
@@ -2166,11 +2277,15 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (tag.contains(CatSchema.KEY_MODE_NAME)) setCatMode(CatMode.fromSavedName(savedMode));
         // Anchor after the mode: setCatMode would otherwise re-anchor to the load position.
         if (tag.contains("ModeAnchor")) this.modeAnchor = NbtUtils.readBlockPos(tag.getCompound("ModeAnchor"));
+        this.guardPost = tag.contains("GuardPost") ? NbtUtils.readBlockPos(tag.getCompound("GuardPost")) : null;
         this.spiritCatnipPrimed = tag.getBoolean(CatSchema.KEY_SPIRIT_PRIMED);
         if (tag.contains("Incapacitated")) setIncapacitated(tag.getBoolean("Incapacitated"));
         downedTicks = tag.getInt("DownedTicks");
         if (tag.contains(com.kittytalents.core.persist.CatSchema.KEY_SKIN)) setSkin(tag.getString(com.kittytalents.core.persist.CatSchema.KEY_SKIN));
         // 4.0 Phase 6: saves from before 4.0 have no trait: roll one now. Bond starts at 0.
+        this.entityData.set(DATA_CAPTAIN, tag.getBoolean("Captain"));
+        setWisps(tag.getInt("Wisps"));
+        this.entityData.set(DATA_PROMOTED, tag.getString("PromotedRole"));
         if (tag.contains("Trait")) this.entityData.set(DATA_TRAIT, com.kittytalents.core.living.CatTrait.byId(tag.getString("Trait")).id);
         else this.entityData.set(DATA_TRAIT, com.kittytalents.core.living.CatTrait.roll(this.random).id);
         this.entityData.set(DATA_BOND, Math.max(0, tag.getInt("Bond")));

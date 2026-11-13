@@ -167,6 +167,23 @@ public class KittyHabitatScreen extends KTContainerScreen<KittyHabitatMenu> {
             g.renderItem(product, 0, 0);
             g.pose().popPose();
         }
+        // 5.0: trait, bond and neighbour modifiers. The combined speed sits after the cycle count; hover it (or the
+        // worker card) for the list ("Shy: alone, +20%").
+        List<String> mods = habitat.getModifierLines();
+        if (!mods.isEmpty()) {
+            int pct = Math.round((habitat.getSyncedSpeed() - 1.0F) * 100);
+            String tag = (pct >= 0 ? "+" : "") + pct + "%";
+            String cycles = KTText.s("habitat.cycles", "Cycles: %s", menu.getTotalCycles());
+            g.drawString(font, tag, rx + 6 + font.width(cycles) + 6, ry + 27, pct >= 0 ? 0xFF86EFAC : 0xFFF87171, false);
+            boolean overCycles = mouseX >= rx + 6 && mouseX < rx + RW - 6 && mouseY >= ry + 25 && mouseY < ry + 36;
+            boolean overWorker = mouseX >= lx && mouseX < lx + LW && mouseY >= ly && mouseY < ly + 45;
+            if (overCycles || overWorker) {
+                java.util.List<Component> tip = new java.util.ArrayList<>();
+                tip.add(KTText.t("habitat.mods", "Personality and bond").copy().withStyle(net.minecraft.ChatFormatting.GOLD));
+                for (String m : mods) tip.add(Component.literal(m));
+                g.renderComponentTooltip(font, tip, mouseX, mouseY);
+            }
+        }
         KTTheme.header(g, font, rx + 6, ry + 66, RW - 12, KTText.t("habitat.outputs", "Outputs"));
     }
 

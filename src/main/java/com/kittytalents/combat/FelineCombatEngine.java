@@ -64,6 +64,7 @@ public class FelineCombatEngine {
         int energyCost = 20;
         int agilityLvl = cat.getTalentLevel(Talents.FELINE_AGILITY);
         energyCost = Math.max(10, energyCost - (agilityLvl * 2));
+        energyCost = Math.max(1, Math.round(energyCost * RolePromotions.dodgeCostMultiplier(cat))); // Windrunner
 
         if (payEnergy && !FelineEnergyEngine.consumeEnergy(cat, energyCost)) {
             return false; // Not enough energy

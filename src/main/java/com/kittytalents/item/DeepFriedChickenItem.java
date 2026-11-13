@@ -13,28 +13,51 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
-
 import java.util.List;
 
 /**
- * Deep Fried Chicken — Signature high-tier culinary item in Kitty Talents 3.0.
- * Restores 15 Nutrition and 15 Saturation for players.
- * Can be directly fed to Talented Cats (+50 Hunger, +15 Saturation, +12 HP) and placed into Food Bowls.
+ * Cooked meals players and Talented Cats can both eat, and that go into Food Bowls.
+ * 5.0: Deep Fried Chicken is a mid-tier meal (8 nutrition, +27 cat hunger); the top meal is Chicken and Rice
+ * (Deep Fried Chicken + Steamed Rice Bowl, 15 nutrition, +50 cat hunger), so the best food needs the Rice Mill line.
  */
 public class DeepFriedChickenItem extends Item {
-    public static final FoodProperties FOOD = new FoodProperties.Builder()
-            .nutrition(15)
-            .saturationMod(0.5F) // 15 * 0.5 * 2.0 = 15.0 Saturation
-            .meat()
-            .alwaysEat()
-            .build();
+    /** Values per meal: player food, cat hunger/saturation/health, whether a bowl comes back, tooltip line. */
+    public record Meal(FoodProperties food, int catHunger, float catSaturation, float catHeal, boolean bowl, String flavor) {}
+
+    public static final Meal CHICKEN = new Meal(new FoodProperties.Builder().nutrition(8).saturationMod(0.6F).meat().alwaysEat().build(),
+            27, 8.0F, 7.0F, false, "Crispy, golden-brown deep-fried drumstick.");
+    public static final Meal CHICKEN_AND_RICE = new Meal(new FoodProperties.Builder().nutrition(15).saturationMod(0.5F).meat().alwaysEat().build(),
+            50, 15.0F, 12.0F, true, "Deep fried chicken on steamed rice. The best meal a cat can get.");
+
+    /** Kept for callers that read the player food of Deep Fried Chicken. */
+    public static final FoodProperties FOOD = CHICKEN.food();
+
+    private final Meal meal;
 
     public DeepFriedChickenItem(Properties properties) {
-        super(properties.food(FOOD).rarity(Rarity.RARE));
+        this(properties, CHICKEN);
+    }
+
+    public DeepFriedChickenItem(Properties properties, Meal meal) {
+        super((meal.bowl() ? properties.stacksTo(16) : properties).food(meal.food()).rarity(meal.bowl() ? Rarity.EPIC : Rarity.RARE));
+        this.meal = meal;
+    }
+
+    public Meal meal() { return meal; }
+
+    @Override
+    public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity eater) {
+        ItemStack rest = super.finishUsingItem(stack, level, eater);
+        if (!meal.bowl()) return rest;
+        if (eater instanceof Player p && p.getAbilities().instabuild) return rest;
+        if (rest.isEmpty()) return new ItemStack(Items.BOWL);
+        if (eater instanceof Player p && !p.getInventory().add(new ItemStack(Items.BOWL))) p.drop(new ItemStack(Items.BOWL), false);
+        return rest;
     }
 
     @Override
@@ -43,11 +66,12 @@ public class DeepFriedChickenItem extends Item {
             if (!cat.isIncapacitated()) {
                 if (cat.getHunger() < 120 || cat.getHealth() < cat.getMaxHealth()) {
                     if (!player.level().isClientSide) {
+                        String mealName = stack.getHoverName().getString();
                         if (!player.getAbilities().instabuild) {
                             stack.shrink(1);
+                            if (meal.bowl() && !player.getInventory().add(new ItemStack(Items.BOWL))) player.drop(new ItemStack(Items.BOWL), false);
                         }
-                        // Restores hunger, saturation and health
-                        cat.applyFood(50, 15.0F, 12.0F);
+                        cat.applyFood(meal.catHunger(), meal.catSaturation(), meal.catHeal());
                         cat.playSound(SoundEvents.CAT_EAT, 1.0F, 1.0F);
                         cat.playSound(SoundEvents.CAT_PURREOW, 0.9F, 1.2F);
 
@@ -61,7 +85,8 @@ public class DeepFriedChickenItem extends Item {
                             }
                         }
 
-                        player.displayClientMessage(Component.literal("Fed " + cat.getName().getString() + " delicious Deep Fried Chicken! (+50 Hunger, +15 Saturation, +12 HP)").withStyle(ChatFormatting.GOLD), true);
+                        player.displayClientMessage(Component.literal("Fed " + cat.getName().getString() + " " + mealName
+                                + "! (+" + meal.catHunger() + " Hunger, +" + (int) meal.catHeal() + " HP)").withStyle(ChatFormatting.GOLD), true);
                     }
                     return InteractionResult.sidedSuccess(player.level().isClientSide);
                 }
@@ -72,8 +97,8 @@ public class DeepFriedChickenItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.literal("Crispy, golden-brown deep-fried drumstick.").withStyle(ChatFormatting.GOLD));
-        tooltip.add(Component.literal("Nutrition: 15 | Saturation: 15.0").withStyle(ChatFormatting.YELLOW));
-        tooltip.add(Component.literal("Fully usable by Players, Talented Cats, and in Food Bowls.").withStyle(ChatFormatting.GREEN));
+        tooltip.add(Component.literal(meal.flavor()).withStyle(ChatFormatting.GOLD));
+        tooltip.add(Component.literal("Nutrition: " + meal.food().getNutrition() + " | Cat hunger: +" + meal.catHunger()).withStyle(ChatFormatting.YELLOW));
+        tooltip.add(Component.literal("For players, Talented Cats and Food Bowls.").withStyle(ChatFormatting.GREEN));
     }
 }
