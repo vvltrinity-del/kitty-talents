@@ -98,6 +98,7 @@ public final class TwineManager {
 
         PacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new PacketSyncTwine(cat.getId(), true));
         player.playNotifySound(ModSounds.TWINE_ENTER.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
+        com.kittytalents.core.KittyGuide.award(player, com.kittytalents.core.KittyGuide.TWINE);
         player.displayClientMessage(Component.literal("✦ Twined with " + cat.getName().getString() + "! Controlling companion. ✦").withStyle(ChatFormatting.GREEN), true);
         return true;
     }

@@ -323,10 +323,10 @@ public class KittyTalentsGameTests {
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void testGearClickEquipsFromInventoryAndUnequipsToInventory(GameTestHelper helper) {
         TalentedCat cat = helper.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
-        cat.setTalentLevel(Talents.CAT_ARMOR, 2); // iron armor needs rank 2
+        // 5.0: iron armor needs no talent; diamond needs Feline Armor 1.
         net.minecraft.server.level.ServerPlayer player = net.minecraftforge.common.util.FakePlayerFactory.getMinecraft(helper.getLevel());
         player.getInventory().clearContent();
-        player.getInventory().setItem(5, new ItemStack(Items.DIAMOND_HELMET)); // needs rank 3: must be skipped
+        player.getInventory().setItem(5, new ItemStack(Items.DIAMOND_HELMET)); // needs rank 1: must be skipped
         player.getInventory().setItem(9, new ItemStack(Items.IRON_HELMET));
 
         com.kittytalents.network.PacketEquipCatItem.handleSlotInteraction(player, cat, 1, false);

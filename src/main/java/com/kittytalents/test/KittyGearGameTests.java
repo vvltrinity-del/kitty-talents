@@ -89,28 +89,30 @@ public class KittyGearGameTests {
         }
     }
 
-    /** Armor and weapons are rank-gated by drag, shift-click and the old click packet alike. */
+    /** 5.0: basic gear needs no talent; diamond (rank 1) and netherite (rank 3) are gated by drag and shift-click alike. */
     @GameTest(template = "empty", timeoutTicks = 20)
     public static void testRankGatedGearIsRefusedEveryWay(GameTestHelper h) {
         FakePlayer p = joinFakeOwner(h, new BlockPos(3, 2, 2));
         try {
             TalentedCat c = ownedCat(h, p);
-            c.setTalentLevel(Talents.CAT_ARMOR, 2);
-            c.setTalentLevel(Talents.CAT_ARMORY, 2);
             CatTalentMenu m = open(p, c);
-            h.assertTrue(CatGearRules.refusal(c, 2, new ItemStack(Items.DIAMOND_CHESTPLATE)) != null, "rank 2 can't wear diamond");
+            h.assertTrue(CatGearRules.refusal(c, 2, new ItemStack(Items.IRON_CHESTPLATE)) == null, "any cat can wear iron armor");
+            h.assertTrue(CatGearRules.refusal(c, 0, new ItemStack(Items.IRON_SWORD)) == null, "any cat can hold an iron sword");
+            h.assertTrue(CatGearRules.refusal(c, 2, new ItemStack(Items.DIAMOND_CHESTPLATE)) != null, "rank 0 can't wear diamond");
+            h.assertTrue(CatGearRules.refusal(c, 2, new ItemStack(Items.NETHERITE_CHESTPLATE)) != null, "rank 0 can't wear netherite");
             give(p, 0, Items.DIAMOND_CHESTPLATE, 1);
             drag(m, p, 0, 2);
-            h.assertTrue(CatGearRules.get(c, 2).isEmpty(), "drag must refuse diamond armor at rank 2");
+            h.assertTrue(CatGearRules.get(c, 2).isEmpty(), "drag must refuse diamond armor at rank 0");
             m.clicked(menuIndex(0), 0, ClickType.PICKUP, p);
             m.clicked(menuIndex(0), 0, ClickType.QUICK_MOVE, p);
             h.assertTrue(CatGearRules.get(c, 2).isEmpty() && p.getInventory().getItem(0).is(Items.DIAMOND_CHESTPLATE), "shift-click must refuse it too");
             give(p, 1, Items.DIAMOND_SWORD, 1);
             m.clicked(menuIndex(1), 0, ClickType.QUICK_MOVE, p);
-            h.assertTrue(CatGearRules.get(c, 0).isEmpty(), "diamond sword needs Cat Armory 3");
-            c.setTalentLevel(Talents.CAT_ARMOR, 3);
+            h.assertTrue(CatGearRules.get(c, 0).isEmpty(), "diamond sword needs Cat Armory 1");
+            c.setTalentLevel(Talents.CAT_ARMOR, 1);
+            h.assertTrue(CatGearRules.refusal(c, 2, new ItemStack(Items.NETHERITE_CHESTPLATE)) != null, "netherite needs rank 3");
             m.clicked(menuIndex(0), 0, ClickType.QUICK_MOVE, p);
-            h.assertTrue(CatGearRules.get(c, 2).is(Items.DIAMOND_CHESTPLATE), "at rank 3 shift-click equips it");
+            h.assertTrue(CatGearRules.get(c, 2).is(Items.DIAMOND_CHESTPLATE), "at rank 1 shift-click equips it");
             h.succeed();
         } finally {
             leave(h, p);

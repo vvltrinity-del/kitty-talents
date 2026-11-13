@@ -75,24 +75,24 @@ public final class CatGearRules {
         };
     }
 
-    /** The talent rank the item needs in this slot (0 = none). */
+    /**
+     * The talent rank the item needs in this slot (0 = none). 5.0: basic gear (leather to iron, wooden to iron
+     * swords, modded armor and weapons) needs no talent; Feline Armor and Cat Armory add power per rank instead of
+     * permission. Only diamond (rank 1), netherite (rank 3) and guns (Cat Armory 1) stay gated.
+     */
     public static int requiredRank(int slot, ItemStack stack) {
         Item item = stack.getItem();
         if (slot == WEAPON) {
             if (TacZCompat.isGun(stack)) return 1;
             if (item instanceof SwordItem sword) {
-                if (sword.getTier() == Tiers.IRON || sword.getTier() == Tiers.GOLD) return 2;
-                if (sword.getTier() == Tiers.DIAMOND) return 3;
-                if (sword.getTier() == Tiers.NETHERITE) return 4;
-                return 1;
+                if (sword.getTier() == Tiers.DIAMOND) return 1;
+                if (sword.getTier() == Tiers.NETHERITE) return 3;
             }
             return 0;
         }
         if (slot >= 1 && slot <= 4 && item instanceof ArmorItem armor) {
-            if (armor.getMaterial() == ArmorMaterials.CHAIN || armor.getMaterial() == ArmorMaterials.IRON) return 2;
-            if (armor.getMaterial() == ArmorMaterials.DIAMOND) return 3;
-            if (armor.getMaterial() == ArmorMaterials.NETHERITE) return 4;
-            return 1;
+            if (armor.getMaterial() == ArmorMaterials.DIAMOND) return 1;
+            if (armor.getMaterial() == ArmorMaterials.NETHERITE) return 3;
         }
         return 0;
     }

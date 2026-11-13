@@ -220,7 +220,8 @@ public class FelineCombatEngine {
             }
 
             // Passive dodge from Feline Reflexes talent (R8)
-            int reflexesLvl = cat.getTalentLevel(Talents.FELINE_REFLEXES);
+            // 5.0: Reflexes parries melee only; projectiles are Feline Agility's job.
+            int reflexesLvl = event.getSource().isIndirect() ? 0 : cat.getTalentLevel(Talents.FELINE_REFLEXES);
             if (reflexesLvl > 0) {
                 float passiveDodgeChance = reflexesLvl * com.kittytalents.talent.TalentTuning.REFLEX_DODGE_PER_RANK.f(); // up to 35%
                 if (cat.getRandom().nextFloat() < passiveDodgeChance) {

@@ -71,4 +71,9 @@ public enum ProductionTier {
         }
         return STANDARD;
     }
+
+    /** Ore tiers (the ones Mole Cat boosts): these Habitat cats can condense Ore Essence (5.0). */
+    public boolean isMetal() {
+        return this == COPPER || this == IRON || this == GOLD || this == DIAMOND || this == NETHERITE;
+    }
 }

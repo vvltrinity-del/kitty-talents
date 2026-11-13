@@ -17,6 +17,7 @@ public class KittyTalents {
 
     public KittyTalents() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+        com.kittytalents.registry.ModGameRules.init();
 
         // Register registries
         ModEntities.ENTITIES.register(modEventBus);

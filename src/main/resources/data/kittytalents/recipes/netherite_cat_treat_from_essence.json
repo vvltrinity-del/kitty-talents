@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "kittytalents:diamond_cat_treat" },
+    { "item": "minecraft:netherite_scrap" },
+    { "item": "kittytalents:ore_essence" },
+    { "item": "kittytalents:ore_essence" },
+    { "item": "kittytalents:ore_essence" },
+    { "item": "kittytalents:ore_essence" }
+  ],
+  "result": { "item": "kittytalents:netherite_cat_treat", "count": 1 }
+}

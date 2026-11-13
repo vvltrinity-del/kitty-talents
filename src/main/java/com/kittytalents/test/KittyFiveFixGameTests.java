@@ -80,9 +80,9 @@ public class KittyFiveFixGameTests {
         h.succeed();
     }
 
-    /** Cats never pick fish as a target, even in Hunting mode (they used to leave a fight to swim after cod). */
+    /** Cats never pick fish or bats as a target, even in Hunting mode (they used to leave a fight to swim after cod). */
     @GameTest(template = "empty", timeoutTicks = 20)
-    public static void testHuntingCatIgnoresFish(GameTestHelper h) {
+    public static void testHuntingCatIgnoresFishAndBats(GameTestHelper h) {
         var fp = joinFakeOwner(h, new BlockPos(1, 2, 1));
         try {
             TalentedCat c = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(3, 2, 3));
@@ -91,11 +91,80 @@ public class KittyFiveFixGameTests {
             c.setCatMode(CatMode.HUNTING);
             h.spawn(net.minecraft.world.entity.EntityType.COD, new BlockPos(4, 2, 3));
             h.assertTrue(com.kittytalents.ai.CatTargeting.findBestTarget(c) == null, "a cod should not be a target");
+            var bat = h.spawn(net.minecraft.world.entity.EntityType.BAT, new BlockPos(2, 3, 3));
+            bat.setNoAi(true);
+            h.assertTrue(com.kittytalents.ai.CatTargeting.findBestTarget(c) == null, "a bat should not be a target");
             var rabbit = h.spawn(net.minecraft.world.entity.EntityType.RABBIT, new BlockPos(3, 2, 4));
             h.assertTrue(com.kittytalents.ai.CatTargeting.findBestTarget(c) == rabbit, "the rabbit is still prey");
             h.succeed();
         } finally {
             leave(h, fp);
         }
+    }
+
+    /** A 4.0 cat with bought ranks in a reworked talent gets those points back on load (Feline Reflexes 3 = 4 points). */
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void testReworkedTalentIsRefundedOnLoad(GameTestHelper h) {
+        TalentedCat old = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
+        old.setTalentLevel(Talents.FELINE_REFLEXES, 3);
+        old.setSkillPoints(2);
+        CompoundTag tag = old.saveWithoutId(new CompoundTag());
+        tag.remove(com.kittytalents.talent.TalentRevisions.TAG); // what a 4.0 save looks like
+        old.discard();
+        TalentedCat c = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(3, 2, 2));
+        c.load(tag);
+        h.assertTrue(c.getTalentLevel(Talents.FELINE_REFLEXES) == 0, "reflexes should be reset, is " + c.getTalentLevel(Talents.FELINE_REFLEXES));
+        h.assertTrue(c.getSkillPoints() == 6, "2 + 4 refunded points expected, got " + c.getSkillPoints());
+        CompoundTag again = c.saveWithoutId(new CompoundTag());
+        c.setTalentLevel(Talents.FELINE_REFLEXES, 2);
+        again.put("Talents", c.saveWithoutId(new CompoundTag()).getCompound("Talents"));
+        c.load(again);
+        h.assertTrue(c.getTalentLevel(Talents.FELINE_REFLEXES) == 2, "a 5.0 save must not be refunded again");
+        h.succeed();
+    }
+
+    /** With the default follower limit (4), a fifth cat told to follow sits down instead. */
+    @GameTest(template = "arena", timeoutTicks = 40)
+    public static void testFollowerLimitSitsTheFifthCat(GameTestHelper h) {
+        var fp = joinFakeOwner(h, new BlockPos(15, 2, 15));
+        TalentedCat[] cats = new TalentedCat[5];
+        for (int i = 0; i < 5; i++) {
+            cats[i] = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(10 + i * 2, 2, 10));
+            cats[i].tame(fp);
+            cats[i].setOrderedToSit(false);
+            cats[i].setCatMode(CatMode.STAY);
+        }
+        h.runAfterDelay(2, () -> {
+            try {
+                for (int i = 0; i < 4; i++) cats[i].setCatMode(CatMode.FOLLOW);
+                for (int i = 0; i < 4; i++) h.assertTrue(cats[i].getCatMode() == CatMode.FOLLOW, "cat " + i + " should follow");
+                cats[4].setCatMode(CatMode.FOLLOW);
+                h.assertTrue(cats[4].getCatMode() != CatMode.FOLLOW && cats[4].isOrderedToSit(), "the fifth cat should sit instead");
+                cats[0].setOrderedToSit(true); // a sitting follower doesn't count
+                cats[4].setOrderedToSit(false);
+                cats[4].setCatMode(CatMode.FOLLOW);
+                h.assertTrue(cats[4].getCatMode() == CatMode.FOLLOW, "with one follower sitting, the fifth may follow");
+                h.succeed();
+            } finally {
+                leave(h, fp);
+            }
+        });
+    }
+
+    /** kittyTalentsCatDeath on: a downed cat bleeds out after 60 s (here: loaded with 5 ticks left). */
+    @GameTest(template = "empty", timeoutTicks = 60, batch = "catdeath")
+    public static void testDownedCatBleedsOutWithCatDeathRule(GameTestHelper h) {
+        var rules = h.getLevel().getGameRules();
+        rules.getRule(com.kittytalents.registry.ModGameRules.CAT_DEATH).set(true, h.getLevel().getServer());
+        TalentedCat c = h.spawn(ModEntities.TALENTED_CAT.get(), new BlockPos(2, 2, 2));
+        CompoundTag tag = c.saveWithoutId(new CompoundTag());
+        tag.putBoolean("Incapacitated", true);
+        tag.putInt("DownedTicks", com.kittytalents.registry.ModGameRules.BLEED_OUT_TICKS - 5);
+        c.load(tag);
+        h.assertTrue(c.isIncapacitated(), "cat should be downed");
+        h.succeedWhen(() -> {
+            h.assertTrue(!c.isAlive(), "the downed cat should have bled out");
+            rules.getRule(com.kittytalents.registry.ModGameRules.CAT_DEATH).set(false, h.getLevel().getServer());
+        });
     }
 }

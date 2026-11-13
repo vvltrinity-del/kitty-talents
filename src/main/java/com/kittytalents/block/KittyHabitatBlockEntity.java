@@ -489,6 +489,14 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         if (habitat.progress >= habitat.maxProgress) {
             habitat.progress = 0;
             habitat.insertOutput(habitat.cachedProducedItem.copy());
+            // 5.0: metal-tier cats sometimes condense Ore Essence (5%, +5% per Mole Cat rank), the Resource
+            // Catalyst's ingredient. It used to have no source and no use.
+            if (habitat.assignedCatResourceTier.isMetal()) {
+                int mole = habitat.cachedWorkerCat != null ? habitat.cachedWorkerCat.getTalentLevel(Talents.MOLE_CAT) : 0;
+                if (level.random.nextFloat() < 0.05F + 0.05F * mole && habitat.canInsertOutput(new ItemStack(com.kittytalents.registry.ModItems.ORE_ESSENCE.get()))) {
+                    habitat.insertOutput(new ItemStack(com.kittytalents.registry.ModItems.ORE_ESSENCE.get()));
+                }
+            }
             habitat.totalCycles += habitat.cachedCycleMultiplier;
             habitat.totalResources += habitat.cachedProducedItem.getCount();
 

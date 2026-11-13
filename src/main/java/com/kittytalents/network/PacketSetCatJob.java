@@ -45,7 +45,10 @@ public class PacketSetCatJob extends PacketBase {
         CatJob job = CatJob.values()[jobOrdinal];
         cat.setCatJob(job);
         cat.setClockedIn(clockedIn);
-        if (job != CatJob.NONE && clockedIn) cat.setCatMode(CatMode.WORK);
+        if (job != CatJob.NONE && clockedIn) {
+            cat.setCatMode(CatMode.WORK);
+            com.kittytalents.core.KittyGuide.award(sender, com.kittytalents.core.KittyGuide.JOB);
+        }
         return true;
     }
 }

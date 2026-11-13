@@ -58,7 +58,9 @@ public abstract class AbstractCatJobGoal extends Goal {
     protected int getEffectiveTaskDurationTicks() {
         int base = getBaseTaskDurationTicks();
         int ethic = cat.getTalentLevel(Talents.WORK_ETHIC);
-        double mult = Math.max(0.35D, 1.0D - (0.08D * ethic));
+        // Kitty Tools (5.0): +5% work speed per rank while the cat holds a tool.
+        int tools = cat.getEquippedTool().isEmpty() ? 0 : cat.getTalentLevel(Talents.KITTY_TOOLS);
+        double mult = Math.max(0.35D, 1.0D - (0.08D * ethic) - (0.05D * tools));
         return Math.max(4, (int) Math.round(base * mult));
     }
 

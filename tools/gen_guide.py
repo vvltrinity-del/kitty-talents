@@ -80,9 +80,9 @@ ITEM_INFO = {
     "treat_bag": ("Tools", "Holds up to 576 treats. Right-click a cat to feed one."),
     "grooming_shears": ("Tools", "Removes accessories and grooms a cat."),
     "kitty_work_clipboard": ("Jobs & production", "Select a cat, then mark its work area, link chests, or put it in a Habitat."),
-    "resource_catalyst": ("Jobs & production", "Optional Habitat booster. No recipe in the mod itself; modpacks can add one."),
-    "catnip_catalyst": ("Jobs & production", "Makes a Habitat produce Catnip Leaves and treats. No recipe in the mod itself; modpacks can add one."),
-    "ore_essence": ("Jobs & production", "Creative-menu item; not used by any recipe yet."),
+    "resource_catalyst": ("Jobs & production", "Habitat booster: +1 yield on every cycle. Crafted from Condensed Ore Essence, gold and redstone; never used up."),
+    "catnip_catalyst": ("Jobs & production", "Makes a Habitat produce Catnip Leaves and treats. Crafted from catnip, bone meal and glowstone; never used up."),
+    "ore_essence": ("Jobs & production", "Copper to netherite Habitat cats sometimes make one (5%, +5% per Mole Cat rank). Crafts the Resource Catalyst and a cheaper Netherite Cat Treat."),
     "cat_collar": ("Style", "Right-click your cat to put on a coloured collar."),
     "yarn_ball": ("Toys", "A toy to throw for Fetch cats."),
     "feather_toy": ("Toys", "A toy to throw for Fetch cats."),
@@ -443,7 +443,7 @@ A new cat starts with enough skill points to max out any one regular talent.</di
 <div class="cols">
   <div class="card"><h4>Hunger</h4><p>Cats get hungry over time, slower while resting. Feed fish, cat food or treats by hand, or fill a <b>Food Bowl</b> (5 stacks) and they eat on their own.</p></div>
   <div class="card"><h4>Sleep and play</h4><p>Cats sleep on a <b>Cat Bed</b> at night, scratch the <b>Scratching Post</b> and perch on a <b>Cat Tree</b>.</p></div>
-  <div class="card"><h4>Downed, not dead</h4><p>At 0 HP a cat is <b>downed</b>. Revive it with a Golden Apple, Milk or <b>Warm Milk</b>. <b>Nine Lives</b> can bring it back on its own, with a recharge.</p></div>
+  <div class="card"><h4>Downed, not dead</h4><p>At 0 HP a cat is <b>downed</b>. Revive it with a Golden Apple, Milk or <b>Warm Milk</b>. <b>Nine Lives</b> can bring it back on its own, with a recharge. For real stakes, <code>/gamerule kittyTalentsCatDeath true</code> makes a downed cat die if it isn't revived within 60 seconds.</p></div>
   <div class="card"><h4>Healing</h4><p><b>Healing Herbal Treat</b> heals 14 HP. <b>Feline Recovery Wrap</b> heals 10 HP and cures Poison and Wither.</p></div>
 </div>
 </section>
@@ -553,7 +553,7 @@ A new cat starts with enough skill points to max out any one regular talent.</di
 </section>
 
 <section id="gear"><h2>Gear and style</h2>
-<p>The Gear tab has a <b>weapon</b> slot (held in the mouth; a TacZ gun works too), <b>helmet, chest, legs and boots</b>, an <b>accessory</b>, a <b>tool</b> for work, and <b>three cosmetic</b> slots. Hover an empty slot to see what fits, and a red tooltip explains why an item doesn't (wrong slot, missing talent rank, or not your cat). Some gear needs a talent: armor needs <b>Feline Armor</b>, weapons need <b>Cat Armory</b>.</p>
+<p>The Gear tab has a <b>weapon</b> slot (held in the mouth; a TacZ gun works too), <b>helmet, chest, legs and boots</b>, an <b>accessory</b>, a <b>tool</b> for work, and <b>three cosmetic</b> slots. Hover an empty slot to see what fits, and a red tooltip explains why an item doesn't (wrong slot, missing talent rank, or not your cat). Any cat can wear leather to iron armor and hold basic swords. Diamond gear needs <b>Feline Armor</b> or <b>Cat Armory</b> rank 1, netherite rank 3, and guns Cat Armory 1; each rank also adds real power.</p>
 <p>On the Style tab: collar colour (dye works too), and <b>17 skins</b>: {esc(", ".join(g.title(p.stem) for p in sorted((g.RES / "data/kittytalents/kittytalents/skins").glob("*.json"))))}. Servers can add more with a skin pack.</p>
 </section>
 
@@ -565,7 +565,7 @@ A new cat starts with enough skill points to max out any one regular talent.</di
     ["<b>Full</b>", "Also change its gear and style."],
 ], ["Role", "Can"])}
 <p>Only the owner can train, respec, rename or manage co-owners. A co-owner can leave on their own. Cats that aren't yours show their owner's name on the HUD, and other players see a label over a Twined cat and over the spot where its player's body rests.</p>
-<p>The <b>HUD</b> shows small cards for your nearby cats that are following you, hurt or downed. Change it in <code>config/kittytalents-client.toml</code> (<code>showFriendCats</code>, <code>showTwineMarkers</code>, range).</p>
+<p>Up to <b>4 cats</b> can follow you at once (Follow, Tactical and Support); a fifth sits down instead. Change it with <code>/gamerule kittyTalentsFollowerLimit</code> (0 = no limit). The <b>HUD</b> shows small cards for your nearby cats that are following you, hurt or downed. Change it in <code>config/kittytalents-client.toml</code> (<code>showFriendCats</code>, <code>showTwineMarkers</code>, range).</p>
 </section>
 
 <section id="items"><h2>Items and blocks</h2>

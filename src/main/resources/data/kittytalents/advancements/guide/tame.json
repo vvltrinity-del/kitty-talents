@@ -1,0 +1,34 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:cod"
+    },
+    "title": {
+      "translate": "advancements.kittytalents.guide.tame.title"
+    },
+    "description": {
+      "translate": "advancements.kittytalents.guide.tame.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "kittytalents:talented_cat"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "parent": "kittytalents:guide/root"
+}

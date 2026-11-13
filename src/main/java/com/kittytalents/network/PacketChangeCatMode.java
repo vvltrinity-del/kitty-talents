@@ -44,6 +44,7 @@ public class PacketChangeCatMode extends PacketBase {
         TalentedCat cat = authorize(sender, entityId, CatAction.COMMAND);
         if (cat == null) return false;
         cat.setCatMode(modeOrdinal == NEXT ? cat.getCatMode().next() : CatMode.values()[modeOrdinal]);
+        if (cat.getCatMode() == CatMode.FOLLOW) com.kittytalents.core.KittyGuide.award(sender, com.kittytalents.core.KittyGuide.FOLLOW);
         return true;
     }
 }

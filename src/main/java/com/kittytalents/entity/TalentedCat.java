@@ -391,6 +391,16 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
     public void setCatMode(CatMode mode) {
         CatMode previous = getCatMode();
+        // Follower limit (5.0 game rule): past the cap, the cat meows and sits instead of joining the group.
+        if (mode.followsOwner() && !previous.followsOwner() && this.tickCount > 0 && overFollowerLimit()) {
+            this.setOrderedToSit(true);
+            this.playSound(SoundEvents.CAT_AMBIENT, 1.0F, 0.8F);
+            if (this.getOwner() instanceof Player owner) {
+                owner.displayClientMessage(Component.translatable("message.kittytalents.follower_limit", this.getName(),
+                        this.level().getGameRules().getInt(com.kittytalents.registry.ModGameRules.FOLLOWER_LIMIT)), true);
+            }
+            return;
+        }
         this.entityData.set(DATA_MODE, mode.ordinal());
         // Anchored modes hold where they were ordered; re-anchor when switching into one.
         if (mode.usesAnchor() && (previous != mode || modeAnchor == null)) {
@@ -413,7 +423,25 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         return this.entityData.get(DATA_INCAPACITATED);
     }
 
+    /** Ticks this cat has been downed (for the kittyTalentsCatDeath bleed-out). */
+    private int downedTicks;
+
+    /** True if another follower would go past the owner's follower limit (game rule; 0 = no limit). */
+    public boolean overFollowerLimit() {
+        if (this.level().isClientSide || !(this.level() instanceof net.minecraft.server.level.ServerLevel sl) || getOwnerUUID() == null) return false;
+        int limit = sl.getGameRules().getInt(com.kittytalents.registry.ModGameRules.FOLLOWER_LIMIT);
+        if (limit <= 0) return false;
+        java.util.UUID owner = getOwnerUUID();
+        int following = 0;
+        for (TalentedCat c : sl.getEntities(com.kittytalents.registry.ModEntities.TALENTED_CAT.get(),
+                c -> c != this && owner.equals(c.getOwnerUUID()) && c.getCatMode().followsOwner() && !c.isOrderedToSit() && !c.isIncapacitated())) {
+            if (++following >= limit) return true;
+        }
+        return false;
+    }
+
     public void setIncapacitated(boolean value) {
+        if (!value) downedTicks = 0;
         this.entityData.set(DATA_INCAPACITATED, value);
         if (value) {
             this.setOrderedToSit(true);
@@ -1857,6 +1885,26 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         if (statsDirty && !this.level().isClientSide && this.tickCount % 20 == 0) flushStats();
 
+        // kittyTalentsCatDeath (5.0, off by default): a downed cat bleeds out after 60 s unless revived.
+        if (!this.level().isClientSide && isIncapacitated()) {
+            if (this.level().getGameRules().getBoolean(com.kittytalents.registry.ModGameRules.CAT_DEATH)) {
+                downedTicks++;
+                if (downedTicks == 1 && this.getOwner() instanceof Player owner) {
+                    owner.sendSystemMessage(Component.translatable("message.kittytalents.cat_bleeding", this.getName(),
+                            com.kittytalents.registry.ModGameRules.BLEED_OUT_TICKS / 20));
+                }
+                if (downedTicks >= com.kittytalents.registry.ModGameRules.BLEED_OUT_TICKS) {
+                    this.entityData.set(DATA_INCAPACITATED, false);
+                    if (this.getOwner() instanceof Player owner) {
+                        owner.sendSystemMessage(Component.translatable("message.kittytalents.cat_bled_out", this.getName()));
+                    }
+                    this.kill();
+                }
+            } else {
+                downedTicks = 0;
+            }
+        }
+
         // Automatic player revival companion capability
         if (!this.level().isClientSide && this.tickCount % 10 == 0 && this.isTame() && !this.isIncapacitated() && this.getOwner() instanceof Player owner) {
             if (com.kittytalents.compat.playerrevive.PlayerReviveCompat.isBleeding(owner)) {
@@ -2074,6 +2122,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (modeAnchor != null) tag.put("ModeAnchor", NbtUtils.writeBlockPos(modeAnchor));
         if (spiritCatnipPrimed) tag.putBoolean(CatSchema.KEY_SPIRIT_PRIMED, true);
         tag.putBoolean("Incapacitated", isIncapacitated());
+        tag.putInt("DownedTicks", downedTicks);
         tag.putString(com.kittytalents.core.persist.CatSchema.KEY_SKIN, getSkin());
         tag.putString("Trait", getTrait().id);
         tag.putInt("Bond", getBondPoints());
@@ -2098,6 +2147,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         trust.save(tag);
         talents.save(tag);
+        com.kittytalents.talent.TalentRevisions.save(tag);
         tag.put("JobData", jobData.save());
     }
 
@@ -2118,6 +2168,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
         if (tag.contains("ModeAnchor")) this.modeAnchor = NbtUtils.readBlockPos(tag.getCompound("ModeAnchor"));
         this.spiritCatnipPrimed = tag.getBoolean(CatSchema.KEY_SPIRIT_PRIMED);
         if (tag.contains("Incapacitated")) setIncapacitated(tag.getBoolean("Incapacitated"));
+        downedTicks = tag.getInt("DownedTicks");
         if (tag.contains(com.kittytalents.core.persist.CatSchema.KEY_SKIN)) setSkin(tag.getString(com.kittytalents.core.persist.CatSchema.KEY_SKIN));
         // 4.0 Phase 6: saves from before 4.0 have no trait: roll one now. Bond starts at 0.
         if (tag.contains("Trait")) this.entityData.set(DATA_TRAIT, com.kittytalents.core.living.CatTrait.byId(tag.getString("Trait")).id);
@@ -2146,6 +2197,7 @@ public class TalentedCat extends Cat implements PlayerRideableJumping {
 
         trust.load(tag);
         talents.load(tag);
+        if (!this.level().isClientSide) com.kittytalents.talent.TalentRevisions.apply(this, tag);
         if (tag.contains("JobData", Tag.TAG_COMPOUND)) {
             jobData.load(tag.getCompound("JobData"));
         }

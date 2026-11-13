@@ -52,6 +52,7 @@ public class PacketSetCatLoadout extends PacketBase {
         }
         loadout.applyTo(cat);
         cat.syncLoadout();
+        if (cat.getCatRole() != com.kittytalents.combat.CatRole.NONE) com.kittytalents.core.KittyGuide.award(sender, com.kittytalents.core.KittyGuide.ROLE);
         return true;
     }
 }

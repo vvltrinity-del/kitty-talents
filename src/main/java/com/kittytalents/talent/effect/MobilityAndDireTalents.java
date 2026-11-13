@@ -36,15 +36,17 @@ final class MobilityAndDireTalents {
                 com.kittytalents.core.tuning.Tuning.talent("feline_agility", "speed_per_rank", 0.03, "Speed per rank");
         private static final com.kittytalents.core.tuning.Tuning.Key DODGE =
                 com.kittytalents.core.tuning.Tuning.talent("feline_agility", "projectile_dodge_per_rank", 0.1, "Projectile dodge per rank");
-        private static final com.kittytalents.core.tuning.Tuning.Key MELEE =
-                com.kittytalents.core.tuning.Tuning.talent("feline_agility", "mastery_melee_dodge", 0.15, "Mastery: melee dodge");
+        private static final com.kittytalents.core.tuning.Tuning.Key BURST =
+                com.kittytalents.core.tuning.Tuning.talent("feline_agility", "mastery_speed_ticks", 60, "Mastery: Speed II ticks after a dodge");
         @Override public void applyAttributes(TalentContext ctx, AttributeTotals t) {
             t.movementSpeed += ctx.rank * SPEED.get();
         }
         @Override public float modifyIncomingDamage(TalentContext ctx, DamageSource src, float amt) {
-            float chance = src.isIndirect() ? ctx.rank * DODGE.f() : (ctx.mastered() ? MELEE.f() : 0.0F);
+            // 5.0: projectiles only (melee parries are Feline Reflexes). Mastery "Ghost Step": Speed II after a dodge.
+            float chance = src.isIndirect() ? ctx.rank * DODGE.f() : 0.0F;
             if (chance > 0 && ctx.cat.getRandom().nextFloat() < chance) {
                 ctx.cat.playSound(SoundEvents.CAT_PURREOW, 0.7F, 1.5F);
+                if (ctx.mastered()) ctx.cat.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.MOVEMENT_SPEED, BURST.i(), 1));
                 return 0.0F;
             }
             return amt;

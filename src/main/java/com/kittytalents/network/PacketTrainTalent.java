@@ -44,6 +44,7 @@ public class PacketTrainTalent extends PacketBase {
         // Dire talents need a Dire-awakened cat (one Dire Treat, checked in canTrainTalent); ranks cost only skill points.
         boolean trained = talent != null && cat.canTrainTalent(talent) && cat.trainTalent(talent);
         cat.syncTalents(sender);
+        if (trained) com.kittytalents.core.KittyGuide.award(sender, com.kittytalents.core.KittyGuide.TALENT);
         return trained;
     }
 }
