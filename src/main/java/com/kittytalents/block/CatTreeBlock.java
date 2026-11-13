@@ -67,6 +67,17 @@ public class CatTreeBlock extends Block {
         return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 
+    /**
+     * Places the top half (the perch). DoubleHighBlockItem only clears the space; without this every survival-placed
+     * tree was just its lower half (5.0 fix: "looks like the Scratching Post with the top missing").
+     */
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity placer, net.minecraft.world.item.ItemStack stack) {
+        if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.LOWER) {
+            level.setBlock(pos.above(), state.setValue(HALF, DoubleBlockHalf.UPPER), 3);
+        }
+    }
+
     @Override
     public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {

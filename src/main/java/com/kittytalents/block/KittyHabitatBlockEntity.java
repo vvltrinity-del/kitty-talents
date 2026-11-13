@@ -634,7 +634,8 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         if (tag.contains("MaxProgress")) maxProgress = Math.max(1, tag.getInt("MaxProgress"));
         housedHunger = tag.contains("HousedHunger") ? tag.getInt("HousedHunger") : 100;
         if (tag.contains("Energy")) {
-            energyStorage.receiveEnergy(tag.getInt("Energy"), false);
+            // Set, not add: the client reloads this tag on every status update (5.0 fix; it used to keep growing).
+            energyStorage.deserializeNBT(net.minecraft.nbt.IntTag.valueOf(tag.getInt("Energy")));
         }
         storedCat = tag.contains("StoredCat") ? tag.getCompound("StoredCat") : new CompoundTag();
         assignedCatMutation = tag.contains("AssignedCatMutation") ? tag.getString("AssignedCatMutation") : "NONE";

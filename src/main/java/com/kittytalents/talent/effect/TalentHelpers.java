@@ -21,7 +21,12 @@ final class TalentHelpers {
     private TalentHelpers() {}
 
     /** Ambient (no particles, no icon flicker) effect refresh, used for auras. */
+    /** Night vision granted by cats lasts at least this long, so it never sits in the vanilla blink window. */
+    public static final int NIGHT_VISION_TICKS = 400;
+
     static void aura(LivingEntity e, MobEffect effect, int duration, int amplifier) {
+        // Night vision blinks in its last 200 ticks: keep a refreshed aura well above that (5.0 flicker fix).
+        if (effect == net.minecraft.world.effect.MobEffects.NIGHT_VISION) duration = Math.max(duration, NIGHT_VISION_TICKS);
         e.addEffect(new MobEffectInstance(effect, duration, amplifier, true, false, true));
     }
 

@@ -34,6 +34,8 @@ public class CatPerchGoal extends Goal {
     private Vec3 perch;
     private boolean onPerch;
     private int ticks, duration, cooldownUntil;
+    /** Facing locked while perched, so the cat does not spin in place (5.0 fix). */
+    private float perchYaw;
 
     public CatPerchGoal(TalentedCat cat) {
         this.cat = cat;
@@ -126,7 +128,10 @@ public class CatPerchGoal extends Goal {
         }
         // Stay put on the perch.
         cat.getNavigation().stop();
-        if (cat.distanceToSqr(perch) > 0.09D) cat.moveTo(perch.x, perch.y, perch.z, cat.getYRot(), cat.getXRot());
+        if (cat.distanceToSqr(perch) > 0.09D) cat.moveTo(perch.x, perch.y, perch.z, perchYaw, 0.0F);
+        cat.setYRot(perchYaw);
+        cat.yBodyRot = perchYaw;
+        cat.setYHeadRot(perchYaw);
         cat.setDeltaMovement(0.0D, Math.min(0.0D, cat.getDeltaMovement().y), 0.0D);
         if (ticks % 200 == 100) cat.setLying(true);
         if (ticks % 40 == 0) keepWatch();
@@ -138,8 +143,9 @@ public class CatPerchGoal extends Goal {
             return;
         }
         onPerch = true;
+        perchYaw = cat.getYRot();
         cat.getNavigation().stop();
-        cat.moveTo(perch.x, perch.y, perch.z, cat.getYRot(), 0.0F);
+        cat.moveTo(perch.x, perch.y, perch.z, perchYaw, 0.0F);
         cat.setInSittingPose(true);
         cat.playSound(SoundEvents.CAT_PURR, 0.6F, 1.0F);
     }

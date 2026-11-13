@@ -276,7 +276,7 @@ public class TreatOvenBlockEntity extends BlockEntity {
         cookProgress = tag.getInt("CookProgress");
         maxCookProgress = Math.max(1, tag.getInt("MaxCookProgress"));
         if (tag.contains("Energy")) {
-            energyStorage.receiveEnergy(tag.getInt("Energy"), false);
+            energyStorage.deserializeNBT(net.minecraft.nbt.IntTag.valueOf(tag.getInt("Energy"))); // set, not add (5.0)
         }
     }
 

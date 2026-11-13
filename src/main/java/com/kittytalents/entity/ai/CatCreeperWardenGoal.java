@@ -74,10 +74,10 @@ public class CatCreeperWardenGoal extends Goal {
             }
         }
 
-        // Night vision to owner at night
+        // Night vision to owner at night (400 ticks: under 200 it blinks, which made Night Prowler flicker)
         if (cat.level().isNight() && cat.isTame() && cat.getOwner() instanceof Player player) {
             if (cat.distanceToSqr(player) < (radius * radius)) {
-                player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 200, 0, false, false, true));
+                player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 400, 0, false, false, true));
             }
         }
     }

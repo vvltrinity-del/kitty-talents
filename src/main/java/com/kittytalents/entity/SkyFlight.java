@@ -61,6 +61,9 @@ public final class SkyFlight {
     public static void aiGlide(TalentedCat cat) {
         int rank = cat.getTalentLevel(Talents.SKY_FELINE);
         if (rank <= 0 || cat.isTwined() || cat.onGround() || cat.isInWater() || cat.fallDistance < 3.0F) return;
+        // Ridden: the rider's client drives the fall (TalentedCat#travel). A server-side glide on top pushed the
+        // cat out of sync with its rider, who then sank halfway into it while falling (5.0 fix).
+        if (cat.getControllingPassenger() != null) return;
         Vec3 m = cat.getDeltaMovement();
         double sink = 0.16D - 0.015D * rank;
         if (m.y < -sink) {

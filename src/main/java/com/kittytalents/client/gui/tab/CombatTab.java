@@ -28,7 +28,11 @@ import java.util.function.Function;
 public class CombatTab implements CatTab {
     private static final int LEFT_W = 210, CARD_H = 22;
     private static int presetHeaderY(CatTalentScreen s) { return s.cy() + 18 + 4 * (CARD_H + 2) + 3; }
-    private static final CatRole[] ROLES = { CatRole.DPS, CatRole.TANK, CatRole.HEALER, CatRole.MAGE, CatRole.SCOUT, CatRole.BRUISER };
+    /** Every role (5.0: six were hidden, though the Field Guide listed all twelve). */
+    private static final CatRole[] ROLES = { CatRole.DPS, CatRole.TANK, CatRole.HEALER, CatRole.MAGE, CatRole.SCOUT, CatRole.BRUISER,
+            CatRole.ASSASSIN, CatRole.SUPPORT, CatRole.CONTROLLER, CatRole.BREAKER, CatRole.MOBILITY, CatRole.HYBRID };
+    /** Rows of role chips: Auto plus the roles, four per row. */
+    private static final int ROLE_ROWS = (ROLES.length + 1 + 3) / 4;
     private static final FelineElement[] ELEMENTS = { FelineElement.PHYSICAL, FelineElement.FIRE, FelineElement.FROST,
             FelineElement.ELECTRIC, FelineElement.POISON, FelineElement.SHADOW, FelineElement.ARCANE };
     private static final Map<String, ResourceLocation> ICON_CACHE = new HashMap<>();
@@ -51,7 +55,7 @@ public class CombatTab implements CatTab {
     private int rw(CatTalentScreen s) { return s.cw() - LEFT_W - 6; }
     /** Role description lines shown under the role name (dropped on small GUIs). */
     private static int roleDescLines(CatTalentScreen s) { return s.ch() >= 200 ? 2 : 0; }
-    private static int statsY(CatTalentScreen s) { return s.cy() + 56 + 11 + roleDescLines(s) * 10 + 2; }
+    private static int statsY(CatTalentScreen s) { return s.cy() + 20 + ROLE_ROWS * 18 + 11 + roleDescLines(s) * 10 + 2; }
     private static int elementHeaderY(CatTalentScreen s) { return statsY(s) + 22; }
 
     static int elementColor(FelineElement e) {
@@ -90,7 +94,7 @@ public class CombatTab implements CatTab {
         TalentedCat cat = s.cat();
         int x = s.cx() + 6, y = s.cy(), w = LEFT_W - 12;
 
-        // Roles (4 per row: Auto + 6 roles)
+        // Roles (4 per row: Auto + every role)
         int chipW = (w - 6) / 4;
         s.add(new KTButton(x, y + 18, chipW, 16, KTText.t("combat.auto", "Auto"), b -> {
             CatRoleEngine.autoUpdateRole(cat);
@@ -212,7 +216,7 @@ public class CombatTab implements CatTab {
         KTTheme.header(g, font, x + 7, y + 6, LEFT_W - 14, KTText.t("combat.role", "Role"));
         CatRole role = cat.getCatRole();
         List<FormattedCharSequence> rd = font.split(Component.literal(role.getDescription()), LEFT_W - 16);
-        int ty = y + 58;
+        int ty = y + 22 + ROLE_ROWS * 18;
         g.drawString(font, role.getDisplayName(), x + 8, ty, KTTheme.TEXT_GOLD, true);
         for (int i = 0; i < Math.min(roleDescLines(s), rd.size()); i++) g.drawString(font, rd.get(i), x + 8, ty + 11 + i * 10, KTTheme.TEXT_DIM, false);
         int sy = statsY(s);
@@ -227,7 +231,8 @@ public class CombatTab implements CatTab {
         KTTheme.header(g, font, x + 7, ey, LEFT_W - 14, KTText.t("combat.element", "Element"));
         FelineElement el = cat.getPrimaryElement();
         List<FormattedCharSequence> ed = font.split(Component.literal(elementDesc(el)), LEFT_W - 16);
-        g.drawString(font, cap(el.name()), x + 8, ey + 50, elementColor(el), true);
+        // The element name only where it fits (all twelve roles take two more chip rows; 5.0).
+        if (ey + 59 <= y + h - 3) g.drawString(font, cap(el.name()), x + 8, ey + 50, elementColor(el), true);
         int edLines = Math.max(0, (y + h - 4 - (ey + 61)) / 10);
         for (int i = 0; i < Math.min(edLines, ed.size()); i++) g.drawString(font, ed.get(i), x + 8, ey + 61 + i * 10, KTTheme.TEXT_DIM, false);
 
