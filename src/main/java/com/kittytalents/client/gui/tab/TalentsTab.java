@@ -31,6 +31,12 @@ public class TalentsTab implements CatTab {
             com.kittytalents.talent.TalentCategory.MOBILITY, com.kittytalents.talent.TalentCategory.SUPPORT,
             com.kittytalents.talent.TalentCategory.UTILITY, com.kittytalents.talent.TalentCategory.DIRE };
 
+    private static final String[] SORT_KEYS = { "default", "most", "least" };
+    private static final String[] SORT_NAMES = { "Default order", "Most trained", "Least trained" };
+    private static final int SORT_H = 13;
+    /** Remembered while the game runs, so the list opens the way it was left. */
+    private static int sortMode;
+
     private final List<Talent> allTalents = new ArrayList<>();
     private final List<Talent> filtered = new ArrayList<>();
     private Talent selected = Talents.POUNCE;
@@ -61,11 +67,25 @@ public class TalentsTab implements CatTab {
         if (!filtered.isEmpty() && !filtered.contains(selected)) selected = filtered.get(0);
     }
 
+    /** Orders the filtered list by trained rank; ties keep the default order. Run on every rebuild so training re-sorts. */
+    private void sort(TalentedCat cat) {
+        java.util.Comparator<Talent> base = java.util.Comparator.comparingInt(allTalents::indexOf);
+        if (sortMode == 1) {
+            filtered.sort(java.util.Comparator.<Talent>comparingInt(t -> -cat.getTalentLevel(t))
+                    .thenComparingDouble(t -> -(double) cat.getTalentLevel(t) / Math.max(1, t.getMaxLevel())).thenComparing(base));
+        } else if (sortMode == 2) {
+            filtered.sort(java.util.Comparator.<Talent>comparingInt(t -> cat.getTalentLevel(t))
+                    .thenComparingDouble(t -> (double) cat.getTalentLevel(t) / Math.max(1, t.getMaxLevel())).thenComparing(base));
+        } else {
+            filtered.sort(base);
+        }
+    }
+
     // ------------------------------------------------------------------ layout helpers
 
     private int listY(CatTalentScreen s) { return s.cy() + 18; }
     private int listH(CatTalentScreen s) { return s.ch() - 18; }
-    private int visibleRows(CatTalentScreen s) { return Math.max(1, (listH(s) - 10) / (ROW_H + ROW_GAP)); }
+    private int visibleRows(CatTalentScreen s) { return Math.max(1, (listH(s) - 10 - SORT_H - 3) / (ROW_H + ROW_GAP)); }
     private int maxScroll(CatTalentScreen s) { return Math.max(0, filtered.size() - visibleRows(s)); }
     private int dx(CatTalentScreen s) { return s.cx() + LIST_W + 6; }
     private int dw(CatTalentScreen s) { return s.cw() - LIST_W - 6; }
@@ -100,6 +120,15 @@ public class TalentsTab implements CatTab {
                     b -> PacketHandler.sendToServer(new PacketRespecTalents(cat.getId())))
                     .style(KTButton.Style.RED).tip(KTText.t("talents.respec.tip", "Refund every trained rank")));
         }
+
+        // Sort toggle along the bottom of the list panel
+        sort(cat);
+        s.add(new KTButton(x + 5, listY(s) + listH(s) - SORT_H - 5, LIST_W - 10, SORT_H,
+                KTText.t("talents.sort." + SORT_KEYS[sortMode], "Sort: " + SORT_NAMES[sortMode]), b -> {
+            sortMode = (sortMode + 1) % SORT_KEYS.length;
+            scroll = 0;
+            s.rebuild();
+        }).style(KTButton.Style.CHIP).tip(KTText.t("talents.sort.tip", "Click to change how the list is sorted")));
 
         // List rows
         scroll = Math.min(scroll, maxScroll(s));
@@ -159,7 +188,7 @@ public class TalentsTab implements CatTab {
         int lx = s.cx(), ly = listY(s), lh = listH(s);
         KTTheme.inset(g, lx, ly, LIST_W, lh);
         if (maxScroll(s) > 0) {
-            int trackX = lx + LIST_W - 8, trackY = ly + 5, trackH = lh - 10;
+            int trackX = lx + LIST_W - 8, trackY = ly + 5, trackH = lh - 10 - SORT_H - 3;
             g.fill(trackX, trackY, trackX + 3, trackY + trackH, 0x66000000);
             int thumbH = Math.max(12, trackH * visibleRows(s) / filtered.size());
             int thumbY = trackY + (trackH - thumbH) * scroll / maxScroll(s);

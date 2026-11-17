@@ -366,7 +366,6 @@
   "message.kittytalents.trust_role_denied": "As a %s you can't do that with %s.",
   "hud.kittytalents.twine_cat": "Twined: %s",
   "hud.kittytalents.twine_body": "%s (Twined)",
-
   "message.kittytalents.follower_limit": "%s sits down: %s cats are already following you.",
   "message.kittytalents.cat_bleeding": "%s is down! Revive it within %s seconds or it will die.",
   "message.kittytalents.cat_bled_out": "%s bled out.",
@@ -431,7 +430,6 @@
   "promotion.kittytalents.mobility.desc": "Dodges cost half Energy, and you get Speed near the cat.",
   "promotion.kittytalents.hybrid": "Paragon",
   "promotion.kittytalents.hybrid.desc": "+5% damage, reflects 5% of damage taken, and slowly regains Energy.",
-
   "jei.kittytalents.category.habitat": "Kitty Habitat",
   "jei.kittytalents.category.breeding": "Cat Breeding",
   "command.kittytalents.uninstall": "Removal mode on: %s Talented Cats are now vanilla cats (their gear was dropped next to them). Cats farther away convert as their chunks load. Wait a few seconds, save, then you can remove Kitty Talents. Use /kittytalents reinstall to undo.",
@@ -649,6 +647,10 @@
   "gui.kittytalents.screen.talents.owner_only": "Only the owner can train this cat",
   "gui.kittytalents.screen.talents.rank": "Rank %s / %s",
   "gui.kittytalents.screen.talents.respec": "Respec",
+  "gui.kittytalents.screen.talents.sort.default": "Sort: Default order",
+  "gui.kittytalents.screen.talents.sort.most": "Sort: Most trained",
+  "gui.kittytalents.screen.talents.sort.least": "Sort: Least trained",
+  "gui.kittytalents.screen.talents.sort.tip": "Click to change how the list is sorted",
   "gui.kittytalents.screen.talents.respec.tip": "Refund every trained rank",
   "gui.kittytalents.screen.talents.sp": "%s SP",
   "gui.kittytalents.screen.talents.train": "TRAIN",
