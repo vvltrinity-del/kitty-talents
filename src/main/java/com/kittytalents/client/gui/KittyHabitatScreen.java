@@ -160,6 +160,7 @@ public class KittyHabitatScreen extends KTContainerScreen<KittyHabitatMenu> {
         float frac = menu.getProgress() / (float) menu.getMaxProgress();
         KTTheme.bar(g, rx + 6, ry + 39, RW - 28, 5, frac, st == Status.WORKING ? 0xFF22C55E : 0xFF6B6760);
         ItemStack product = hasWorker() ? habitat.getAssignedCatResourceTier().getProductionResult() : ItemStack.EMPTY;
+        if (habitat.hasSmelter()) product = KittyHabitatBlockEntity.smelted(habitat.getLevel(), product); // 5.1
         if (!product.isEmpty()) {
             g.pose().pushPose();
             g.pose().translate(rx + RW - 19, ry + 35, 0);
@@ -196,6 +197,31 @@ public class KittyHabitatScreen extends KTContainerScreen<KittyHabitatMenu> {
             g.renderItem(new ItemStack(Items.COOKED_COD), fx, fy);
             g.fill(fx, fy, fx + 16, fy + 16, 0xB02A2A2E);
         }
+    }
+
+    /** 5.1: hovering an empty upgrade, food or catalyst slot says what goes in it. */
+    @Override
+    protected void renderTooltip(GuiGraphics g, int x, int y) {
+        super.renderTooltip(g, x, y);
+        if (hoveredSlot == null || hoveredSlot.hasItem() || !menu.getCarried().isEmpty()) return;
+        int i = menu.slots.indexOf(hoveredSlot);
+        Component title, tip;
+        if (i >= 0 && i <= 3) {
+            title = KTText.t("habitat.slot.upgrade", "Upgrade slot");
+            tip = KTText.t("habitat.slot.upgrade.tip", "Productivity Upgrades (speed and yield) or a Smelter Upgrade (ingots instead of raw ore).");
+        } else if (i == KittyHabitatBlockEntity.SLOT_FOOD_IN) {
+            title = KTText.t("habitat.slot.food", "Food");
+            tip = KTText.t("habitat.slot.food.tip", "The worker eats from here whenever it has room for a meal. Fish, chicken and cat food all work.");
+        } else if (i == KittyHabitatBlockEntity.SLOT_CATALYST_IN) {
+            title = KTText.t("habitat.slot.catalyst", "Catalyst");
+            tip = KTText.t("habitat.slot.catalyst.tip", "A Resource or Catnip Catalyst, or the catalyst a Habitat recipe asks for (see JEI).");
+        } else {
+            return;
+        }
+        List<FormattedCharSequence> lines = new java.util.ArrayList<>();
+        lines.add(title.copy().withStyle(net.minecraft.ChatFormatting.GOLD).getVisualOrderText());
+        lines.addAll(font.split(tip.copy().withStyle(net.minecraft.ChatFormatting.GRAY), 170));
+        g.renderTooltip(font, lines, x, y);
     }
 
     private static String fit(Font font, String s, int w) {

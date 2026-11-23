@@ -90,6 +90,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.UPGRADE_PRODUCTIVITY_4.get());
                         output.accept(ModItems.UPGRADE_PRODUCTIVITY_5.get());
                         output.accept(ModItems.UPGRADE_PRODUCTIVITY_6.get());
+                        output.accept(ModItems.UPGRADE_SMELTER.get());
                         output.accept(ModItems.COAL_CAT_TREAT.get());
                         output.accept(ModItems.COPPER_CAT_TREAT.get());
                         output.accept(ModItems.IRON_CAT_TREAT.get());

@@ -57,6 +57,10 @@ public class KittyJeiPlugin implements IModPlugin {
                 ModItems.CATNIP_TREAT.get(),
                 Component.translatable("jei.kittytalents.treats.info")
         );
+        registration.addIngredientInfo(
+                ModItems.UPGRADE_SMELTER.get(),
+                Component.translatable("jei.kittytalents.upgrade_smelter.info")
+        );
     }
 
     @Override

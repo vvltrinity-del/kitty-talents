@@ -12,6 +12,8 @@ import com.kittytalents.talent.Talents;
 import com.kittytalents.util.CatFoodHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -20,12 +22,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.Tags;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
@@ -68,7 +73,10 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             if (slot >= 0 && slot <= 3) return isUpgradeItem(stack);
             if (slot >= 4 && slot <= 7) return false;
             if (slot == SLOT_FOOD_IN) return CatFoodHelper.isEdibleByCat(stack, null);
-            return true;
+            // 5.1: only real catalysts. It used to take anything, so shift-clicked junk (or a second food stack) landed
+            // in it and silently did nothing.
+            if (slot == SLOT_CATALYST_IN) return isCatalyst(level, stack);
+            return false;
         }
     };
 
@@ -131,7 +139,43 @@ public class KittyHabitatBlockEntity extends BlockEntity {
                stack.is(ModItems.UPGRADE_PRODUCTIVITY_3.get()) ||
                stack.is(ModItems.UPGRADE_PRODUCTIVITY_4.get()) ||
                stack.is(ModItems.UPGRADE_PRODUCTIVITY_5.get()) ||
-               stack.is(ModItems.UPGRADE_PRODUCTIVITY_6.get());
+               stack.is(ModItems.UPGRADE_PRODUCTIVITY_6.get()) ||
+               stack.is(ModItems.UPGRADE_SMELTER.get());
+    }
+
+    /** Catalyst slot: the Resource and Catnip Catalysts, and anything a Habitat production recipe uses as its catalyst. */
+    public static boolean isCatalyst(@Nullable Level level, ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        if (stack.is(ModItems.RESOURCE_CATALYST.get()) || stack.is(ModItems.CATNIP_CATALYST.get())) return true;
+        if (level == null) return false;
+        for (HabitatProductionRecipe recipe : level.getRecipeManager().getAllRecipesFor(ModRecipes.HABITAT_PRODUCTION_TYPE.get())) {
+            if (!recipe.getCatalyst().isEmpty() && recipe.getCatalyst().test(stack)) return true;
+        }
+        return false;
+    }
+
+    /** True if a Smelter Upgrade sits in one of the upgrade slots (5.1). */
+    public boolean hasSmelter() {
+        for (int i = 0; i <= 3; i++) {
+            if (inventory.getStackInSlot(i).is(ModItems.UPGRADE_SMELTER.get())) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Smelter Upgrade (5.1): a raw ore (forge:raw_materials or forge:ores) becomes what a furnace (or, failing that, a
+     * blast furnace) makes of it, keeping the count: 3 raw iron -> 3 iron ingots. Anything else comes back unchanged,
+     * so diamonds, coal or sand stay as they are. Works for modded ores through their own furnace recipes.
+     */
+    public static ItemStack smelted(@Nullable Level level, ItemStack stack) {
+        if (level == null || stack.isEmpty() || !(stack.is(Tags.Items.RAW_MATERIALS) || stack.is(Tags.Items.ORES))) return stack;
+        SimpleContainer in = new SimpleContainer(stack.copyWithCount(1));
+        var recipes = level.getRecipeManager();
+        ItemStack out = recipes.getRecipeFor(RecipeType.SMELTING, in, level).map(r -> r.getResultItem(level.registryAccess()))
+                .or(() -> recipes.getRecipeFor(RecipeType.BLASTING, in, level).map(r -> r.getResultItem(level.registryAccess())))
+                .orElse(ItemStack.EMPTY);
+        if (out.isEmpty()) return stack;
+        return out.copyWithCount(Math.min(out.getMaxStackSize(), stack.getCount() * Math.max(1, out.getCount())));
     }
 
     private UUID assignedCatUUID = null;
@@ -145,6 +189,9 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     private boolean isPaused = false;
     private CompoundTag storedCat = new CompoundTag();
     private int housedHunger = 100;
+    /** Ticks until the worker may eat from the food slot again (5.1). */
+    private int feedCooldown = 0;
+    private static final int MAX_HUNGER = 120, HUNGRY = 50;
 
     private int progress = 0;
     /** Fractional progress from trait speed (5.0): progress gains step x speed per tick. */
@@ -224,6 +271,42 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         else removeWorker();
     }
     public boolean hasStoredCat() { return storedCat != null && !storedCat.isEmpty(); }
+    /** Hunger of the cat housed inside (0..120). */
+    public int getHousedHunger() { return housedHunger; }
+
+    /**
+     * Supplies (5.1): the food slot feeds the worker, housed or linked, one item at a time, whenever the whole meal fits
+     * (hunger + food value <= 120) or the cat is hungry (below 50). It used to feed only a housed cat below 50 hunger,
+     * so food sat in the slot for hours, and a linked worker could starve right next to a full food slot.
+     */
+    private void feedWorker(Level level) {
+        ItemStack food = inventory.getStackInSlot(SLOT_FOOD_IN);
+        if (food.isEmpty()) return;
+        if (hasStoredCat()) {
+            if (!CatFoodHelper.isEdibleByCat(food, null)) return;
+            int gain = Math.max(1, CatFoodHelper.getFoodValues(food, null).hunger);
+            if (!wantsMeal(housedHunger, gain)) return;
+            inventory.extractItem(SLOT_FOOD_IN, 1, false);
+            housedHunger = Math.min(MAX_HUNGER, housedHunger + gain);
+            level.playSound(null, worldPosition, SoundEvents.CAT_EAT, SoundSource.NEUTRAL, 0.5F, 1.0F);
+            setChanged();
+            return;
+        }
+        if (assignedCatUUID == null || !(level instanceof ServerLevel sl)) return;
+        if (!(sl.getEntity(assignedCatUUID) instanceof TalentedCat cat) || !cat.isAlive() || cat.isIncapacitated()) return;
+        if (!CatFoodHelper.isEdibleByCat(food, cat)) return;
+        CatFoodHelper.CatFoodValue val = CatFoodHelper.getFoodValues(food, cat);
+        if (!wantsMeal(cat.getHunger(), Math.max(1, val.hunger))) return;
+        ItemStack eaten = inventory.extractItem(SLOT_FOOD_IN, 1, false);
+        cat.applyFood(val.hunger, val.saturation, val.heal);
+        cat.playSound(SoundEvents.CAT_EAT, 0.7F, 1.0F);
+        sl.sendParticles(new ItemParticleOption(ParticleTypes.ITEM, eaten), cat.getX(), cat.getY() + 0.3D, cat.getZ(),
+                4, 0.15D, 0.1D, 0.15D, 0.05D);
+    }
+
+    private static boolean wantsMeal(int hunger, int gain) {
+        return hunger < HUNGRY || hunger + gain <= MAX_HUNGER;
+    }
 
     // ---------------------------------------------------------------- 5.0 traits and bond in the Habitat
 
@@ -408,18 +491,15 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             return;
         }
 
+        // Supplies (5.1): the worker eats from the food slot once a second when a meal fits, even while paused.
+        if (--habitat.feedCooldown <= 0) {
+            habitat.feedCooldown = 20;
+            habitat.feedWorker(level);
+        }
+
         if (habitat.isPaused || level.hasNeighborSignal(pos)) {
             habitat.status = level.hasNeighborSignal(pos) ? Status.PAUSED_REDSTONE : Status.PAUSED;
             return;
-        }
-
-        // Auto-feed housed cat from slot 8 if hungry
-        if (habitat.housedHunger < 50) {
-            ItemStack foodIn = habitat.inventory.getStackInSlot(SLOT_FOOD_IN);
-            if (!foodIn.isEmpty() && CatFoodHelper.isEdibleByCat(foodIn, null)) {
-                habitat.inventory.extractItem(SLOT_FOOD_IN, 1, false);
-                habitat.housedHunger = Math.min(120, habitat.housedHunger + 30);
-            }
         }
 
         if (--habitat.simulationCooldown <= 0 || !habitat.workerValid) {
@@ -522,6 +602,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             habitat.maxProgress = Math.max(20, baseDuration - speedBoost);
             ItemStack produced = baseResource.copy();
             produced.setCount(Math.min(produced.getMaxStackSize(), baseResource.getCount() * habitat.cachedYieldMultiplier * habitat.cachedCycleMultiplier));
+            if (habitat.hasSmelter()) produced = smelted(level, produced); // 5.1: raw ore comes out as ingots
             habitat.cachedProducedItem = produced;
             habitat.workerValid = true;
         }
@@ -573,6 +654,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             habitat.insertOutput(habitat.canInsertOutput(made) ? made : habitat.cachedProducedItem.copy());
             if (habitat.mods.curious() && level.random.nextFloat() < com.kittytalents.core.living.HabitatModifiers.CURIOUS.f()) {
                 ItemStack bonus = curiousFind(habitat.assignedCatResourceTier);
+                if (habitat.hasSmelter()) bonus = smelted(level, bonus);
                 if (!bonus.isEmpty() && habitat.canInsertOutput(bonus)) habitat.insertOutput(bonus);
             }
             // 5.0: metal-tier cats sometimes condense Ore Essence (5%, +5% per Mole Cat rank), the Resource

@@ -207,6 +207,10 @@ public class ModItems {
     public static final RegistryObject<Item> UPGRADE_PRODUCTIVITY_6 = ITEMS.register("upgrade_productivity_6",
             () -> new ProductivityUpgradeItem(new Item.Properties(), ProductivityUpgradeItem.Tier.DIRE));
 
+    /** 5.1: Habitat upgrade that smelts the raw ores a worker produces (one is enough, so it doesn't stack). */
+    public static final RegistryObject<Item> UPGRADE_SMELTER = ITEMS.register("upgrade_smelter",
+            () -> new SmelterUpgradeItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+
     // Craftable Production Tier Upgrade Treats
     public static final RegistryObject<Item> COAL_CAT_TREAT = ITEMS.register("coal_cat_treat",
             () -> new TierUpgradeTreatItem(new Item.Properties(), com.kittytalents.entity.ProductionTier.STANDARD, com.kittytalents.entity.ProductionTier.COAL, Rarity.COMMON));

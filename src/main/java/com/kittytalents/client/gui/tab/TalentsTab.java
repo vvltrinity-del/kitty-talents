@@ -31,11 +31,19 @@ public class TalentsTab implements CatTab {
             com.kittytalents.talent.TalentCategory.MOBILITY, com.kittytalents.talent.TalentCategory.SUPPORT,
             com.kittytalents.talent.TalentCategory.UTILITY, com.kittytalents.talent.TalentCategory.DIRE };
 
-    private static final String[] SORT_KEYS = { "default", "most", "least" };
-    private static final String[] SORT_NAMES = { "Default order", "Most trained", "Least trained" };
+    private static final int SORT_MODES = 3; // default, most trained, least trained
     private static final int SORT_H = 13;
     /** Remembered while the game runs, so the list opens the way it was left. */
     private static int sortMode;
+
+    /** Literal keys, so tools/gen_screen_lang.py keeps them in en_us.json (a key built from an array got dropped). */
+    private static Component sortLabel() {
+        return switch (sortMode) {
+            case 1 -> KTText.t("talents.sort.most", "Sort: Most trained");
+            case 2 -> KTText.t("talents.sort.least", "Sort: Least trained");
+            default -> KTText.t("talents.sort.default", "Sort: Default order");
+        };
+    }
 
     private final List<Talent> allTalents = new ArrayList<>();
     private final List<Talent> filtered = new ArrayList<>();
@@ -124,8 +132,8 @@ public class TalentsTab implements CatTab {
         // Sort toggle along the bottom of the list panel
         sort(cat);
         s.add(new KTButton(x + 5, listY(s) + listH(s) - SORT_H - 5, LIST_W - 10, SORT_H,
-                KTText.t("talents.sort." + SORT_KEYS[sortMode], "Sort: " + SORT_NAMES[sortMode]), b -> {
-            sortMode = (sortMode + 1) % SORT_KEYS.length;
+                sortLabel(), b -> {
+            sortMode = (sortMode + 1) % SORT_MODES;
             scroll = 0;
             s.rebuild();
         }).style(KTButton.Style.CHIP).tip(KTText.t("talents.sort.tip", "Click to change how the list is sorted")));
