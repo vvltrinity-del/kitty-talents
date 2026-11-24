@@ -22,7 +22,7 @@ public class CatnipRespecElixirItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity interactionTarget, InteractionHand hand) {
-        if (interactionTarget instanceof TalentedCat cat && cat.isOwnedBy(player)) {
+        if (interactionTarget instanceof TalentedCat cat && com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.RESPEC)) {
             Level level = cat.level();
             if (!level.isClientSide) {
                 int refunded = cat.respecTalents();

@@ -39,6 +39,13 @@ public class CatFoodHelper {
         if (stack.getItem() instanceof com.kittytalents.item.DeepFriedChickenItem) return true; // Deep Fried Chicken, Chicken and Rice
         if (stack.is(Items.GOLDEN_CARROT)) return true;
 
+        // Meats: Happy Eater allows all meats; every cat eats chicken. 5.1.1: checked before the general cat_food tag,
+        // which also holds every meat, so it used to let every cat eat beef and pork and the talent's rule never applied.
+        // With no cat given (a bowl or Habitat slot deciding what it holds), meat is allowed.
+        if (stack.is(CAT_MEAT) && !stack.is(CAT_FISH) && !stack.is(CAT_PREMIUM_FOOD)) {
+            return cat == null || isChicken(stack) || cat.getTalentLevel(Talents.HAPPY_EATER) > 0;
+        }
+
         // Tag checks
         if (stack.is(CAT_PREMIUM_FOOD)) return true;
         if (stack.is(CAT_FISH)) return true;
@@ -51,14 +58,14 @@ public class CatFoodHelper {
             return true;
         }
 
-        // Meats: Happy Eater allows all meats; normal cats also enjoy chicken
-        if (stack.is(CAT_MEAT) || stack.is(Items.CHICKEN) || stack.is(Items.COOKED_CHICKEN)) {
-            if (cat == null || cat.getTalentLevel(Talents.HAPPY_EATER) > 0 || stack.is(Items.CHICKEN) || stack.is(Items.COOKED_CHICKEN)) {
-                return true;
-            }
-        }
+        return isChicken(stack);
+    }
 
-        return false;
+    /** Raw or cooked chicken, including modded cuts (Farmer's Delight chicken cuts): every cat eats these. */
+    public static boolean isChicken(ItemStack stack) {
+        if (stack.is(Items.CHICKEN) || stack.is(Items.COOKED_CHICKEN)) return true;
+        var id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return id != null && id.getPath().contains("chicken");
     }
 
     public static CatFoodValue getFoodValues(ItemStack stack, TalentedCat cat) {

@@ -69,7 +69,7 @@ public class KittyWorkClipboardItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        if (target instanceof TalentedCat cat && (cat.isOwnedBy(player) || cat.isTrusted(player))) {
+        if (target instanceof TalentedCat cat && com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.SET_JOB)) {
             if (!player.level().isClientSide) {
                 CompoundTag tag = stack.getOrCreateTag();
                 boolean alreadySelected = tag.hasUUID("CatUUID") && tag.getUUID("CatUUID").equals(cat.getUUID());

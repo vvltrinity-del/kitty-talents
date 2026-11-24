@@ -25,7 +25,7 @@ public class GenderRibbonItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        if (target instanceof TalentedCat cat && (cat.isOwnedBy(player) || cat.isTrusted(player))) {
+        if (target instanceof TalentedCat cat && com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.STYLE)) {
             if (!player.level().isClientSide) {
                 boolean isCurrentlyFemale = cat.isFemale();
                 cat.setFemale(!isCurrentlyFemale);

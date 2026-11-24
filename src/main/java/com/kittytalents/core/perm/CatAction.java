@@ -34,7 +34,11 @@ public enum CatAction {
     /** Add or remove co-owners. Co-owners may only remove themselves (handled by the packet). */
     MANAGE_TRUST(null, 32),
     /** Ride the cat (4.0): the one thing a Rider co-owner may do. */
-    RIDE(TrustRole.RIDER, 8);
+    RIDE(TrustRole.RIDER, 8),
+    /** Carry it in a Cat Carrier, breed it, or raise its production tier (5.1.1: these items let any co-owner). */
+    CARE(TrustRole.FULL, 8),
+    /** Wipe its statistics with an Amnesia Treat. Owner only (5.1.1). */
+    RESET_STATS(null, 8);
 
     @javax.annotation.Nullable
     private final TrustRole minRole;

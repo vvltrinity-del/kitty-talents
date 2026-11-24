@@ -186,6 +186,21 @@ public class KittyHabitatScreen extends KTContainerScreen<KittyHabitatMenu> {
             }
         }
         KTTheme.header(g, font, rx + 6, ry + 66, RW - 12, KTText.t("habitat.outputs", "Outputs"));
+
+        // 5.1.1: energy bar under the outputs (the stored FE was never shown). Hover it for the numbers.
+        int fe = menu.getEnergy();
+        boolean powered = fe >= KittyHabitatBlockEntity.ENERGY_PER_TICK;
+        int ex = rx + 6, ey = topPos + 122, ew = RW - 12;
+        KTTheme.bar(g, ex, ey, ew, 3, fe / (float) KittyHabitatBlockEntity.ENERGY_CAPACITY, powered ? 0xFF38BDF8 : 0xFF6B6760);
+        if (mouseX >= ex && mouseX < ex + ew && mouseY >= ey - 2 && mouseY < ey + 5) {
+            java.util.List<Component> tip = new java.util.ArrayList<>();
+            tip.add(KTText.t("habitat.energy", "Energy").copy().withStyle(net.minecraft.ChatFormatting.AQUA));
+            tip.add(Component.literal(String.format("%,d / %,d FE", fe, KittyHabitatBlockEntity.ENERGY_CAPACITY)));
+            tip.add(powered
+                    ? KTText.t("habitat.energy.on", "Double speed: uses 40 FE per tick.").copy().withStyle(net.minecraft.ChatFormatting.GREEN)
+                    : KTText.t("habitat.energy.off", "No power: normal speed. Connect any FE cable or generator, any side.").copy().withStyle(net.minecraft.ChatFormatting.GRAY));
+            g.renderComponentTooltip(font, tip, mouseX, mouseY);
+        }
     }
 
     @Override

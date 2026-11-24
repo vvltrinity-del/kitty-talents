@@ -63,7 +63,9 @@ public class KittyWhistleItem extends Item {
             List<TalentedCat> cats = level.getEntitiesOfClass(
                     TalentedCat.class,
                     new AABB(player.blockPosition()).inflate(radius),
-                    c -> c.isOwnedBy(player) && !c.isIncapacitated()
+                    // 5.1.1: whistle orders are commands (Handler co-owners and up), not any co-owner
+                    c -> com.kittytalents.core.perm.CatPermissions.can(player, c, com.kittytalents.core.perm.CatAction.COMMAND)
+                            && !c.isIncapacitated()
             );
 
             WhistleCommand cmd = getCommand(held);
@@ -108,7 +110,8 @@ public class KittyWhistleItem extends Item {
                             cat.setTarget(null);
                             cat.setOrderedToSit(false);
                             cat.setCatMode(CatMode.WANDER);
-                            cat.teleportTo(home.getX() + 0.5D, home.getY() + 0.5D, home.getZ() + 0.5D);
+                            // 5.1.1: to the bed's own dimension (it used to land on the bed's coordinates wherever the cat was)
+                            com.kittytalents.util.CatTeleport.sendHome(cat, 0.5D);
                         }
                     }
                     case STOP_ATTACK -> {

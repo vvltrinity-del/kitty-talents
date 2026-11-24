@@ -382,9 +382,10 @@ public final class CatInteractions {
             }
         }
 
-        // Fish & meats for food & healing
+        // Fish & meats for food & healing. 5.1.1: chicken for every cat, as in bowls and Habitats; beef and pork need Happy Eater.
         if (held.is(Items.COD) || held.is(Items.COOKED_COD) || held.is(Items.SALMON) || held.is(Items.COOKED_SALMON) ||
-                (cat.getTalentLevel(Talents.HAPPY_EATER) > 0 && (held.is(Items.CHICKEN) || held.is(Items.COOKED_CHICKEN) || held.is(Items.BEEF) || held.is(Items.PORKCHOP)))) {
+                held.is(Items.CHICKEN) || held.is(Items.COOKED_CHICKEN) ||
+                (cat.getTalentLevel(Talents.HAPPY_EATER) > 0 && (held.is(Items.BEEF) || held.is(Items.PORKCHOP)))) {
             if (cat.getHunger() < 120 || cat.getHealth() < cat.getMaxHealth() || cat.isBaby()) {
                 if (!player.getAbilities().instabuild) {
                     held.shrink(1);

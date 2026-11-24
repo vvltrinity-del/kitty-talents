@@ -128,7 +128,7 @@ public class PacketWhistleCommand extends PacketBase {
                 }
                 case REST -> {
                     cat.setOrderedToSit(false);
-                    if (cat.getHomeBedPos() != null) {
+                    if (com.kittytalents.util.CatTeleport.isHomeBedHere(cat)) { // 5.1.1: only walk to a bed in this dimension
                         cat.getNavigation().moveTo(cat.getHomeBedPos().getX(), cat.getHomeBedPos().getY(), cat.getHomeBedPos().getZ(), 1.2D);
                     }
                 }
@@ -154,9 +154,8 @@ public class PacketWhistleCommand extends PacketBase {
                 }
                 case RETURN_HOME -> {
                     cat.setOrderedToSit(false);
-                    if (cat.getHomeBedPos() != null) {
-                        cat.teleportTo(cat.getHomeBedPos().getX() + 0.5D, cat.getHomeBedPos().getY() + 1.0D, cat.getHomeBedPos().getZ() + 0.5D);
-                    }
+                    // 5.1.1: to the bed's own dimension (it used to land on the bed's coordinates wherever the cat was)
+                    com.kittytalents.util.CatTeleport.sendHome(cat, 1.0D);
                 }
                 case LOCATE -> {
                     cat.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 300, 0));

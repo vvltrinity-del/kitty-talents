@@ -25,7 +25,8 @@ public class CatReturnHomeGoal extends Goal {
         if (cat.isTwined() || cat.isIncapacitated() || cat.isOrderedToSit() || cat.isSleeping()) return false;
         if (cat.getCatMode() != CatMode.RETURN_HOME) return false;
         BlockPos home = cat.getHomeBedPos();
-        if (home == null) return false;
+        // 5.1.1: a bed in another dimension can't be walked to (the cat used to head for its coordinates here)
+        if (home == null || !com.kittytalents.util.CatTeleport.isHomeBedHere(cat)) return false;
 
         return cat.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) > 4.0D;
     }
@@ -35,7 +36,7 @@ public class CatReturnHomeGoal extends Goal {
         if (cat.isTwined() || cat.isIncapacitated() || cat.isOrderedToSit() || cat.isSleeping()) return false;
         if (cat.getCatMode() != CatMode.RETURN_HOME) return false;
         BlockPos home = cat.getHomeBedPos();
-        if (home == null) return false;
+        if (home == null || !com.kittytalents.util.CatTeleport.isHomeBedHere(cat)) return false;
 
         return cat.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) > 2.5D;
     }

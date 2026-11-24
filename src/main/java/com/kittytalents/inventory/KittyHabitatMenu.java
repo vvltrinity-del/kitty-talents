@@ -23,7 +23,7 @@ public class KittyHabitatMenu extends AbstractContainerMenu {
 
     public KittyHabitatMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buf) {
         this(containerId, playerInventory, (KittyHabitatBlockEntity) playerInventory.player.level().getBlockEntity(buf.readBlockPos()),
-                new net.minecraft.world.inventory.SimpleContainerData(5));
+                new net.minecraft.world.inventory.SimpleContainerData(KittyHabitatBlockEntity.DATA_COUNT));
     }
 
     public KittyHabitatMenu(int containerId, Inventory playerInventory, KittyHabitatBlockEntity habitat) {
@@ -71,6 +71,8 @@ public class KittyHabitatMenu extends AbstractContainerMenu {
     public int getMaxProgress() { return Math.max(1, data.get(1)); }
     public int getTotalCycles() { return data.get(2); }
     public boolean isPaused() { return data.get(3) != 0; }
+    /** Stored FE (5.1.1), for the energy bar. */
+    public int getEnergy() { return Math.max(0, data.get(5)); }
     public KittyHabitatBlockEntity.Status getStatus() {
         int i = data.get(4);
         var all = KittyHabitatBlockEntity.Status.values();

@@ -31,7 +31,7 @@ public class SpiritCatnipItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        if (target instanceof TalentedCat cat && cat.isOwnedBy(player)) {
+        if (target instanceof TalentedCat cat && com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.CARE)) {
             if (!cat.isInLove() && cat.getAge() == 0) {
                 if (!player.level().isClientSide) {
                     cat.setInLove(player);

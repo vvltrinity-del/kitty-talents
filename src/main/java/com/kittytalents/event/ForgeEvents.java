@@ -138,11 +138,22 @@ public class ForgeEvents {
         }
     }
 
+    /** Persistent-data key: the day number of the owner's last morning gifts (5.1.1). */
+    public static final String GIFT_DAY_KEY = "kittytalents_gift_day";
+
     @SubscribeEvent
     public static void onPlayerWakeUp(PlayerWakeUpEvent event) {
         Player player = event.getEntity();
         Level level = player.level();
         if (!level.isClientSide) {
+            // 5.1.1 (player report): gifts only come when the night actually passed. Leaving the bed by hand
+            // (updateLevel) or being woken early (wakeImmediately) used to gift too, so sleep-and-leave farmed gifts
+            // without limit. The day guard keeps it to one round of gifts per morning whatever wakes the player.
+            if (event.wakeImmediately() || event.updateLevel()) return;
+            long day = level.getDayTime() / 24000L;
+            var data = player.getPersistentData();
+            if (data.contains(GIFT_DAY_KEY) && data.getLong(GIFT_DAY_KEY) == day) return;
+            data.putLong(GIFT_DAY_KEY, day);
             List<TalentedCat> cats = level.getEntitiesOfClass(
                     TalentedCat.class,
                     player.getBoundingBox().inflate(12.0D),
@@ -371,30 +382,17 @@ public class ForgeEvents {
         List<TalentedCat> followers = new java.util.ArrayList<>();
         for (net.minecraft.world.entity.Entity entity : fromLevel.getAllEntities()) {
             if (entity instanceof TalentedCat cat && cat.isAlive() && !cat.isIncapacitated() && !cat.isOrderedToSit()
-                    && !cat.isTwined() && !cat.isPassenger() && cat.isPrimaryOwner(player)) {
-                com.kittytalents.entity.CatMode mode = cat.getCatMode();
-                if (mode == com.kittytalents.entity.CatMode.FOLLOW || mode == com.kittytalents.entity.CatMode.GUARD
-                        || mode == com.kittytalents.entity.CatMode.TACTICAL || mode == com.kittytalents.entity.CatMode.AGGRESSIVE) {
-                    followers.add(cat);
-                }
+                    && !cat.isTwined() && !cat.isPassenger() && cat.isPrimaryOwner(player)
+                    // 5.1.1: the mode says whether it follows. The old list (Follow, Guard, Tactical, Aggressive) left
+                    // Support cats and add-on follow modes behind, and pulled Guard and Aggressive cats off their posts.
+                    && cat.getCatMode().followsOwner()) {
+                followers.add(cat);
             }
         }
         net.minecraft.world.phys.Vec3 arrival = player.position();
-        net.minecraftforge.common.util.ITeleporter toPlayer = new net.minecraftforge.common.util.ITeleporter() {
-            @Override
-            public net.minecraft.world.level.portal.PortalInfo getPortalInfo(net.minecraft.world.entity.Entity entity, ServerLevel dest,
-                    java.util.function.Function<ServerLevel, net.minecraft.world.level.portal.PortalInfo> defaultPortalInfo) {
-                return new net.minecraft.world.level.portal.PortalInfo(arrival, net.minecraft.world.phys.Vec3.ZERO, entity.getYRot(), entity.getXRot());
-            }
-
-            @Override
-            public boolean playTeleportSound(net.minecraft.server.level.ServerPlayer p, ServerLevel src, ServerLevel dest) {
-                return false;
-            }
-        };
         List<net.minecraft.world.entity.Entity> moved = new java.util.ArrayList<>();
         for (TalentedCat cat : followers) {
-            net.minecraft.world.entity.Entity copy = cat.changeDimension(toLevel, toPlayer);
+            net.minecraft.world.entity.Entity copy = com.kittytalents.util.CatTeleport.moveTo(cat, toLevel, arrival);
             if (copy != null) moved.add(copy);
         }
         return moved;

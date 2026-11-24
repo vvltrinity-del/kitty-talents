@@ -35,7 +35,7 @@ public class CatCollarItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        if (target instanceof TalentedCat cat && cat.isOwnedBy(player)) {
+        if (target instanceof TalentedCat cat && com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.STYLE)) {
             DyeColor color = getColor(stack);
             cat.setCollarColor(color);
             cat.playSound(SoundEvents.ARMOR_EQUIP_LEATHER, 1.0F, 1.2F);

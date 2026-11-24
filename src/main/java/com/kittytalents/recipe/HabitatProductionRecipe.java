@@ -103,7 +103,9 @@ public class HabitatProductionRecipe implements Recipe<Container> {
             String tier = GsonHelper.getAsString(json, "tier", "");
             String variant = GsonHelper.getAsString(json, "variant", "");
             Ingredient catalyst = json.has("catalyst") ? Ingredient.fromJson(json.get("catalyst")) : Ingredient.EMPTY;
-            int duration = GsonHelper.getAsInt(json, "duration", 160);
+            // 5.1.1: "ticks" works too. The built-in catnip recipe wrote its time as "ticks", which nothing read, so it
+            // always ran at the 160-tick default instead of its 200.
+            int duration = GsonHelper.getAsInt(json, "duration", GsonHelper.getAsInt(json, "ticks", 160));
 
             List<WeightedOutput> outputs = new ArrayList<>();
             if (json.has("outputs")) {

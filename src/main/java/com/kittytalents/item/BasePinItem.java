@@ -51,7 +51,7 @@ public class BasePinItem extends Item {
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
         if (!(target instanceof TalentedCat cat) || !player.isShiftKeyDown()) return InteractionResult.PASS;
-        if (!cat.isOwnedBy(player)) return InteractionResult.PASS;
+        if (!com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.COMMAND)) return InteractionResult.PASS;
         if (player.level().isClientSide) return InteractionResult.SUCCESS;
         ItemStack held = player.getItemInHand(hand);
         CompoundTag tag = held.getOrCreateTag();
@@ -86,7 +86,7 @@ public class BasePinItem extends Item {
         if (player.isShiftKeyDown() && tag.hasUUID("Cat")) {
             UUID id = tag.getUUID("Cat");
             Entity e = ((ServerLevel) level).getEntity(id);
-            if (e instanceof TalentedCat cat && cat.isOwnedBy(player)) {
+            if (e instanceof TalentedCat cat && com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.COMMAND)) {
                 cat.setGuardPost(pos);
                 player.displayClientMessage(Component.translatable("message.kittytalents.base_pin.post_set", cat.getName(), pos.toShortString()).withStyle(ChatFormatting.GREEN), true);
             } else {

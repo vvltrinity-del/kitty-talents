@@ -76,7 +76,9 @@ public class CatRetreatGoal extends Goal {
             return;
         }
         BlockPos home = cat.getHomeBedPos();
-        if (home != null) cat.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 1.5D);
+        if (home != null && com.kittytalents.util.CatTeleport.isHomeBedHere(cat)) { // 5.1.1: not to a bed in another dimension
+            cat.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 1.5D);
+        }
     }
 
     @Override

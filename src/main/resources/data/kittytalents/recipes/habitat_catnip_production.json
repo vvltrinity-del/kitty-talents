@@ -7,7 +7,7 @@
   "catalyst": {
     "item": "kittytalents:catnip_catalyst"
   },
-  "ticks": 200,
+  "duration": 200,
   "outputs": [
     {
       "item": "kittytalents:catnip",

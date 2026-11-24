@@ -32,7 +32,7 @@ public class CatCarrierItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        if (!hasStoredCat(stack) && target instanceof TalentedCat cat && cat.isOwnedBy(player)) {
+        if (!hasStoredCat(stack) && target instanceof TalentedCat cat && com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.CARE)) {
             Level level = target.level();
             if (!level.isClientSide) {
                 CompoundTag catTag = new CompoundTag();

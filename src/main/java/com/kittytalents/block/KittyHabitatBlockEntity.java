@@ -80,7 +80,7 @@ public class KittyHabitatBlockEntity extends BlockEntity {
         }
     };
 
-    private final EnergyStorage energyStorage = new EnergyStorage(20000, 400, 400);
+    private final EnergyStorage energyStorage = new EnergyStorage(ENERGY_CAPACITY, 400, 400);
     private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> energyStorage);
     private final LazyOptional<IItemHandler> itemHandler = LazyOptional.of(() -> inventory);
     private final LazyOptional<IItemHandler> bottomHandler = LazyOptional.of(() -> new RangedWrapper(inventory, 4, 8) {
@@ -206,7 +206,12 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     public enum Status { IDLE, WORKING, PAUSED, PAUSED_REDSTONE, WORKER_DOWN, WORKER_STARVING, OUTPUT_FULL }
     private Status status = Status.IDLE;
 
-    /** Live values for an open screen: progress, max progress, total cycles, paused flag, status ordinal. */
+    /** Stored FE the Habitat holds; 40 FE per tick doubles its speed. */
+    public static final int ENERGY_CAPACITY = 20000, ENERGY_PER_TICK = 40;
+    /** Synced values for the screen (5.1.1 added energy). The client menu must use the same count. */
+    public static final int DATA_COUNT = 6;
+
+    /** Live values for an open screen: progress, max progress, total cycles, paused flag, status ordinal, stored FE. */
     public final net.minecraft.world.inventory.ContainerData dataAccess = new net.minecraft.world.inventory.ContainerData() {
         @Override public int get(int i) {
             return switch (i) {
@@ -215,11 +220,12 @@ public class KittyHabitatBlockEntity extends BlockEntity {
                 case 2 -> totalCycles;
                 case 3 -> isPaused ? 1 : 0;
                 case 4 -> status.ordinal();
+                case 5 -> Math.min(Short.MAX_VALUE, energyStorage.getEnergyStored()); // sent as a short; capacity is 20000
                 default -> 0;
             };
         }
         @Override public void set(int i, int v) {}
-        @Override public int getCount() { return 5; }
+        @Override public int getCount() { return DATA_COUNT; }
     };
 
     private int simulationCooldown = 0;
@@ -227,6 +233,8 @@ public class KittyHabitatBlockEntity extends BlockEntity {
     private int cachedYieldMultiplier = 1;
     private int cachedCycleMultiplier = 1;
     private ItemStack cachedProducedItem = ItemStack.EMPTY;
+    /** The matched Habitat recipe's outputs after the first, each rolled by its chance every cycle (5.1.1). */
+    private List<HabitatProductionRecipe.WeightedOutput> cachedExtraOutputs = List.of();
     private boolean workerValid = false;
 
     public KittyHabitatBlockEntity(BlockPos pos, BlockState state) {
@@ -576,11 +584,14 @@ public class KittyHabitatBlockEntity extends BlockEntity {
             ItemStack baseResource = ItemStack.EMPTY;
             int baseDuration = habitat.assignedCatResourceTier.getBaseIntervalTicks();
             List<HabitatProductionRecipe> recipes = level.getRecipeManager().getAllRecipesFor(ModRecipes.HABITAT_PRODUCTION_TYPE.get());
+            habitat.cachedExtraOutputs = List.of();
             for (HabitatProductionRecipe recipe : recipes) {
                 if (recipe.matchesWorker(habitat.assignedCatResourceTier, habitat.assignedCatVariant, catalyst)) {
                     if (!recipe.getOutputs().isEmpty()) {
                         baseResource = recipe.getOutputs().get(0).stack().copy();
                         baseDuration = recipe.getDuration();
+                        List<HabitatProductionRecipe.WeightedOutput> all = recipe.getOutputs();
+                        habitat.cachedExtraOutputs = all.size() > 1 ? List.copyOf(all.subList(1, all.size())) : List.of();
                         break;
                     }
                 }
@@ -634,8 +645,8 @@ public class KittyHabitatBlockEntity extends BlockEntity {
 
         // Optional FE speed boost: +100% speed when 40 FE/tick is available
         int step = 1;
-        if (habitat.energyStorage.getEnergyStored() >= 40) {
-            habitat.energyStorage.extractEnergy(40, false);
+        if (habitat.energyStorage.getEnergyStored() >= ENERGY_PER_TICK) {
+            habitat.energyStorage.extractEnergy(ENERGY_PER_TICK, false);
             step = 2;
         }
 
@@ -656,6 +667,14 @@ public class KittyHabitatBlockEntity extends BlockEntity {
                 ItemStack bonus = curiousFind(habitat.assignedCatResourceTier);
                 if (habitat.hasSmelter()) bonus = smelted(level, bonus);
                 if (!bonus.isEmpty() && habitat.canInsertOutput(bonus)) habitat.insertOutput(bonus);
+            }
+            // 5.1.1: the recipe's other outputs, each by its chance (only the first output was ever made). A Nekomata's
+            // double cycle rolls them twice. They never block the main product: no room, no extra.
+            for (int roll = 0; roll < habitat.cachedCycleMultiplier; roll++) {
+                for (ItemStack extra : rollExtras(habitat.cachedExtraOutputs, level.random)) {
+                    if (habitat.hasSmelter()) extra = smelted(level, extra);
+                    if (habitat.canInsertOutput(extra)) habitat.insertOutput(extra);
+                }
             }
             // 5.0: metal-tier cats sometimes condense Ore Essence (5%, +5% per Mole Cat rank), the Resource
             // Catalyst's ingredient. It used to have no source and no use.
@@ -685,6 +704,16 @@ public class KittyHabitatBlockEntity extends BlockEntity {
 
             habitat.setChanged();
         }
+    }
+
+    /** A Habitat recipe's extra outputs for one cycle (5.1.1): each comes out with its chance; 1 or more always does. */
+    public static List<ItemStack> rollExtras(List<HabitatProductionRecipe.WeightedOutput> extras, net.minecraft.util.RandomSource random) {
+        if (extras.isEmpty()) return List.of();
+        List<ItemStack> out = new java.util.ArrayList<>(extras.size());
+        for (HabitatProductionRecipe.WeightedOutput e : extras) {
+            if (!e.stack().isEmpty() && (e.chance() >= 1.0F || random.nextFloat() < e.chance())) out.add(e.stack().copy());
+        }
+        return out;
     }
 
     /** Curious cats' bonus find: one of the tier below's product (a Diamond cat finds an Emerald). */

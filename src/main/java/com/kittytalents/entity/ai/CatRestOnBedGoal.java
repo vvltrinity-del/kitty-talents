@@ -26,7 +26,7 @@ public class CatRestOnBedGoal extends Goal {
     @Override
     public boolean canUse() {
         if (cat.isTwined()) return false;
-        if (cat.getHomeBedPos() == null) return false;
+        if (!com.kittytalents.util.CatTeleport.isHomeBedHere(cat)) return false; // 5.1.1: no bed, or it's in another dimension
 
         // Downed cat pathing fix: incapacitated cats can NEVER pathfind across the world to bed.
         // They can only receive bed nursing if already placed directly on/adjacent to the bed.

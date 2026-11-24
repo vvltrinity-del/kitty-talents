@@ -47,7 +47,7 @@ public class CatLaserPointerItem extends Item {
         List<TalentedCat> cats = level.getEntitiesOfClass(
                 TalentedCat.class,
                 player.getBoundingBox().inflate(32.0D),
-                cat -> cat.isOwnedBy(player) && !cat.isIncapacitated()
+                cat -> com.kittytalents.core.perm.CatPermissions.can(player, cat, com.kittytalents.core.perm.CatAction.COMMAND) && !cat.isIncapacitated()
         );
 
         if (player.isShiftKeyDown()) {
